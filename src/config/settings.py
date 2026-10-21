@@ -12,13 +12,14 @@ class Settings(BaseSettings):
 
     llm_provider: str = "groq"
     groq_api_key: str | None = None
-    groq_model: str = "llama3-8b-8192"
+    groq_model: str = "openai/gpt-oss-20b"
+    gemini_api_key: str | None = None
     google_api_key: str | None = None
-    gemini_model: str = "gemini-1.5-flash"
+    gemini_model: str = "gemini-3.8-flash"
     openai_api_key: str | None = None
     openai_model: str = "gpt-4o-mini"
     anthropic_api_key: str | None = None
-    anthropic_model: str = "claude-3-5-sonnet-20240620"
+    anthropic_model: str = "claude-sonnet-4-5"
     ollama_base_url: str = "http://localhost:11434"
     ollama_model: str = "llama3"
 
@@ -26,6 +27,16 @@ class Settings(BaseSettings):
     spam_filter_threshold: float = 0.7
     embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2"
     faiss_index_path: str = "data/faiss_index"
+    tavily_api_key: str | None = None
+    serpapi_api_key: str | None = None
+    email_provider: str = "sendgrid"
+    sendgrid_api_key: str | None = None
+    resend_api_key: str | None = None
+    from_email: str = "hireflow@example.com"
+    public_base_url: str = "http://localhost:8000"
+    local_storage_path: str = "data"
+    browser_headless: bool = True
+    application_timeout_ms: int = 15000
 
     model_config = SettingsConfigDict(
         env_file=".env",

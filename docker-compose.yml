@@ -1,16 +1,28 @@
-version: "3.9"
-
 services:
   api:
-    build: .
+    build:
+      context: .
+      args:
+        INSTALL_EMBEDDINGS: ${INSTALL_EMBEDDINGS:-false}
     ports:
       - "8000:8000"
     env_file:
-      - .env
+      - path: .env
+        required: false
+    environment:
+      DATABASE_URL: postgresql+psycopg2://postgres:${POSTGRES_PASSWORD:-hireflow_local}@db:5432/hireflow
+      LOCAL_STORAGE_PATH: /app/data
+      FAISS_INDEX_PATH: /app/data/faiss_index
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:8000}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000}
+      PORT: 8000
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     volumes:
-      - ./data:/app/data
+      - application_data:/app/data
+    init: true
+    shm_size: 1gb
     restart: unless-stopped
 
   db:
@@ -18,24 +30,34 @@ services:
     environment:
       POSTGRES_DB: hireflow
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
-    ports:
-      - "5432:5432"
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-hireflow_local}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d hireflow"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
     restart: unless-stopped
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-/api}
     ports:
-      - "3000:3000"
-    env_file:
-      - .env
+      - "3000:80"
     depends_on:
-      - api
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "--quiet", "http://127.0.0.1/"]
+      interval: 15s
+      timeout: 3s
+      retries: 5
     restart: unless-stopped
 
 volumes:
   postgres_data:
+  application_data:

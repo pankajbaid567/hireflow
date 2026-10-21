@@ -11,6 +11,11 @@ from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
+
+def json_type():
+    """Keep the PostgreSQL schema while allowing local SQLite migrations."""
+    return sa.JSON().with_variant(postgresql.JSONB(), "postgresql")
+
 # revision identifiers, used by Alembic.
 revision: str = '001'
 down_revision: Union[str, Sequence[str], None] = None
@@ -32,7 +37,7 @@ def upgrade() -> None:
     sa.Column('listing_type', sa.Enum('internship', 'job', name='listingtype'), nullable=False),
     sa.Column('is_spam', sa.Boolean(), nullable=False),
     sa.Column('spam_confidence', sa.Float(), nullable=True),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.func.current_timestamp(), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_jobs_id'), 'jobs', ['id'], unique=False)
@@ -42,10 +47,10 @@ def upgrade() -> None:
     sa.Column('name', sa.String(), nullable=False),
     sa.Column('email', sa.String(), nullable=False),
     sa.Column('mode', sa.Enum('internship', 'job', name='usermode'), nullable=False),
-    sa.Column('master_profile', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
+    sa.Column('master_profile', json_type(), nullable=True),
     sa.Column('weekly_quota', sa.Integer(), nullable=False),
     sa.Column('confirmation_mode', sa.Enum('manual', 'auto', name='confirmationmode'), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.func.current_timestamp(), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_users_email'), 'users', ['email'], unique=True)
@@ -55,10 +60,10 @@ def upgrade() -> None:
     sa.Column('user_id', sa.Integer(), nullable=False),
     sa.Column('job_id', sa.Integer(), nullable=False),
     sa.Column('match_score', sa.Float(), nullable=True),
-    sa.Column('skill_gaps', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
+    sa.Column('skill_gaps', json_type(), nullable=True),
     sa.Column('resume_path', sa.String(), nullable=True),
     sa.Column('status', sa.Enum('pending', 'applied', 'rejected', 'interview', 'offer', name='applicationstatus'), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.func.current_timestamp(), nullable=True),
     sa.Column('updated_at', sa.DateTime(timezone=True), nullable=True),
     sa.ForeignKeyConstraint(['job_id'], ['jobs.id'], ondelete='CASCADE'),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
@@ -71,9 +76,9 @@ def upgrade() -> None:
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=False),
     sa.Column('week_start_date', sa.Date(), nullable=False),
-    sa.Column('metrics', postgresql.JSONB(astext_type=sa.Text()), nullable=False),
-    sa.Column('content', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
+    sa.Column('metrics', json_type(), nullable=False),
+    sa.Column('content', json_type(), nullable=True),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.func.current_timestamp(), nullable=True),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
@@ -83,8 +88,8 @@ def upgrade() -> None:
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('application_id', sa.Integer(), nullable=False),
     sa.Column('content', sa.Text(), nullable=True),
-    sa.Column('structured_data', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
+    sa.Column('structured_data', json_type(), nullable=True),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.func.current_timestamp(), nullable=True),
     sa.Column('updated_at', sa.DateTime(timezone=True), nullable=True),
     sa.ForeignKeyConstraint(['application_id'], ['applications.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
@@ -113,4 +118,7 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_jobs_url'), table_name='jobs')
     op.drop_index(op.f('ix_jobs_id'), table_name='jobs')
     op.drop_table('jobs')
+    if op.get_bind().dialect.name == "postgresql":
+        for name in ("applicationstatus", "confirmationmode", "usermode", "listingtype"):
+            sa.Enum(name=name).drop(op.get_bind(), checkfirst=True)
     # ### end Alembic commands ###

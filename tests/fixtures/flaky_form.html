@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Local uncertain submission</title></head>
+<body>
+  <form>
+    <label>Name <input name="name" required></label>
+    <label>Email <input type="email" name="email" required></label>
+    <label>Resume <input type="file" name="resume" required></label>
+    <button type="submit">Apply</button>
+  </form>
+  <output id="result"></output>
+  <script>
+    // Simulate a server accepting the first POST while its confirmation fails.
+    // Retrying blindly would create a second application.
+    window.submissionCount = 0;
+    document.querySelector('form').addEventListener('submit', event => {
+      event.preventDefault();
+      window.submissionCount += 1;
+      if (window.submissionCount > 1) {
+        document.querySelector('#result').textContent = 'Application submitted';
+      } else {
+        document.querySelector('#result').textContent = 'Connection interrupted while loading response';
+      }
+    });
+  </script>
+</body></html>

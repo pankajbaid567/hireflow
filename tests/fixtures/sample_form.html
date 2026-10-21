@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Local sample application</title></head>
+<body>
+  <h1>AI Engineer Intern</h1>
+  <form id="application">
+    <label>Full name <input name="full_name" required></label>
+    <label>Email <input name="email" type="email" required></label>
+    <label>Phone <input name="phone" type="tel" required></label>
+    <label>Education <select name="education" required>
+      <option value="">Choose</option><option>BTech</option><option>MTech</option>
+    </select></label>
+    <label>Years of experience <input name="experience_years" type="number" min="0" required></label>
+    <label>Skills <textarea name="skills" required></textarea></label>
+    <label>Why do you want to work here? <textarea name="motivation" required></textarea></label>
+    <label>Resume PDF <input name="resume" type="file" accept=".pdf" required></label>
+    <button type="submit">Send application</button>
+  </form>
+  <output id="result" role="status"></output>
+  <script>
+    window.submissionCount = 0;
+    document.querySelector('form').addEventListener('submit', event => {
+      event.preventDefault();
+      window.submissionCount += 1;
+      const form = event.currentTarget;
+      const data = Object.fromEntries(new FormData(form));
+      window.submitted = {...data, resume: {
+        name: data.resume.name, size: data.resume.size, type: data.resume.type
+      }};
+      document.querySelector('#result').textContent = 'Thank you for applying. Application received.';
+    });
+  </script>
+</body>
+</html>

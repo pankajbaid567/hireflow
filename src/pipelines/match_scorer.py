@@ -20,10 +20,10 @@ import re
 from typing import Any
 
 from src.config.database import SessionLocal
-from src.config.settings import get_settings
 from src.models.application import Application, ApplicationStatus
 from src.models.job import Job, ListingType
-from src.models.user import User, UserMode
+from src.models.user import User
+from src.utils.skills import extract_skills, normalize_skill
 
 logger = logging.getLogger(__name__)
 
@@ -40,48 +40,60 @@ WEIGHTS = {
 }
 
 # Common experience-level keywords
-SENIOR_KEYWORDS = {"senior", "lead", "principal", "staff", "architect", "director", "vp", "head"}
-JUNIOR_KEYWORDS = {"junior", "entry", "graduate", "fresher", "trainee", "intern", "apprentice", "associate"}
+SENIOR_KEYWORDS = {
+    "senior",
+    "lead",
+    "principal",
+    "staff",
+    "architect",
+    "director",
+    "vp",
+    "head",
+}
+JUNIOR_KEYWORDS = {
+    "junior",
+    "entry",
+    "graduate",
+    "fresher",
+    "trainee",
+    "intern",
+    "apprentice",
+    "associate",
+}
 
 # Internship-related compensation keywords
-STIPEND_PATTERN = re.compile(r"(\d[\d,]*)\s*(k|lpa|lakh|lakhs|usd|inr|\/month|per month|monthly)?", re.IGNORECASE)
+STIPEND_PATTERN = re.compile(
+    r"(\d[\d,]*)\s*(k|lpa|lakh|lakhs|usd|inr|\/month|per month|monthly)?", re.IGNORECASE
+)
 
 
 # ---------------------------------------------------------------------------
 # Sub-scorers
 # ---------------------------------------------------------------------------
 
-def _skill_match_score(profile: dict, jd_text: str) -> tuple[float, list[str], list[str]]:
+
+def _skill_match_score(
+    profile: dict, jd_text: str
+) -> tuple[float, list[str], list[str]]:
     """
     Returns (score 0-1, matched_skills, skill_gaps).
     Compares user skills against the JD text (case-insensitive substring match).
     """
-    user_skills = [s.lower() for s in profile.get("skills", [])]
-    jd_lower = jd_text.lower()
-
-    if not user_skills:
-        return 0.0, [], []
-
-    matched = [s for s in user_skills if s in jd_lower]
-    gaps = [s for s in user_skills if s not in jd_lower]
-
-    # Also extract skills mentioned in JD that user doesn't have
-    # (simple heuristic: look for tech-like tokens in JD)
-    jd_tokens = set(re.findall(r"\b[A-Za-z][A-Za-z0-9+#.]{1,20}\b", jd_text))
-    TECH_STOP = {"the", "and", "for", "with", "you", "are", "our", "your", "this",
-                 "that", "have", "will", "not", "from", "all", "can", "been"}
-    jd_skills_candidates = {t.lower() for t in jd_tokens if t.lower() not in TECH_STOP and len(t) > 2}
-    missing_from_jd = list(jd_skills_candidates - set(user_skills) - set(matched))[:10]
-
-    score = len(matched) / len(user_skills) if user_skills else 0.0
-    # skill_gaps = user skills not present in this JD (what the user is "missing" for this role)
-    user_skill_gaps = [s for s in user_skills if s not in jd_lower]
-    return min(score, 1.0), matched, user_skill_gaps
+    user_skills = {normalize_skill(s) for s in (profile.get("skills") or [])}
+    required = list(
+        dict.fromkeys(
+            normalize_skill(s)
+            for s in extract_skills(jd_text, profile.get("skills") or [])
+        )
+    )
+    matched = [s for s in required if s in user_skills]
+    gaps = [s for s in required if s not in user_skills]
+    return len(matched) / len(required) if required else 0.0, matched, gaps
 
 
 def _role_fit_score(profile: dict, job_title: str) -> float:
     """Score based on how well the job title aligns with user's target roles."""
-    target_roles = [r.lower() for r in profile.get("target_roles", [])]
+    target_roles = [r.lower() for r in (profile.get("target_roles") or [])]
     title_lower = job_title.lower()
 
     if not target_roles:
@@ -103,8 +115,8 @@ def _experience_fit_score(profile: dict, jd_text: str, job_title: str) -> float:
     Freshers/interns score highly for junior/intern roles; poorly for senior roles.
     """
     mode = profile.get("mode", "job")
-    experience = profile.get("experience", [])
-    years_exp = len(experience)  # rough proxy
+    experience = profile.get("experience") or []
+    years_exp = profile.get("experience_years") or len(experience)
 
     title_lower = job_title.lower()
     jd_lower = jd_text.lower()
@@ -131,7 +143,7 @@ def _experience_fit_score(profile: dict, jd_text: str, job_title: str) -> float:
 
 def _location_match_score(profile: dict, job_location: str | None) -> float:
     """Score based on preferred locations."""
-    preferred = [loc.lower() for loc in profile.get("preferred_locations", [])]
+    preferred = [loc.lower() for loc in (profile.get("preferred_locations") or [])]
     job_loc = (job_location or "").lower()
 
     if not preferred or not job_loc:
@@ -147,7 +159,9 @@ def _location_match_score(profile: dict, job_location: str | None) -> float:
     return 0.2
 
 
-def _compensation_fit_score(profile: dict, jd_text: str, listing_type: ListingType) -> float:
+def _compensation_fit_score(
+    profile: dict, jd_text: str, listing_type: ListingType
+) -> float:
     """Score compensation fit based on min_stipend (internship) or salary mention."""
     if listing_type == ListingType.internship:
         min_stipend = profile.get("min_stipend")
@@ -167,7 +181,15 @@ def _compensation_fit_score(profile: dict, jd_text: str, listing_type: ListingTy
         return 0.1
     else:
         # For full jobs, a mention of salary/compensation is a positive signal
-        comp_keywords = ["salary", "compensation", "ctc", "lpa", "per annum", "usd", "inr"]
+        comp_keywords = [
+            "salary",
+            "compensation",
+            "ctc",
+            "lpa",
+            "per annum",
+            "usd",
+            "inr",
+        ]
         if any(k in jd_text.lower() for k in comp_keywords):
             return 0.8
         return 0.5
@@ -187,6 +209,7 @@ def _company_signal_score(profile: dict, company_name: str) -> float:
 # ---------------------------------------------------------------------------
 # Main scorer
 # ---------------------------------------------------------------------------
+
 
 def compute_match_score(profile: dict, job: "Job") -> dict[str, Any]:
     """
@@ -231,7 +254,8 @@ def compute_match_score(profile: dict, job: "Job") -> dict[str, Any]:
 # Database runner
 # ---------------------------------------------------------------------------
 
-def score_jobs_for_user(user_id: int, dry_run: bool = False) -> list[dict]:
+
+def score_jobs_for_user(user_id: int, dry_run: bool = False, db=None) -> list[dict]:
     """
     Score all non-spam jobs for the given user and (optionally) persist results.
 
@@ -242,25 +266,32 @@ def score_jobs_for_user(user_id: int, dry_run: bool = False) -> list[dict]:
     Returns:
         Sorted list of result dicts (highest score first).
     """
-    db = SessionLocal()
+    owns_session = db is None
+    db = db if db is not None else SessionLocal()
     try:
         user = db.query(User).filter(User.id == user_id).first()
         if not user:
             raise ValueError(f"User {user_id} not found")
 
-        profile = user.master_profile or {}
-        jobs = db.query(Job).filter(Job.is_spam == False).all()  # noqa: E712
+        profile = {**(user.master_profile or {}), "mode": user.mode.value}
+        jobs = (
+            db.query(Job)
+            .filter(Job.is_spam.is_(False), Job.listing_type == user.mode.value)
+            .all()
+        )
         logger.info(f"Scoring {len(jobs)} non-spam jobs for user {user_id}")
 
         results = []
         for job in jobs:
             score_data = compute_match_score(profile, job)
-            results.append({
-                "job_id": job.id,
-                "job_title": job.title,
-                "company": job.company,
-                **score_data,
-            })
+            results.append(
+                {
+                    "job_id": job.id,
+                    "job_title": job.title,
+                    "company": job.company,
+                    **score_data,
+                }
+            )
 
         # Sort by total_score descending and assign rank
         results.sort(key=lambda r: r["total_score"], reverse=True)
@@ -298,24 +329,34 @@ def score_jobs_for_user(user_id: int, dry_run: bool = False) -> list[dict]:
 
         return results
     finally:
-        db.close()
+        if owns_session:
+            db.close()
 
 
 # ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
 
+
 def main():
     parser = argparse.ArgumentParser(description="HireFlow Multi-Factor Match Scorer")
-    parser.add_argument("--user-id", type=int, required=True, help="User ID to score jobs for")
-    parser.add_argument("--dry-run", action="store_true", help="Compute scores without writing to DB")
+    parser.add_argument(
+        "--user-id", type=int, required=True, help="User ID to score jobs for"
+    )
+    parser.add_argument(
+        "--dry-run", action="store_true", help="Compute scores without writing to DB"
+    )
     args = parser.parse_args()
 
     results = score_jobs_for_user(args.user_id, dry_run=args.dry_run)
 
     print(json.dumps(results, indent=2, default=str))
-    print(f"\nScored {len(results)} jobs. Top match: {results[0]['job_title']} @ {results[0]['company']} "
-          f"(score: {results[0]['total_score']})" if results else "\nNo jobs found.")
+    print(
+        f"\nScored {len(results)} jobs. Top match: {results[0]['job_title']} @ {results[0]['company']} "
+        f"(score: {results[0]['total_score']})"
+        if results
+        else "\nNo jobs found."
+    )
 
 
 if __name__ == "__main__":

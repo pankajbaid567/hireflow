@@ -1,196 +1,269 @@
-import pytest
-from unittest.mock import MagicMock
+"""Verify plan quotas and confirmation against isolated, real database rows."""
+
 from datetime import datetime, timedelta, timezone
 
-from src.models.application import Application, ApplicationStatus
-from src.models.job import Job
-from src.models.user import User, ConfirmationMode
+import pytest
+
+from src.agents.report_generator import ReportGenerator
+from src.models import Application, ApplicationStatus, Job, ListingType, User, UserMode
 from src.pipelines.quota_selector import QuotaSelector
+from src.utils.dates import week_start
 
 
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
-def _make_mock_db():
-    return MagicMock()
-
-def _make_user(quota=3, blacklist=["badco"]):
-    user = MagicMock(spec=User)
-    user.id = 1
-    user.weekly_quota = quota
-    user.master_profile = {"blacklist_companies": blacklist}
-    user.confirmation_mode = ConfirmationMode.batch
+def make_user(db, quota=3):
+    user = User(
+        name="Student",
+        email="student@example.com",
+        mode=UserMode.internship,
+        weekly_quota=quota,
+        master_profile={"blacklist_companies": ["BadCo"]},
+    )
+    db.add(user)
+    db.commit()
     return user
 
-def _make_job(job_id, company, days_old=5):
-    job = MagicMock(spec=Job)
-    job.id = job_id
-    job.title = f"Role {job_id}"
-    job.company = company
-    job.posted_date = datetime.now(timezone.utc) - timedelta(days=days_old)
-    return job
 
-def _make_app(app_id, job, match_score, status=ApplicationStatus.pending):
-    app = MagicMock(spec=Application)
-    app.id = app_id
-    app.user_id = 1
-    app.job_id = job.id
-    app.job = job
-    app.match_score = match_score
-    app.status = status
-    app.skill_gaps = {}
+def make_app(db, user, score=0.8, status="pending", cycle=None, **job_fields):
+    index = db.query(Job).count() + 1
+    fields = {
+        "title": f"Role {index}",
+        "company": "GoodCo",
+        "url": f"https://jobs.example.com/{index}",
+        "description": "Python Docker",
+        "listing_type": ListingType.internship,
+        "posted_date": datetime.now(timezone.utc) - timedelta(days=5),
+    }
+    job = Job(**{**fields, **job_fields})
+    app = Application(
+        user=user,
+        job=job,
+        match_score=score,
+        status=ApplicationStatus(status),
+        cycle_start=cycle,
+    )
+    db.add(app)
+    db.commit()
     return app
 
 
-# ---------------------------------------------------------------------------
-# Tests
-# ---------------------------------------------------------------------------
-
-class TestGenerateWeeklyPlan:
-    def test_selects_top_n_jobs(self):
-        db = _make_mock_db()
-        user = _make_user(quota=2)
-        
-        # 3 pending apps, user quota is 2
-        j1 = _make_job(1, "GoodCo")
-        a1 = _make_app(1, j1, 0.9)
-        j2 = _make_job(2, "OtherCo")
-        a2 = _make_app(2, j2, 0.8)
-        j3 = _make_job(3, "ThirdCo")
-        a3 = _make_app(3, j3, 0.7)
-        
-        def db_query_side_effect(model):
-            if model == Application:
-                mock_app_query = MagicMock()
-                mock_app_query.filter.return_value.all.return_value = []
-                mock_app_query.join.return_value.filter.return_value.order_by.return_value.all.return_value = [a1, a2, a3]
-                return mock_app_query
-            elif model == User:
-                mock_user_query = MagicMock()
-                mock_user_query.filter.return_value.first.return_value = user
-                return mock_user_query
-                
-        db.query.side_effect = db_query_side_effect
-        
-        selector = QuotaSelector(db)
-        plan = selector.generate_weekly_plan(1)
-        
-        assert len(plan["plan"]) == 2
-        assert plan["plan"][0]["job_id"] == 1
-        assert plan["plan"][1]["job_id"] == 2
-        assert a1.status == ApplicationStatus.planned
-        assert a2.status == ApplicationStatus.planned
-        assert a3.status == ApplicationStatus.pending # unchanged
-
-    def test_filters_blacklist_and_expired(self):
-        db = _make_mock_db()
-        user = _make_user(quota=2, blacklist=["badco"])
-        
-        j1 = _make_job(1, "GoodCo")
-        a1 = _make_app(1, j1, 0.9)
-        j2 = _make_job(2, "BadCo") # Blacklisted
-        a2 = _make_app(2, j2, 0.8)
-        j3 = _make_job(3, "OldCo", days_old=40) # Expired
-        a3 = _make_app(3, j3, 0.7)
-        j4 = _make_job(4, "NewCo")
-        a4 = _make_app(4, j4, 0.6)
-        
-        db.query.return_value.filter.return_value.first.return_value = user
-        db.query.return_value.filter.return_value.all.side_effect = [[], [a1, a2, a3, a4]]
-        
-        # Query chain mocking for pending apps
-        # db.query().join().filter().order_by().all() -> returns [a1, a2, a3, a4]
-        mock_query = MagicMock()
-        mock_query.join.return_value.filter.return_value.order_by.return_value.all.return_value = [a1, a2, a3, a4]
-        
-        # We need to correctly route the two `all()` calls in the function
-        # 1: existing_planned query
-        # 2: pending_apps query
-        def db_query_side_effect(model):
-            if model == Application:
-                mock_app_query = MagicMock()
-                # for existing planned: filter().all()
-                # for pending: join().filter().order_by().all()
-                mock_app_query.filter.return_value.all.return_value = []
-                mock_app_query.join.return_value.filter.return_value.order_by.return_value.all.return_value = [a1, a2, a3, a4]
-                return mock_app_query
-            elif model == User:
-                mock_user_query = MagicMock()
-                mock_user_query.filter.return_value.first.return_value = user
-                return mock_user_query
-                
-        db.query.side_effect = db_query_side_effect
-        
-        selector = QuotaSelector(db)
-        plan = selector.generate_weekly_plan(1)
-        
-        assert len(plan["plan"]) == 2
-        assert plan["plan"][0]["job_id"] == 1
-        assert plan["plan"][1]["job_id"] == 4 # Skips 2 and 3
+def invalidate(app, kind):
+    if kind == "expired":
+        app.job.posted_date = datetime.now(timezone.utc) - timedelta(days=40)
+    elif kind == "spam":
+        app.job.is_spam = True
+    elif kind == "blacklist":
+        app.job.company = "bAdCo"
+    else:
+        app.job.listing_type = ListingType.job
 
 
-class TestSwapJob:
-    def test_swap_updates_status(self):
-        db = _make_mock_db()
-        j1 = _make_job(1, "A")
-        a1 = _make_app(1, j1, 0.9, ApplicationStatus.planned)
-        j2 = _make_job(2, "B")
-        a2 = _make_app(2, j2, 0.8, ApplicationStatus.pending)
-        
-        def filter_side_effect(*args):
-            mock_filter = MagicMock()
-            # Simplistic mock for the first() calls
-            if "remove_job_id" in str(args) or a1.job_id in [1]: 
-                # This is a hacky mock for the specific test, we'll just return a1 on first call and a2 on second
-                pass
-            return mock_filter
-            
-        # Proper mocking of the query sequence
-        mock_q1 = MagicMock()
-        mock_q1.first.return_value = a1
-        mock_q2 = MagicMock()
-        mock_q2.first.return_value = a2
-        
-        # The swap_job function makes two .filter().first() calls, then calls generate_weekly_plan
-        # We'll mock the filter calls directly
-        
-        db.query.return_value.filter.side_effect = [mock_q1, mock_q2]
-        
-        # Mock generate_weekly_plan to just return something
-        selector = QuotaSelector(db)
-        selector.generate_weekly_plan = MagicMock(return_value={"plan": []})
-        
-        selector.swap_job(1, 1, 2)
-        
-        assert a1.status == ApplicationStatus.pending
-        assert a2.status == ApplicationStatus.planned
-        db.commit.assert_called_once()
+def test_selects_top_n_and_read_does_not_duplicate_audit(db_session):
+    user = make_user(db_session, quota=2)
+    apps = [make_app(db_session, user, score) for score in (0.7, 0.9, 0.8)]
+    selector = QuotaSelector(db_session)
+    plan = selector.generate_weekly_plan(user.id)
+    assert [item["application_id"] for item in plan["plan"]] == [apps[1].id, apps[2].id]
+    assert apps[0].status == ApplicationStatus.pending
+    assert all(app.cycle_start == week_start() for app in apps[1:])
+    assert selector.generate_weekly_plan(user.id)["plan"] == plan["plan"]
+    assert [event.status for event in apps[1].status_history] == ["planned"]
 
-class TestConfirmPlan:
-    def test_confirm_updates_status(self):
-        db = _make_mock_db()
-        j1 = _make_job(1, "A")
-        a1 = _make_app(1, j1, 0.9, ApplicationStatus.planned)
-        
-        mock_query = MagicMock()
-        mock_query.all.return_value = [a1]
-        db.query.return_value.filter.return_value = mock_query
-        
-        selector = QuotaSelector(db)
-        result = selector.confirm_plan(1, [1])
-        
-        assert a1.status == ApplicationStatus.confirmed
-        assert result["status"] == "success"
-        db.commit.assert_called_once()
 
-    def test_confirm_fails_if_not_planned(self):
-        db = _make_mock_db()
-        
-        mock_query = MagicMock()
-        mock_query.all.return_value = [] # Missing the requested job
-        db.query.return_value.filter.return_value = mock_query
-        
-        selector = QuotaSelector(db)
-        with pytest.raises(ValueError, match="Some jobs are not currently planned"):
-            selector.confirm_plan(1, [1])
+def test_pending_candidates_filter_expired_spam_blacklist_and_mode(db_session):
+    user = make_user(db_session, quota=2)
+    for fields in (
+        {"company": "BadCo"},
+        {"posted_date": datetime.now(timezone.utc) - timedelta(days=40)},
+        {"is_spam": True},
+        {"listing_type": ListingType.job},
+    ):
+        make_app(db_session, user, score=0.99, **fields)
+    good = [make_app(db_session, user, score) for score in (0.8, 0.7)]
+    plan = QuotaSelector(db_session).generate_weekly_plan(user.id)
+    assert [item["application_id"] for item in plan["plan"]] == [app.id for app in good]
+
+
+@pytest.mark.parametrize("kind", ["expired", "spam", "blacklist", "mode"])
+def test_existing_draft_is_revalidated_with_audit(db_session, kind):
+    user = make_user(db_session, quota=1)
+    stale = make_app(db_session, user, 0.99, "planned", week_start())
+    invalidate(stale, kind)
+    replacement = make_app(db_session, user)
+    plan = QuotaSelector(db_session).generate_weekly_plan(user.id)
+    assert [item["application_id"] for item in plan["plan"]] == [replacement.id]
+    assert stale.status == ApplicationStatus.pending and stale.cycle_start is None
+    assert stale.status_history[-1].status == "pending"
+    assert "Removed from weekly plan" in stale.status_history[-1].reason
+
+
+def test_prior_week_draft_rolls_forward_and_is_in_current_report(db_session, tmp_path):
+    user = make_user(db_session, quota=1)
+    app = make_app(
+        db_session, user, status="planned", cycle=week_start() - timedelta(days=7)
+    )
+    selector = QuotaSelector(db_session)
+    assert selector.generate_weekly_plan(user.id)["plan"][0]["application_id"] == app.id
+    assert app.cycle_start == week_start()
+    selector.confirm_plan(user.id, [app.job_id])
+    report = ReportGenerator(db_session, storage_path=tmp_path).generate(user.id)
+    assert report["metrics"]["application_count"] == 1
+    assert report["content"]["applications"][0]["id"] == app.id
+
+
+def test_lowered_quota_demotes_lowest_draft_and_clears_cycle(db_session):
+    user = make_user(db_session, quota=2)
+    best, extra = [make_app(db_session, user, score) for score in (0.9, 0.8)]
+    selector = QuotaSelector(db_session)
+    selector.generate_weekly_plan(user.id)
+    user.weekly_quota = 1
+    db_session.commit()
+    plan = selector.generate_weekly_plan(user.id)
+    assert [item["application_id"] for item in plan["plan"]] == [best.id]
+    assert extra.status == ApplicationStatus.pending and extra.cycle_start is None
+    assert "quota" in extra.status_history[-1].reason
+
+
+@pytest.mark.parametrize(
+    "status",
+    [
+        "confirmed",
+        "applying",
+        "applied",
+        "failed",
+        "needs_action",
+        "rejected",
+        "interview",
+        "offer",
+    ],
+)
+def test_attempted_states_consume_current_week_quota(db_session, status):
+    user = make_user(db_session, quota=2)
+    used = make_app(db_session, user, 0.99, status, week_start())
+    best = make_app(db_session, user, 0.8)
+    later = make_app(db_session, user, 0.7)
+    plan = QuotaSelector(db_session).generate_weekly_plan(user.id)
+    assert [item["application_id"] for item in plan["plan"]] == [best.id]
+    assert used.status.value == status and later.status == ApplicationStatus.pending
+
+
+def test_prior_cycle_applied_is_not_reselected_or_counted_twice(db_session):
+    user = make_user(db_session, quota=1)
+    applied = make_app(db_session, user, 1, "applied", week_start() - timedelta(days=7))
+    pending = make_app(db_session, user)
+    assert (
+        QuotaSelector(db_session).generate_weekly_plan(user.id)["plan"][0][
+            "application_id"
+        ]
+        == pending.id
+    )
+    assert (
+        applied.status == ApplicationStatus.applied
+        and applied.cycle_start != week_start()
+    )
+
+
+def test_exhausted_quota_removes_drafts_without_selecting_more(db_session):
+    user = make_user(db_session, quota=1)
+    make_app(db_session, user, status="failed", cycle=week_start())
+    draft = make_app(db_session, user, status="planned", cycle=week_start())
+    make_app(db_session, user, 0.99)
+    assert QuotaSelector(db_session).generate_weekly_plan(user.id)["plan"] == []
+    assert draft.status == ApplicationStatus.pending and draft.cycle_start is None
+    assert "quota" in draft.status_history[-1].reason
+
+
+def test_confirm_records_state_and_refuses_repeat(db_session):
+    user = make_user(db_session, quota=1)
+    app = make_app(db_session, user, status="planned", cycle=week_start())
+    selector = QuotaSelector(db_session)
+    assert selector.confirm_plan(user.id, [app.job_id])["status"] == "success"
+    assert app.status == ApplicationStatus.confirmed
+    assert app.status_history[-1].status == "confirmed"
+    with pytest.raises(ValueError, match="not currently planned"):
+        selector.confirm_plan(user.id, [app.job_id])
+
+
+def test_confirm_prior_week_requires_new_review(db_session):
+    user = make_user(db_session)
+    app = make_app(
+        db_session, user, status="planned", cycle=week_start() - timedelta(days=7)
+    )
+    with pytest.raises(ValueError, match="weekly cycle"):
+        QuotaSelector(db_session).confirm_plan(user.id, [app.job_id])
+    assert app.status == ApplicationStatus.planned and app.status_history == []
+
+
+@pytest.mark.parametrize(
+    "status", ["confirmed", "applying", "applied", "failed", "needs_action"]
+)
+def test_confirm_checks_quota_against_all_current_attempts(db_session, status):
+    user = make_user(db_session, quota=1)
+    make_app(db_session, user, status=status, cycle=week_start())
+    app = make_app(db_session, user, status="planned", cycle=week_start())
+    with pytest.raises(ValueError, match="weekly quota"):
+        QuotaSelector(db_session).confirm_plan(user.id, [app.job_id])
+    assert app.status == ApplicationStatus.planned
+
+
+def test_confirmation_is_atomic_when_quota_was_lowered(db_session):
+    user = make_user(db_session, quota=1)
+    apps = [
+        make_app(db_session, user, status="planned", cycle=week_start())
+        for _ in range(2)
+    ]
+    with pytest.raises(ValueError, match="weekly quota"):
+        QuotaSelector(db_session).confirm_plan(user.id, [app.job_id for app in apps])
+    assert all(app.status == ApplicationStatus.planned for app in apps)
+
+
+@pytest.mark.parametrize("kind", ["expired", "spam", "blacklist", "mode"])
+def test_confirm_checks_changes_since_preview(db_session, kind):
+    user = make_user(db_session)
+    app = make_app(db_session, user, status="planned", cycle=week_start())
+    invalidate(app, kind)
+    db_session.commit()
+    with pytest.raises(ValueError, match="cannot be confirmed"):
+        QuotaSelector(db_session).confirm_plan(user.id, [app.job_id])
+    assert app.status == ApplicationStatus.planned
+
+
+@pytest.mark.parametrize("ids", [[], [1, 1], [9999]])
+def test_invalid_selection_does_not_change_state(db_session, ids):
+    user = make_user(db_session)
+    app = make_app(db_session, user, status="planned", cycle=week_start())
+    with pytest.raises(ValueError):
+        QuotaSelector(db_session).confirm_plan(user.id, ids)
+    assert app.status == ApplicationStatus.planned
+
+
+def test_swap_preserves_choice_and_records_both_statuses(db_session):
+    user = make_user(db_session, quota=1)
+    original = make_app(db_session, user, 0.9, "planned", week_start())
+    replacement = make_app(db_session, user, 0.8)
+    plan = QuotaSelector(db_session).swap_job(
+        user.id, original.job_id, replacement.job_id
+    )
+    assert [item["application_id"] for item in plan["plan"]] == [replacement.id]
+    assert original.status == ApplicationStatus.pending and original.cycle_start is None
+    assert original.status_history[-1].reason == "Removed from weekly plan"
+    assert replacement.status_history[-1].reason == "Added to weekly plan"
+
+
+@pytest.mark.parametrize("kind", ["expired", "spam", "blacklist", "mode"])
+def test_swap_refuses_invalid_replacement_without_mutation(db_session, kind):
+    user = make_user(db_session, quota=1)
+    original = make_app(db_session, user, status="planned", cycle=week_start())
+    replacement = make_app(db_session, user)
+    invalidate(replacement, kind)
+    db_session.commit()
+    with pytest.raises(ValueError, match="Replacement"):
+        QuotaSelector(db_session).swap_job(user.id, original.job_id, replacement.job_id)
+    assert (
+        original.status == ApplicationStatus.planned
+        and replacement.status == ApplicationStatus.pending
+    )
+
+
+def test_unknown_user_has_clean_error(db_session):
+    with pytest.raises(ValueError, match="not found"):
+        QuotaSelector(db_session).generate_weekly_plan(9999)

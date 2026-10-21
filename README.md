@@ -16,14 +16,14 @@ You tell HireFlow:
 - Mode: Internship or Full-time Job
 
 HireFlow then:
-1. Discovers 100+ relevant openings from career pages and portals
+1. Imports openings with the Lever, Greenhouse, or generic career-page scrapers
 2. Scores every listing against your profile and picks the best matches
-3. Sends you a weekly plan - "here are your top 10, review before we proceed"
-4. You confirm, swap, or remove any listing. Nothing is submitted without your approval.
-5. Tailors your resume specifically for each confirmed role (a different resume per company)
-6. Shows you each tailored resume before it is sent - you can edit or reject
-7. Applies to all confirmed listings using form-filling automation
-8. Sends you a weekly report with every resume used and a prep guide for each company
+3. Builds a weekly plan with versioned resume PDFs for your review
+4. Lets you swap listings and select the applications you want to confirm
+5. Applies to confirmed listings using Playwright, retaining a timestamped status trail
+6. Flags CAPTCHAs, missing answers, and uncertain submissions for manual review
+7. Builds interview prep guides and a weekly HTML report with skills to study
+8. Supports explicit report delivery through configurable SendGrid or Resend
 
 It also works in reverse - companies can use HireFlow to shortlist the best applicants from a pile of 100+ resumes.
 
@@ -51,17 +51,17 @@ The user selects a mode at profile setup. Both modes use the same core pipeline 
 
 | What | Tool |
 |------|------|
-| Agent Orchestration | LangGraph |
+| Application Execution | FastAPI background tasks and Python agents |
 | LLM | Groq (free), Gemini (free), Ollama (local), OpenAI or Anthropic (paid) |
 | Web Scraping | Playwright and BeautifulSoup |
 | Vector Matching | FAISS and Sentence Transformers |
 | Backend API | FastAPI |
-| Frontend Dashboard | React and Tailwind CSS |
+| Frontend Dashboard | React, Vite, React Router, Axios, and responsive CSS |
 | Database | PostgreSQL |
-| Resume Generation | LaTeX (XeLaTeX) |
+| Resume Generation | ReportLab for dashboard previews; optional LaTeX pipeline |
 | Email Delivery | SendGrid or Resend |
 | Web Search | Tavily or SerpAPI |
-| Deployment | Docker and Railway or Render |
+| Deployment | Local Docker Compose; Railway/Render instructions prepared |
 
 ---
 
@@ -70,7 +70,7 @@ The user selects a mode at profile setup. Both modes use the same core pipeline 
 ```
 hireflow-ai/
 - src/
-  - agents/        (LangGraph agents - supervisor, application, prep guide)
+  - agents/        (Application, preparation, company research, report, shortlist)
   - scrapers/      (Job discovery scrapers - Lever, Greenhouse, generic)
   - pipelines/     (Match scoring, embedding, resume generation)
   - automation/    (Form filler, CAPTCHA handler)
@@ -95,15 +95,15 @@ hireflow-ai/
 ## Getting Started (Local Setup)
 
 ### Prerequisites
-- Python 3.10 or higher
-- Node.js 18 or higher (for frontend)
+- Python 3.11 or higher
+- Node.js 20.19 or higher (for frontend)
 - Docker (optional but recommended)
 - PostgreSQL
 
 ### Step 1 - Clone the repo
 ```bash
-git clone https://github.com/newton-school-ai/hireflow-ai.git
-cd hireflow-ai
+git clone https://github.com/pankajbaid567/hireflow.git
+cd hireflow
 ```
 
 ### Step 2 - Set up Python environment
@@ -112,6 +112,7 @@ python -m venv venv
 source venv/bin/activate
 
 pip install -r requirements.txt
+playwright install chromium
 ```
 
 ### Step 3 - Configure environment variables
@@ -122,13 +123,24 @@ cp .env.example .env
 
 ### Step 4 - Run with Docker (easiest)
 ```bash
-docker-compose up
+docker compose up --build -d --wait
 ```
 
 Or run manually:
 ```bash
+alembic upgrade head
 uvicorn src.api.main:app --reload
 ```
+
+In another terminal, run `cd frontend && npm ci && npm run dev`. Open
+<http://localhost:3000>; API documentation is at <http://localhost:8000/docs>.
+For a local SQLite setup, set `DATABASE_URL=sqlite:///./hireflow.db` before
+running migrations and the API. Docker uses PostgreSQL automatically.
+
+See [the workflow guide](docs/workflow.md) for discovery, API routes, provider
+configuration, and test commands. See [deployment instructions](docs/deployment.md)
+for container setup, migrations, backups, and future Railway/Render deployment.
+No public deployment has been created.
 
 Note: Docker is optional for development. Students working on individual modules only need steps 1 to 3. Docker is required for deployment.
 

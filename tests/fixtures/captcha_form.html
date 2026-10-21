@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Local CAPTCHA application</title></head>
+<body>
+  <form>
+    <label>Email <input type="email" name="email" required></label>
+    <label>Resume <input type="file" name="resume" required></label>
+    <div class="g-recaptcha" data-sitekey="fixture-only">Verify you are human</div>
+    <button type="submit">Apply</button>
+  </form>
+  <script>
+    window.submissionCount = 0;
+    document.querySelector('form').addEventListener('submit', event => {
+      event.preventDefault(); window.submissionCount += 1;
+    });
+  </script>
+</body></html>

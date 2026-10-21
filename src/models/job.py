@@ -5,9 +5,11 @@ import enum
 
 from src.config.database import Base
 
+
 class ListingType(str, enum.Enum):
     internship = "internship"
     job = "job"
+
 
 class Job(Base):
     __tablename__ = "jobs"
@@ -19,15 +21,17 @@ class Job(Base):
     description = Column(Text, nullable=True)
     url = Column(String, unique=True, index=True, nullable=False)
     posted_date = Column(DateTime(timezone=True), nullable=True)
-    
+
     listing_type = Column(Enum(ListingType), nullable=False, default=ListingType.job)
     is_spam = Column(Boolean, nullable=False, default=False)
     spam_confidence = Column(Float, nullable=True)
-    
+
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     # Relationships
-    applications = relationship("Application", back_populates="job", cascade="all, delete-orphan")
+    applications = relationship(
+        "Application", back_populates="job", cascade="all, delete-orphan"
+    )
 
     def __repr__(self):
         return f"<Job(title={self.title}, company={self.company})>"

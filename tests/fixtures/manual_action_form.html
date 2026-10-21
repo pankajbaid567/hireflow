@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Local manual action application</title></head>
+<body>
+  <form>
+    <label>Email <input type="email" name="email" required></label>
+    <label>Resume <input type="file" name="resume" required></label>
+    <label>Are you authorized to work in this country?
+      <select name="work_authorization" required><option value="">Choose</option><option>Yes</option><option>No</option></select>
+    </label>
+    <label><input type="checkbox" name="consent" required> I consent to data processing</label>
+    <button type="submit">Apply</button>
+  </form>
+  <script>
+    window.submissionCount = 0;
+    document.querySelector('form').addEventListener('submit', event => {
+      event.preventDefault(); window.submissionCount += 1;
+      document.body.insertAdjacentHTML('beforeend', '<p>Application submitted</p>');
+    });
+  </script>
+</body></html>

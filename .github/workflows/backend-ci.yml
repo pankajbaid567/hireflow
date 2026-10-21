@@ -2,27 +2,51 @@ name: Backend CI
 
 on:
   pull_request:
-    branches:
-      - dev
+  push:
+    branches: [main, dev]
 
 jobs:
   test:
     runs-on: ubuntu-latest
-
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: hireflow_ci
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres -d hireflow_ci"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      DATABASE_URL: postgresql+psycopg2://postgres:postgres@localhost:5432/hireflow_ci
+      GROQ_API_KEY: ''
+      GEMINI_API_KEY: ''
+      GOOGLE_API_KEY: ''
+      OPENAI_API_KEY: ''
+      ANTHROPIC_API_KEY: ''
+      TAVILY_API_KEY: ''
+      SERPAPI_API_KEY: ''
+      SENDGRID_API_KEY: ''
+      RESEND_API_KEY: ''
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.11'
-        cache: 'pip'
-        
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        
-    - name: Run tests
-      run: |
-        pytest tests/ -v
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: requirements-runtime.txt
+      - name: Install runtime and test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-runtime.txt pytest pytest-asyncio
+          playwright install --with-deps chromium
+      - name: Verify PostgreSQL migrations and rollback
+        run: |
+          alembic upgrade head
+          alembic downgrade base
+          alembic upgrade head
+          alembic check
+      - name: Run tests with local fixtures and mocked providers
+        run: pytest tests/ -v

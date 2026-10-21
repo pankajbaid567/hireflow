@@ -20,7 +20,7 @@ openai>=1.30.0
 anthropic>=0.28.0
 # Free: Groq (recommended for students) and Google Gemini
 groq>=0.9.0
-google-generativeai>=0.7.0
+google-genai>=2.8.0,<3
 # Free local: Ollama needs no package - install from https://ollama.com
 
 # --- Web Scraping ---

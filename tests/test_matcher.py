@@ -18,10 +18,10 @@ from src.pipelines.match_scorer import (
     _company_signal_score,
 )
 
-
 # ---------------------------------------------------------------------------
 # Helper
 # ---------------------------------------------------------------------------
+
 
 def _make_job(
     title="Software Engineer",
@@ -43,6 +43,7 @@ def _make_job(
 # Weights sanity
 # ---------------------------------------------------------------------------
 
+
 class TestWeights:
     def test_weights_sum_to_one(self):
         assert abs(sum(WEIGHTS.values()) - 1.0) < 1e-9
@@ -52,10 +53,13 @@ class TestWeights:
 # Skill Match
 # ---------------------------------------------------------------------------
 
+
 class TestSkillMatchScore:
     def test_all_skills_matched(self):
         profile = {"skills": ["python", "fastapi"]}
-        score, matched, gaps = _skill_match_score(profile, "We use Python and FastAPI for our backend.")
+        score, matched, gaps = _skill_match_score(
+            profile, "We use Python and FastAPI for our backend."
+        )
         assert score == 1.0
         assert "python" in matched
         assert "fastapi" in matched
@@ -68,14 +72,18 @@ class TestSkillMatchScore:
 
     def test_partial_skill_match(self):
         profile = {"skills": ["python", "java", "go"]}
-        score, matched, _ = _skill_match_score(profile, "Looking for Python experience.")
+        score, matched, _ = _skill_match_score(
+            profile, "Looking for Python and Docker experience."
+        )
         assert 0.0 < score < 1.0
         assert "python" in matched
         assert "java" not in matched
 
     def test_empty_user_skills(self):
         profile = {"skills": []}
-        score, matched, gaps = _skill_match_score(profile, "Python and FastAPI required.")
+        score, matched, gaps = _skill_match_score(
+            profile, "Python and FastAPI required."
+        )
         assert score == 0.0
         assert matched == []
 
@@ -83,6 +91,7 @@ class TestSkillMatchScore:
 # ---------------------------------------------------------------------------
 # Role Fit
 # ---------------------------------------------------------------------------
+
 
 class TestRoleFitScore:
     def test_exact_role_match(self):
@@ -105,26 +114,34 @@ class TestRoleFitScore:
 # Experience Fit
 # ---------------------------------------------------------------------------
 
+
 class TestExperienceFitScore:
     def test_intern_profile_matches_intern_role(self):
         profile = {"mode": "internship", "experience": []}
-        score = _experience_fit_score(profile, "Internship opportunity for students", "Software Intern")
+        score = _experience_fit_score(
+            profile, "Internship opportunity for students", "Software Intern"
+        )
         assert score == 1.0
 
     def test_intern_profile_penalised_for_senior_role(self):
         profile = {"mode": "internship", "experience": []}
-        score = _experience_fit_score(profile, "5+ years required", "Senior Software Engineer")
+        score = _experience_fit_score(
+            profile, "5+ years required", "Senior Software Engineer"
+        )
         assert score <= 0.2
 
     def test_experienced_profile_matches_senior_role(self):
         profile = {"mode": "job", "experience": ["job1", "job2", "job3", "job4"]}
-        score = _experience_fit_score(profile, "8 years experience preferred", "Senior Backend Engineer")
+        score = _experience_fit_score(
+            profile, "8 years experience preferred", "Senior Backend Engineer"
+        )
         assert score >= 0.8
 
 
 # ---------------------------------------------------------------------------
 # Location Match
 # ---------------------------------------------------------------------------
+
 
 class TestLocationMatchScore:
     def test_remote_matches_remote(self):
@@ -152,26 +169,34 @@ class TestLocationMatchScore:
 # Compensation Fit
 # ---------------------------------------------------------------------------
 
+
 class TestCompensationFitScore:
     def test_internship_above_min_stipend(self):
         profile = {"min_stipend": 10000}
-        score = _compensation_fit_score(profile, "Stipend: 15000 per month", ListingType.internship)
+        score = _compensation_fit_score(
+            profile, "Stipend: 15000 per month", ListingType.internship
+        )
         assert score == 1.0
 
     def test_internship_below_min_stipend(self):
         profile = {"min_stipend": 50000}
-        score = _compensation_fit_score(profile, "Stipend: 5000 per month", ListingType.internship)
+        score = _compensation_fit_score(
+            profile, "Stipend: 5000 per month", ListingType.internship
+        )
         assert score <= 0.2
 
     def test_job_with_salary_mention(self):
         profile = {}
-        score = _compensation_fit_score(profile, "Competitive salary offered, CTC 20 LPA", ListingType.job)
+        score = _compensation_fit_score(
+            profile, "Competitive salary offered, CTC 20 LPA", ListingType.job
+        )
         assert score >= 0.7
 
 
 # ---------------------------------------------------------------------------
 # Company Signal
 # ---------------------------------------------------------------------------
+
 
 class TestCompanySignalScore:
     def test_named_company_positive(self):
@@ -186,6 +211,7 @@ class TestCompanySignalScore:
 # ---------------------------------------------------------------------------
 # compute_match_score (end-to-end)
 # ---------------------------------------------------------------------------
+
 
 class TestComputeMatchScore:
     def test_score_is_between_0_and_1(self):
@@ -210,7 +236,9 @@ class TestComputeMatchScore:
             "preferred_locations": ["bangalore"],
             "min_stipend": None,
         }
-        job = _make_job(description="Python developer for backend services in Bangalore.")
+        job = _make_job(
+            description="Python developer for backend services in Bangalore."
+        )
         result1 = compute_match_score(profile, job)
         result2 = compute_match_score(profile, job)
         assert result1["total_score"] == result2["total_score"]
@@ -224,12 +252,16 @@ class TestComputeMatchScore:
             "preferred_locations": [],
             "min_stipend": None,
         }
-        job = _make_job(description="We use Python, Docker, and Terraform for infrastructure.")
+        job = _make_job(
+            description="We use Python, Docker, and Terraform for infrastructure."
+        )
         result = compute_match_score(profile, job)
         # skill_matches: user skills found in JD (python)
         assert "python" in result["skill_matches"]
-        # skill_gaps: user skills NOT in JD (kubernetes) — user should add these to their profile
-        assert "kubernetes" in result["skill_gaps"]
+        # Gaps are JD requirements absent from the profile.
+        assert "docker" in result["skill_gaps"]
+        assert "terraform" in result["skill_gaps"]
+        assert "kubernetes" not in result["skill_gaps"]
 
     def test_intern_profile_scores_high_on_intern_job(self):
         profile = {
