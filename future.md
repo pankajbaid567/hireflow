@@ -1,0 +1,228 @@
+# HireFlow: remaining work and future roadmap
+
+Updated: **23 October 2026 (IST)**. Baseline: verified release `b215a7b`.
+
+This is the prioritized backlog for finishing the original project, improving its AI and engineering quality, and considering new capabilities. **Everything below is planned work or pending verification, not a claim of implementation.** The eight original milestones remain partial; completing optional ideas does not close their acceptance gaps.
+
+Sources: [original milestones](MILESTONES.md), [expectation-versus-reality audit](docs/milestone-audit.md), [current application](README.md), and [Cloudflare deployment and limits](docs/cloudflare.md). The audit contains the detailed evidence; this file describes what to do next.
+
+## Current baseline
+
+- The live dashboard is [Cloudflare Pages](https://hireflow-dashboard.pages.dev); its backend is the [API Worker](https://hireflow-api.baidpankaj567.workers.dev/health), using D1, private KV documents, Queues and Browser Run. The Python/FastAPI/PostgreSQL application is a separate local/container implementation.
+- PDF intake, rich profile editing, reviewed plans, swaps, company blacklisting, private versioned PDFs, application history, prep guides and weekly HTML reports have working paths.
+- Discovery already makes **five separate source searches in Internship mode** and **four in Job mode**. The production Internship UI verified eight JDs across Internshala, Wellfound and Greenhouse. Search is bounded to eight verified results per request; it is not a demonstrated 100+ listing cycle.
+- Deployed matching is weighted lexical matching. Groq selects existing facts/projects for tailoring; generation falls back visibly when unavailable. Embeddings, a vector index and measured semantic ranking are not connected to the deployed matching path.
+- A controlled production application cycle passed against an owned QA form. This does not establish automatic submission compatibility with real employer portals. Production email delivery and a complete weekly scheduler remain unconfigured/incomplete.
+- Baseline checks passed: **294 Python, 274 Worker and 93 frontend tests**, plus production browser verification and all three GitHub CI workflows. Functional tests are not an AI-quality benchmark.
+
+## Priority and tracking rules
+
+| Priority | Meaning | Work order |
+| --- | --- | --- |
+| **P0** | User trust, safe review/submission, recovery and operation | Address before expanding public usage or promising broader automation. |
+| **P1** | Core acceptance gaps and measurable AI quality | Finish after the relevant P0 dependencies; these give the largest product and AI-portfolio improvement. |
+| **P2** | Scale, remaining delivery/preparation features and maintainability | Extend the verified core while respecting account budgets. |
+| **P3** | Optional module or research experiments | Start after the required candidate workflow is reliable. |
+
+Item types: **Remaining** = an unfinished original requirement; **Verification** = evidence still needed; **Improvement** = hardening or quality beyond the current baseline; **Decision** = a scope/architecture choice that must be documented. Dependencies refer to item IDs. Check an item only after its completion criteria have evidence.
+
+Priority expresses importance, not a completion-time promise. Provider credentials, sender/domain setup, account entitlements and third-party accessibility may block specific integrations. No item authorizes paid infrastructure or external application/email delivery by itself.
+
+## P0 — user trust and reliable operation
+
+### P0-01 — Verified account recovery and ownership
+
+- [ ] **Improvement / Verification · M1, M8:** Add a verified sign-in/recovery flow for an expired/lost session and another device. Preserve the existing secure cookie ownership and single-use migration protections; an email address or numeric profile ID alone must not grant access.
+- **Done when:** an owner can recover the same workspace on a new browser, revoke sessions and log out; expired/replayed recovery links and cross-user access to profiles, resumes, guides and reports fail in integration tests.
+- **Related remaining work:** authenticate the Python API before any public deployment. Its current trusted-local numeric-ID access must not be described as public multi-user authentication. An identity provider or verified-email method needs an explicit implementation/configuration choice.
+
+### P0-02 — Per-opportunity resume edit, reject and reapproval
+
+- [ ] **Remaining · M4, M8; issues 24–25:** Add an editor for each planned resume, a clear reject/regenerate action, a comparison with its previous version and explicit review of the final version.
+- **Done when:** edits create immutable versions; a profile, resume or material JD change invalidates the old approval; confirmation submits exactly the version the user reviewed. Rejected drafts cannot be submitted. Existing historical applications retain their original PDF.
+- **Product decision:** retain preview generation **before** “Confirm and Apply,” as required by issue 24. Document the conflict with M4's older wording instead of claiming both timing rules are satisfied.
+
+### P0-03 — Portal compatibility and durable multi-step forms
+
+- [ ] **Remaining / Verification · M5:** Extend the existing shared form engine with explicit portal adapters, beginning with permitted public Greenhouse/Lever forms. Add step detection, required-answer validation, a final review gate and safe checkpoints for multi-page applications; retain the existing file-upload support.
+- **Done when:** a controlled four-step form can recover from a pre-submission failure without losing approved facts or duplicating submission; expired jobs, login walls, CAPTCHA, unknown required questions and uncertain submission outcomes produce specific manual instructions. Publish a compatibility matrix that distinguishes discovery, JD verification, form filling and submission.
+- **Verification boundary:** use owned forms and sanctioned test environments. Real employer submission requires the user's explicit authorization for that opportunity; searching a portal does not provide it. Internshala login flows and LinkedIn Easy Apply are separate, currently unsupported integrations. Do not attempt CAPTCHA solving or bypass access restrictions.
+
+### P0-04 — Provider degradation and actionable recovery
+
+- [ ] **Improvement · M1, M4–M6:** Improve the existing visible fallback with a bounded, user-triggered retry/regeneration flow, clear readiness/error states and provider health information. Recheck configured model availability through opt-in diagnostics rather than assuming a model name remains valid forever.
+- **Done when:** 429s, timeouts, unavailable models and malformed responses are distinguishable; retry limits prevent expensive loops; regenerated PDFs require review. No failed extraction silently saves an empty profile, and no missing experience or answer is invented. Test recovery with both Groq and Gemini outages.
+- **Existing behavior to retain:** the saved-profile check produced nine ready PDFs, with three provider-selected drafts and six explicit deterministic fallbacks. Fallback is already implemented; reducing its frequency and improving recovery are the work here.
+
+### P0-05 — Production capacity, cost visibility and alerts
+
+- [ ] **Improvement / Verification · M2, M5, M8:** Measure representative Worker CPU/memory, queue wait, browser usage, provider latency, failures and per-cycle consumption. Add redacted correlation IDs and actionable alerts for repeated failures, stuck work and exhausted budgets.
+- **Done when:** a repeatable load check reports percentiles and relevant failures, and the UI explains budget exhaustion without claiming success. Existing atomic claims, browser spacing, idempotency and no-repeat-after-uncertain-submit protections remain intact.
+- **Remaining M5 detail:** expose and verify configurable delays between submissions within provider minimum spacing and daily budgets; configuration must not allow those safeguards to be disabled.
+- **Constraint:** the current conservative application budget permits at most nine browser reservations/day; a quota of ten is not a promise of ten automatic applications in one day. Measure sustainable capacity before increasing limits. Keep credentials, PDF contents and session tokens out of telemetry; do not enable paid plans automatically.
+
+### P0-06 — Answer review and queued-application cancellation
+
+- [ ] **Improvement · M4, M5, M8:** Let users review generated free-text answers alongside the selected PDF and cancel an authorized application before execution starts. Bind approved answers and the resume version to the authorization; protect against instructions embedded in an external JD/form changing the permitted task or exposing private facts.
+- **Done when:** queued cancellation is atomic against worker claims; editing an answer requires reapproval; unknown eligibility, work-authorization, availability or sensitive answers require user input. After execution/submission may have started, display an accurate state and reconciliation instructions instead of falsely promising the external application was withdrawn.
+- **Preserve:** existing no-repeat-after-uncertain-submission behavior. A local cancel action cannot undo an application already accepted by an employer.
+
+## P1 — complete the core and demonstrate AI quality
+
+### P1-01 — Labeled AI evaluation suite
+
+- [ ] **Improvement · M1, M3, M4, M6:** Build a versioned, consent-safe dataset of profiles, PDFs, JDs, rankings, resume selections and preparation outputs. Include India-specific compensation, fresher/experienced profiles, ambiguous skills, short JDs, unavailable providers and adversarial instructions in external text.
+- **Done when:** a documented evaluation set, ideally 100+ representative cases, measures extraction accuracy, unsupported/fabricated claims, fact preservation, ranking relevance, question specificity, source support, latency and cost. Keep development and held-out evaluation data separate. Publish error analysis and compare changes against the current baseline; counts of passing functional tests alone do not satisfy this item.
+- **Evaluation controls:** set justified quality thresholds before changing the implementation. Combine deterministic checks and a reviewed human rubric; an LLM judge alone is insufficient evidence of factual correctness.
+
+### P1-02 — Embeddings and hybrid matching in the actual plan path
+
+- [ ] **Remaining / Improvement · M3:** Connect profile/JD embeddings and retrieval to normal plan generation. Integrate the existing FAISS helper into the Python path; choose a separately compatible vector-storage/retrieval design for Workers rather than pretending FAISS runs in the deployed Worker.
+- **Done when:** saved vectors are versioned by model/profile/JD, updates invalidate stale results, and the UI's ranking actually uses the retrieval output. Compare lexical, semantic and hybrid ranking on held-out relevance labels using Recall@K and nDCG, with latency/cost measurements. Adopt the more complex approach only if results justify it.
+- **Preserve:** the documented six-factor weights, deterministic tie-breaking, explanatory skill gaps and a lexical fallback. A similarity score is not a calibrated hiring probability.
+- **Depends on:** P1-01; a cost/capacity decision for any external embedding or vector service.
+
+### P1-03 — Complete listing schema and reliable fit signals
+
+- [ ] **Remaining · M2, M3:** Persist source, canonical application URL, required skills, required experience, posting/expiry dates, selection process and structured compensation. Represent missing information explicitly and retain evidence/provenance instead of turning inferred values into facts.
+- **Done when:** schema migrations, all supported extractors, APIs and reports agree on these fields. Normalize INR/LPA, monthly/annual amounts, ranges, other currencies and undisclosed pay; compare against the correct internship stipend or job salary preference without using unrelated JD numbers. Test role, location, experience and company signals on labeled cases.
+- **Python extraction gap:** ensure generic/static scrapers persist a real full JD instead of a placeholder description; snippets and empty descriptions cannot qualify as complete verified listings.
+- **Related quality work:** connect spam/quality filtering to normal persistence, store an explained confidence score, and evaluate false positives on legitimate small startups. Clarify what company quality actually measures.
+
+### P1-04 — Company-wide prior-application exclusion
+
+- [ ] **Remaining · M4:** Prevent future drafts for an already-applied company according to a documented company-level policy, beyond the existing user/job duplicate protection and explicit blacklist.
+- **Done when:** normalized company identities/aliases handle different postings from the same employer, historical applications remain unchanged, and tests cover similarly named unrelated companies. Define how failed/manual-action attempts, reapplications and time windows affect eligibility instead of silently guessing.
+
+### P1-05 — Live Job-mode discovery verification
+
+- [ ] **Verification · M2, M8:** Run the equivalent production UI discovery check in Job mode for Naukri, LinkedIn, Greenhouse and Lever, with real source-specific calls and retained sanitized evidence.
+- **Done when:** accepted active JDs, canonical URLs, source diagnostics, duplicate handling, filters and correct mode are verified through the UI. Restricted/empty sources must remain visible; do not fabricate a Naukri success to complete the matrix. This check must not submit any application.
+- **Existing evidence:** the five-source Internship path is already production verified. Named source configuration and local Job-mode fixtures do not prove live Job-mode results.
+
+### P1-06 — Complete acceptance scenarios for both modes
+
+- [ ] **Remaining / Verification · M1–M8:** Exercise each mode from intake through real discovery, ranking, reviewed PDFs, controlled application, preparation and report, and verify an explicit mixed-mode week. Add failure scenarios for stale profiles/approvals, partial batches, CAPTCHA, provider/search failure, budget exhaustion and interrupted work.
+- **Done when:** evidence identifies exactly which stages used real providers and which used controlled forms; quota accounting, status trails and private document versions remain correct. A complete run must not be inferred by combining unrelated passing unit tests. Real-source discovery must not cause an employer submission during QA.
+- **Depends on:** relevant P0 work, P1-05 and P2-07 for the mixed-mode report acceptance case.
+
+### P1-07 — Architecture, reproducible setup and honest demo
+
+- [ ] **Remaining / Decision · M1, M8:** Add `docs/architecture.md`, a 3–5-minute demo with `docs/demo.md`, and a fresh-machine walkthrough. Explain Pages/Worker/D1/KV/Queues versus Python/FastAPI/PostgreSQL, actual agent boundaries, data flow, review state and failure handling.
+- **Done when:** a clean environment can follow the maintained setup instructions, install the required Python dependencies and Chromium, migrate its database and run the documented checks. Verify the Cloudflare account bootstrap separately from the local Docker path, and keep resource IDs/account configuration environment-specific.
+- **Documentation cleanup:** reconcile older local-oriented instructions such as `docs/workflow.md` with the live deployment, preserve historical evidence as historical, and remove unsupported architecture claims. Queue/outbox orchestration is currently real; a working LangGraph `StateGraph` is not. Choose whether an evaluated graph implementation is actually needed instead of adding a framework solely for resume keywords.
+
+### P1-08 — Resume extraction and rendering coverage
+
+- [ ] **Improvement / Verification · M1, M4:** Expand the quality corpus for long/multi-column resumes, unusual layouts, sparse profiles, links and non-ASCII names/content. Improve Unicode/font support where the current PDF renderer is limited, while retaining complete facts, readable wrapping and explicit size/content bounds.
+- **Done when:** extracted facts and selected resume facts are checked against the source; rendered pages have no clipping, missing sections or broken links across representative PDFs. Distinguish text-based extraction from OCR support rather than silently claiming scanned PDFs work. Regression evidence should include visual inspection and machine-readable text checks.
+
+## P2 — scale discovery and finish delivery/preparation features
+
+### P2-01 — Background discovery and a measured 100+ pool
+
+- [ ] **Remaining · M2:** Move larger searches into resumable bounded jobs with pagination, source rotation, freshness refresh, canonical deduplication, cancellation and progress. Support saved cursor/checkpoint state so one timeout does not restart the entire cycle.
+- **Done when:** a cycle demonstrates 100+ distinct, active, sufficiently complete relevant listings with source/mode/geography precision measurements, not 100 search snippets or repeated records. Respect provider and per-domain budgets and preserve partial results on failures.
+- **Depends on:** P0-05, P1-03 and P1-05. If that throughput is not sustainable on the configured free accounts, document the measured limit and offer explicit local execution or a separately approved infrastructure choice.
+
+### P2-02 — Portal adapters, career pages and shared rate limits
+
+- [ ] **Remaining / Improvement · M2, M5:** Expand permitted company-career, static and JavaScript-page adapters; add per-domain scheduling, caching, backoff and selector/metadata drift detection. Improve Internshala/Wellfound public detail coverage and assess permitted authenticated integrations separately.
+- **Done when:** each supported source has a fixture suite, documented field coverage and a current live read-only check. A failure on one portal leaves other sources usable. Keep login-required, restricted and inaccessible states explicit; follow permitted APIs/access rules rather than assuming every portal exposes an accessible feed.
+- **Depends on:** P0-03 for applying support. An adapter that only reads JDs must not be advertised as automatic application support.
+
+### P2-03 — Better preparation and company evidence
+
+- [ ] **Remaining / Improvement · M6; issues 17–19:** Fetch accessible company/career evidence, label predicted rounds as estimates, improve strong/moderate/gap analysis, validate 2–3 useful resources per supported topic and produce 5–10 JD-specific questions across the required categories when evidence/budgets permit.
+- **Done when:** outputs are distinct per JD and mode, resources are checked and attributed, recent news has a valid date within the required window, and stage/team/stack/review claims distinguish sourced facts from estimates. Evaluate relevance and duplication using P1-01, not JSON shape alone.
+- **Fallback rule:** when links/reviews or model output are unavailable, retain clear warnings and useful guidance. Never invent reviews, interview rounds, citations or extra questions just to meet a count; track these shortfalls as acceptance limitations.
+
+### P2-04 — Standalone preparation exports
+
+- [ ] **Remaining · M6:** Generate a private per-listing HTML/PDF guide with rounds, topics, working resource links, questions, company evidence and generation time.
+- **Done when:** the artifact is saved/versioned and linked from the guide, library/report where appropriate; authorization and expired/deleted artifact behavior are tested. A weekly report that merely links to the React guide does not satisfy this export requirement.
+
+### P2-05 — Configure and verify email delivery
+
+- [ ] **Remaining / Verification · M7; issue 21:** Configure a real supported provider and verified sender, then verify HTML reports, up to ten resume attachments, oversized-attachment link fallback and delivery timestamps/failure reasons.
+- **Done when:** an explicitly authorized test to an owner-controlled address confirms receipt; retry/idempotency controls prevent duplicate delivery; links preserve document privacy and have an appropriate authenticated or expiring access design. Mocked provider success is not delivery proof.
+- **Dependencies:** provider key, verified sender/domain as required, account quotas and P0-01 where authentication is needed. Do not send to applicants, employers or other recipients during ordinary testing.
+
+### P2-06 — Consent-preserving weekly scheduler
+
+- [ ] **Improvement / inferred weekly-workflow scope · M7:** Schedule discovery, draft planning, review reminders, preparation/report generation and optional opted-in report delivery with user timezone, per-cycle deduplication and durable recovery. Weekly reports/email are explicit commitments; a complete autonomous scheduler, timezone controls and pause/resume are additional workflow scope rather than literal M7 acceptance criteria.
+- **Done when:** missed/duplicate ticks, restarts, provider outages, timezone/week boundaries and quota rollover are tested. Scheduled work may prepare and remind; only a valid review/confirmation can authorize the exact submitted opportunities/resume versions. Provide pause/resume controls and visible next-run state.
+- **Existing cron:** the five-minute recovery/outbox cron is not this complete weekly scheduler.
+- **Depends on:** P0-02, P0-05, P2-01 and P2-05 for email scheduling.
+
+### P2-07 — Mixed-mode and delivery-complete reports
+
+- [ ] **Remaining / Verification · M7, M8:** Define mode changes and simultaneous internship/job activity within one week, including shared versus separate quotas. Group results clearly while retaining top-five skill demand, strongest/weakest match types and the top-three study priorities across the appropriate applications.
+- **Done when:** mixed statuses and both listing types appear with the correct PDF/guide links, compensation units, failure reasons and manual instructions. Verify mode-specific and overall summaries, HTML rendering and emailed content. Explicit policy must prevent mode switching from accidentally resetting consumed quota.
+
+### P2-08 — Backup, restore, retention and migration lifecycle
+
+- [ ] **Improvement · M1, M8:** Document and exercise coordinated D1/document backup and restore, artifact retention, orphan cleanup and scoped user export/deletion. Define rollback expectations for schema and application releases.
+- **Done when:** a synthetic workspace can be restored with correct ownership, status history and PDF versions, without cross-user leakage. Cleanup cannot delete referenced or submitted artifacts unintentionally.
+- **Migration lifecycle:** keep the old Vercel bridge while needed; define verified recovery/migration readiness and a communicated retirement plan before removing it. R2 is an optional future storage migration, not a required fix or permission to activate billing.
+
+### P2-09 — Backend parity and regression maintenance
+
+- [ ] **Remaining / Decision · M1–M8:** Decide which Python and Worker features are maintained to parity and publish an API/behavior matrix. If the Python path remains supported, wire its normal plan route to the intended optional tailoring/prep configuration and verify the behavior, rather than treating unused helpers as integrated features.
+- **Done when:** shared contract fixtures cover schemas, scoring/versioning, confirmation, ownership and statuses; CI makes intentional differences visible. Keep database records independent unless a tested migration/import path is explicitly provided. Document the smaller runtime requirements versus optional embedding/ML dependencies for reproducible installs.
+
+## P3 — optional module and experiments
+
+### P3-01 — Finish the hiring-side module
+
+- [ ] **Remaining, optional M7 scope · issue 22:** Extend the existing JSON/CSV shortlist to verified applicant facts for skills, experience, projects and education, with a useful per-candidate report and explicitly authorized team delivery. The current persisted scores/JSON summaries are the baseline, not the complete optional reporting/email workflow.
+- **New extensions:** applicant PDF intake, a hiring dashboard and private HTML/PDF exports go beyond the original JSON/CSV API requirement. Track them separately when defining the optional module's release scope.
+- **Done when:** the same maintained scoring engine is used, top-N/ties/no-match behavior is reproducible, explanations are traceable to applicant evidence, and tenant ownership is enforced. Include error handling for unreadable PDFs and incomplete profiles. Evaluate job-relevant matching without using protected or irrelevant personal traits as ranking signals.
+- **Depends on:** P0-01, P1-01, P1-02 if semantic matching is claimed, P1-03 and P2-05 for email. This optional module must not delay fixing the candidate workflow.
+
+### P3-02 — Learned reranking experiment
+
+- [ ] **Improvement / research:** After a labeled lexical/semantic baseline exists, evaluate a small reranker or learned relevance model. Record dataset construction, leakage controls, held-out results, error categories, latency and cost.
+- **Done when:** a reproducible report explains whether the experiment improves ranking and for whom; deploy only if it beats the simpler baseline under acceptable budgets. Fine-tuning is optional, not a prerequisite for a credible Applied AI product.
+- **Depends on:** P1-01 and P1-02.
+
+## Additional future product ideas
+
+These are **new proposals**, not missing original acceptance criteria. The priority below is relative to other optional additions; finish the relevant core items first. Prototype only after defining the user benefit and success metric.
+
+| ID / suggested priority | Addition | User benefit and completion direction | Main dependencies / constraints |
+| --- | --- | --- | --- |
+| **F01 · P2** | Saved searches and new-match alerts | Persist role/location/compensation filters; notify about genuinely new relevant openings and allow frequency/unsubscribe controls. | Background discovery, deduplication, verified email if used; no automatic submission. |
+| **F02 · P2** | Richer application preferences and answer library | Structured availability/start date, internship duration, notice period, relocation/remote preferences and reviewed recurring application answers. | Existing profile already supports roles, locations, compensation, links and blacklist. Ask for missing required facts rather than inferring sensitive answers. |
+| **F03 · P2** | Resume comparison and application evidence | Highlight selected/omitted facts and JD coverage; show which approved PDF and answers were actually used. | P0-02, immutable versions and fact provenance. Keep evidence private and avoid exposing sensitive form content in logs. |
+| **F04 · P2** | Better accessibility and keyboard workflows | Audit focus, labels, screen readers, contrast, error announcements and readable mobile review flows. | Existing mobile responsiveness is a baseline, not proof of accessibility; verify with assistive-technology checks. |
+| **F05 · P3** | Interview practice with feedback | Run JD-specific text or voice mock sessions, with a cited rubric, actionable feedback and progress over time. | P1-01 and P2-03; recording/storage consent, privacy and measured feedback quality. |
+| **F06 · P3** | Adaptive study plan and progress tracking | Convert recurring gaps into a weekly learning plan, completed exercises and revised recommendations. | Reliable gap labels; distinguish self-reported progress from demonstrated proficiency. |
+| **F07 · P3** | Application outcome analytics | Track callbacks/interviews/offers and compare source, role and resume-version outcomes. | Sufficient consented outcome data; avoid presenting correlation as proof that a resume caused a callback. |
+| **F08 · P3** | Calendar and follow-up reminders | Add interview dates, preparation reminders and user-reviewed follow-up drafts. | Explicit calendar/email permissions; creating a draft is separate from sending it. |
+| **F09 · P3** | GitHub/portfolio evidence import | Let users select repositories, projects and accomplishments to include as reviewed profile facts. | Explicit account permissions, source attribution and confirmation; never infer ownership or impact solely from a URL. |
+| **F10 · P3** | Grounded cover letters and outreach drafts | Produce JD-specific drafts using approved facts and show their sources for review. | Factuality evaluations and per-draft approval; no unsolicited automated outreach. |
+| **F11 · P3** | User-controlled browser companion | Assist with supported forms in the user's browser and hand off login/manual steps clearly. | Separate security/permissions design, platform rules and P0-03. Keep final submission explicit; do not bypass CAPTCHA. |
+| **F12 · P3** | Multilingual profiles and scanned-PDF OCR | Support additional Indian languages and image-only resumes with confidence-aware review. | P1-08, evaluated extraction and appropriate fonts; expose low-confidence facts before use. |
+| **F13 · P3** | Model/provider comparison dashboard | Compare quality, factuality, latency and per-task cost across configured providers/models; route tasks only from measured results. | P1-01, opt-in live checks and budgets. More model calls are not automatically better. |
+| **F14 · P3** | Collaborative hiring workspaces | Add reviewer roles, notes, shortlist comparison and human decisions for hiring teams. | P3-01, verified identity/tenant isolation and audit trails; preserve human accountability for hiring decisions. |
+| **F15 · P3** | Installable dashboard and optional offline study | Save selected non-sensitive preparation material for offline reading with clear cache/logout controls. | Private-data threat review and explicit user choice; do not cache session secrets or submit applications offline. |
+
+## Recommended execution sequence
+
+1. **Trust and control:** P0-01 through P0-06. Establish safe recovery, final-version/answer review, queued cancellation, supported-form boundaries and measured capacity.
+2. **AI depth and core correctness:** P1-01 and P1-03, then P1-02; complete company exclusion, Job-mode evidence, PDF coverage and architecture/setup/demo work in parallel where independent.
+3. **Close original delivery gaps:** background discovery, better preparation and exports, configured email, scheduler and mixed-mode reports, followed by the full P1-06 acceptance scenarios.
+4. **Maintain and expand deliberately:** backend parity, recovery drills, optional hiring, experiments and selected F-series ideas based on user value and measured results.
+
+For an AI internship portfolio, the highest-value proof after the trust fixes is **a labeled evaluation suite, a measured semantic/hybrid matching improvement, and a reproducible supported application workflow**. Adding more pages or an orchestration framework without evidence has lower priority.
+
+## Definition of completion
+
+- [ ] Link every completed item to its implementation and relevant test/evaluation evidence; distinguish isolated tests, actual providers and production browser runs.
+- [ ] Re-run checks appropriate to the change. Validate actual AI quality separately from schema/functional correctness; keep nondeterministic paid/provider tests opt-in.
+- [ ] Preserve factual resume content, explicit confirmation, tenant ownership, accurate statuses and the rule against blind resubmission after uncertain outcomes.
+- [ ] Update [the audit](docs/milestone-audit.md), [README](README.md) and applicable deployment documents. Mark a milestone complete only after its remaining acceptance conditions are satisfied or a scope change is explicitly recorded.
+- [ ] Keep test identities/evidence sanitized and use owned application forms; never include keys, cookies, private resumes or real user data in public artifacts.
+
+Do not present planned features, restricted-source search results, mocked email delivery, an unused embedding helper, a generic form fixture or an estimated interview process as verified real-world capability.

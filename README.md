@@ -4,7 +4,7 @@ HireFlow helps students and job seekers build a reviewed application plan, prepa
 
 **Live dashboard:** [hireflow-dashboard.pages.dev](https://hireflow-dashboard.pages.dev/profile). The frontend and backend are hosted on Cloudflare: Pages serves React and the same-origin API proxy, and the [API Worker](https://hireflow-api.baidpankaj567.workers.dev/health) handles application data and work. Release verification on 23 October 2026 (IST) passed: PDF-only signup, structured profile edits, plan/PDF review, one controlled form submission, tracking, prep, report, downloads, mobile and logout. Old-browser workspace transfer and replay rejection passed in a separate browser run. Production UI discovery made five separate searches and verified eight listings across Internshala, Wellfound and Greenhouse; source counts and original listing links are visible. The old Vercel origin is retained temporarily as a session-migration bridge.
 
-The original specification is **not fully complete**. Read the [milestone audit](docs/milestone-audit.md) for implemented, partial, missing, and unverified requirements.
+The original specification is **not fully complete**. Read the [milestone audit](docs/milestone-audit.md) for implemented, partial, missing, and unverified requirements, and the [prioritized roadmap](future.md) for remaining work, improvements and future additions.
 
 ## Current application
 
@@ -78,5 +78,6 @@ Default tests use isolated data and controlled forms. Live provider/browser veri
 | `docs/cloudflare.md` | Pages/Worker deployment, resources, sessions, limits, provider setup |
 | `docs/deployment.md` | Deployment status, local Docker operations, persistence and migration notes |
 | `docs/milestone-audit.md` | Requirement-by-requirement audit and remaining work |
+| `future.md` | Prioritized remaining work, AI improvements and optional future additions |
 
 NST Engineering — HireFlow
