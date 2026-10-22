@@ -1,10 +1,24 @@
 # Running and deploying HireFlow
 
-Deployment status: **local deployment configuration only; no public deployment
-has been created and there is no live public URL.**
+## Current public deployment target
 
-Source repository: [pankajbaid567/hireflow](https://github.com/pankajbaid567/hireflow),
-branch `main`. GitHub source publication is separate from public application hosting.
+The live frontend is **Cloudflare Pages**, project `hireflow-dashboard`, at [hireflow-dashboard.pages.dev/profile](https://hireflow-dashboard.pages.dev/profile). The live API Worker is [hireflow-api.baidpankaj567.workers.dev](https://hireflow-api.baidpankaj567.workers.dev/health). Release verification passed on 23 October 2026 (IST): public availability/private ownership, the complete controlled Pages UI application cycle, and a separate old-cookie migration/replay/logout browser run. Pages deployment is `115fbb66`; Worker version is `a16cf206-9a60-4bf7-8979-b3f29bc2da49`, with D1 migrations through `0003`. No real employer application or email was sent during QA.
+
+| Resource | Actual project / binding |
+| --- | --- |
+| Dashboard / private `/api` proxy | Pages `hireflow-dashboard`; service binding `API=hireflow-api` |
+| API / queue / recovery cron | Worker `hireflow-api` |
+| SQL state | D1 `hireflow`, binding `DB` |
+| Private PDFs/uploads/reports | KV `hireflow-files`, binding `FILES_KV` |
+| Application dispatch | Queue `hireflow-applications`, binding `APPLICATION_QUEUE` |
+| Browser | Browser Run binding `BROWSER` |
+| Old browser session transfer only | `https://hireflow-blue-seven.vercel.app/api/workspace-migrate` |
+
+Follow [the Cloudflare guide](cloudflare.md) for the complete Pages/Worker deployment commands, variables, secrets, resource IDs, limits, private sessions, migration flow, and release verification. The legacy Vercel site is retained temporarily so an already signed-in browser can transfer its workspace with a five-minute, single-use token. It is no longer the preferred frontend target; it does not expose an operator-code prompt or email/ID-only login.
+
+The source repository is [pankajbaid567/hireflow](https://github.com/pankajbaid567/hireflow), current branch `main`. Source publication and application deployment are separate operations. The [milestone audit](milestone-audit.md) records remaining acceptance gaps. Production email is **not configured/verified**; generating a report does not send it.
+
+The sections below cover the independent, original **Python/Docker** runtime. They do not describe the live Worker's D1/KV database or execute Python on Cloudflare.
 
 ## Local Docker deployment
 
@@ -120,8 +134,7 @@ the new fields/tables; restore a backup if you need their data afterward.
 
 ## Railway or Render deployment
 
-These steps are prepared for a future explicitly authorized deployment. Running
-them publishes the application; no deployment command has been run here.
+This is an optional alternative to the Cloudflare deployment. No Railway or Render deployment is claimed. Running these steps publishes a separate Python/container service and requires an explicitly chosen target.
 
 1. Provision a PostgreSQL 16 service. Backups are recommended for persisted
    applications. Copy its private connection URL to the API's `DATABASE_URL`,

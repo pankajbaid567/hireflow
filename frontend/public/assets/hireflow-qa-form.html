@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>HireFlow deployment test form</title>
+  <style>
+    body{font:16px/1.6 system-ui,sans-serif;background:#f4f7f3;color:#224536;max-width:720px;margin:40px auto;padding:24px}h1{font-size:27px;line-height:1.3}aside{padding:16px;background:#fff3d8;border:1px solid #e4d29c;border-radius:8px}form{display:grid;gap:17px;background:white;border:1px solid #dde6d7;padding:26px;border-radius:12px;margin-top:24px}label{display:grid;gap:6px}input,textarea,button{font:inherit;padding:10px;border:1px solid #c8d4c0;border-radius:6px}button{background:#175742;color:white;cursor:pointer}#confirmation{display:none;background:#e7f4e2;border:1px solid #bdd3ae;padding:28px;border-radius:10px;margin-top:24px}
+  </style>
+</head>
+<body>
+  <h1>Deployment test form — no real job application</h1>
+  <p>HireFlow deployment QA form</p>
+  <aside>This controlled HireFlow fixture is for synthetic deployment checks. It does not send form data, upload files to a server, contact an employer, or send email.</aside>
+  <form id="application-form">
+    <label>Full name<input name="name" autocomplete="name" required></label>
+    <label>Email address<input name="email" type="email" autocomplete="email" required></label>
+    <label>Phone number<input name="phone" type="tel" autocomplete="tel" required></label>
+    <label>Education<input name="education"></label>
+    <label>Years of experience<input name="experience_years" type="number" min="0" step="0.5"></label>
+    <label>Skills<input name="skills"></label>
+    <label>Resume PDF<input name="resume" type="file" accept=".pdf,application/pdf" required></label>
+    <label>Why do you want to work here?<textarea name="why_company" rows="4"></textarea></label>
+    <button type="submit">Submit application</button>
+  </form>
+  <section id="confirmation" role="status" aria-live="polite">
+    <h2>Application submitted successfully</h2>
+    <p>Local simulation complete. No application data was transmitted and no real job application was submitted.</p>
+  </section>
+  <script>
+    document.getElementById('application-form').addEventListener('submit', event => {
+      event.preventDefault();
+      event.currentTarget.remove();
+      document.getElementById('confirmation').style.display = 'block';
+      document.title = 'Application submitted successfully';
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "vite",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "functions": {
+    "api/**/*.js": { "maxDuration": 60 }
+  },
+  "rewrites": [
+    { "source": "/api/:__hireflow_path*", "destination": "/api/proxy" },
+    { "source": "/:path((?!api/|assets/).*)", "destination": "/api/proxy?__hireflow_path=workspace-migrate" }
+  ]
+}

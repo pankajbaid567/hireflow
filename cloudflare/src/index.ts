@@ -1,0 +1,196 @@
+import { ApiError, type Env, type Row, type Task, json, parsed } from './types';
+import { all, first, run, userById, applicationQuery } from './storage';
+import { checkAccessCode, logout, requireUser, sessionUser, startSession } from './auth';
+import { readJson, saveProfile } from './profile';
+import { addJobs, confirmPlan, getPlan, swapPlan } from './plans';
+import { discoverJobs, scoreMatch } from './intelligence';
+import { emailReport, generateReport, latestReport } from './reports';
+import { processTask, scheduledRecovery } from './tasks';
+import { validatePublicUrl } from './automation';
+import { files } from './files';
+import { createTransfer, consumeTransfer } from './session_transfer';
+
+function number(value: string | null, fallback?: number, max = Number.MAX_SAFE_INTEGER) {
+  const n = value === null && fallback !== undefined ? fallback : Number(value);
+  if (!Number.isSafeInteger(n) || n < 1 || n > max) throw new ApiError(422, 'Invalid ID or pagination value');
+  return n;
+}
+async function privateFile(env: Env, key: string, type: string, filename?: string) {
+  const object = await files(env).get(key);
+  if (!object) throw new ApiError(404, 'File not found');
+  return new Response(object.body, {headers:{'Content-Type':type,'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff',
+    ...(filename?{'Content-Disposition':`inline; filename="${filename}"`}:{}),
+    ...(type.startsWith('text/html')?{'Content-Security-Policy':"default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'"}:{}),
+  }});
+}
+async function route(request: Request, env: Env): Promise<Response> {
+  const url = new URL(request.url); const path = url.pathname.replace(/\/$/,'') || '/'; const method = request.method;
+  let match: RegExpMatchArray | null;
+  if (method==='GET' && path==='/') return json({message:'HireFlow API is running',runtime:'cloudflare-workers'});
+  if (method==='GET' && path==='/health') {
+    await first(env,'SELECT id FROM users LIMIT 1');
+    return json({status:'ok',runtime:'cloudflare-workers'});
+  }
+  if (method==='GET' && path==='/docs') return json({title:'HireFlow Cloudflare API',authentication:'Create a profile through the dashboard. Private requests require its HttpOnly session cookie. Administrative recovery uses a separate operator credential.',
+    endpoints:['POST /profile','GET/PATCH /profile/{id}','POST /session/login','POST /session/logout','GET /session','POST /jobs/{id}','POST /jobs/{id}/discover','GET /weekly-plan/{id}','POST /weekly-plan/{id}/swap','POST /weekly-plan/{id}/confirm','GET /applications/{id}','GET /applications/{application_id}/prep-guide','GET /resumes/{id}','GET /resumes/{id}/{application_id}/download','POST /report/{id}/generate','GET /report/{id}/latest','GET /report/{id}/latest/html','POST /report/{id}/latest/email','POST /hiring/shortlist']});
+  if (method==='GET' && path==='/session') {
+    const userId=await sessionUser(request,env); return json({authenticated:!!userId,...(userId?{user_id:userId}:{})});
+  }
+  if (method==='POST' && path==='/session/login') {
+    const data=await readJson(request); await checkAccessCode(request,env,data.access_code);
+    const user=typeof data.email==='string'?await first(env,'SELECT id FROM users WHERE email=?',data.email.trim().toLowerCase()):null;
+    if(!user) throw new ApiError(401,'Email or access code is incorrect.');
+    return json({authenticated:true,user_id:user.id},200,{'Set-Cookie':await startSession(request,env,user.id)});
+  }
+  if (method==='POST' && path==='/session/logout') return logout(request,env);
+  if (method==='POST' && path==='/session/transfer') return createTransfer(request,env);
+  if (method==='POST' && path==='/session/transfer/consume') return consumeTransfer(request,env);
+  if (method==='POST' && path==='/profile') return saveProfile(request,env);
+  if ((match=path.match(/^\/profile\/(\d+)$/))) {
+    const id=number(match[1]); await requireUser(request,env,id);
+    if(method==='GET') return json(await userById(env,id));
+    if(method==='PATCH') return saveProfile(request,env,id);
+  }
+  if ((match=path.match(/^\/jobs\/(\d+)(\/discover)?$/)) && method==='POST') {
+    const id=number(match[1]); await requireUser(request,env,id);
+    if(match[2]) {
+      const user=await userById(env,id);
+      let jobs: Row[]; const warnings:string[]=[];
+      try { jobs=await discoverJobs(env,user.master_profile,{warn:message=>warnings.push(message),trace:data=>console.log(JSON.stringify({event:'job_discovery',...data}))}); }
+      catch(error) {
+        const status=typeof (error as {status?:unknown})?.status==='number'?(error as {status:number}).status:null;
+        console.warn(JSON.stringify({event:'job_discovery_unavailable',status}));
+        throw new ApiError(503,'Job search could not finish. Please try again, or paste a current job-detail URL and its full description below.');
+      }
+      // Search results are untrusted; discard malformed URLs/listings individually.
+      const valid=jobs.slice(0,10).filter(job=>{
+        try {validatePublicUrl(job.url);} catch{return false;}
+        return ['title','company','description'].every(k=>typeof job[k]==='string'&&job[k].trim())&&job.title.length<=300&&job.company.length<=300&&job.description.length<=30000&&job.url.length<=2000&&(!job.posted_date||Number.isFinite(Date.parse(job.posted_date)));
+      });
+      const known=await all(env,'SELECT j.url FROM applications a JOIN jobs j ON j.id=a.job_id WHERE a.user_id=?',id);
+      const identity=(url:string)=>url.replace(/\/apply\/?(?=\?|$)/,'').replace(/\/$/,'');
+      const existing=new Set(known.map(job=>identity(job.url))), fresh=valid.filter(job=>!existing.has(identity(job.url)));
+      const imported=await addJobs(env,id,fresh);
+      const message=imported?`${imported} active opportunities added. Refresh your plan to review the job details and resumes.`:
+        valid.length&&!fresh.length?'These active listings are already in your opportunities. Review your weekly plan or broaden your target role.':
+        'No new active listings could be verified. Try a broader target role or location, or paste a current job-detail URL and its full description below.';
+      return json({imported,discovered:valid.length,already_known:valid.length-fresh.length,warnings,message});
+    }
+    const count=await addJobs(env,id,[await readJson(request)]); return json({imported:count,message:count?'Opportunity added. Refresh your plan.':'This listing is not eligible for the current profile.'},201);
+  }
+  if((match=path.match(/^\/weekly-plan\/(\d+)(?:\/(swap|confirm))?$/))) {
+    const id=number(match[1]); await requireUser(request,env,id);
+    if(method==='GET' && !match[2]) return json(await getPlan(env,id));
+    if(method==='POST') {
+      const body=await readJson(request);
+      if(match[2]==='swap') return json(await swapPlan(env,id,number(String(body.remove_job_id)),number(String(body.add_job_id))));
+      if(match[2]==='confirm') return json(await confirmPlan(env,id,body.confirmed_job_ids));
+    }
+  }
+  if((match=path.match(/^\/applications\/(\d+)\/prep-guide$/)) && method==='GET') {
+    const id=number(match[1]); const app=await first(env,`${applicationQuery} WHERE a.id=?`,id);
+    if(!app) { await requireUser(request,env); throw new ApiError(404,'Application not found'); }
+    await requireUser(request,env,app.user_id);
+    const guide=await first(env,'SELECT * FROM prep_guides WHERE application_id=?',id);
+    if(!guide) throw new ApiError(404,'Prep guide is not ready yet. Refresh shortly.');
+    return json({...parsed(guide.structured_data,{}),company:app.company,role:app.title,company_intel:parsed(guide.company_intel,{})});
+  }
+  if((match=path.match(/^\/applications\/(\d+)$/)) && method==='GET') {
+    const id=number(match[1]); await requireUser(request,env,id);
+    const page=number(url.searchParams.get('page'),1); const size=number(url.searchParams.get('page_size'),20,100);
+    const status=url.searchParams.get('status');
+    if(status&&!['pending','planned','confirmed','applying','applied','failed','needs_action','rejected','interview','offer'].includes(status)) throw new ApiError(422,'Unknown application status');
+    const params:any[]=[id]; let where=' WHERE a.user_id=?'; if(status){where+=' AND a.status=?';params.push(status);}
+    const count=await first(env,`SELECT count(*) AS n FROM applications a${where}`,...params);
+    const rows=await all(env,`${applicationQuery}${where} ORDER BY a.created_at DESC,a.id DESC LIMIT ? OFFSET ?`,...params,size,(page-1)*size);
+    const history=await all(env,'SELECT application_id,status,reason,created_at AS timestamp FROM application_status_events WHERE application_id IN (SELECT value FROM json_each(?)) ORDER BY id',JSON.stringify(rows.map(a=>a.id)));
+    const guides=await all(env,'SELECT application_id FROM prep_guides WHERE application_id IN (SELECT value FROM json_each(?))',JSON.stringify(rows.map(a=>a.id)));
+    return json({items:rows.map(a=>({id:a.id,job_id:a.job_id,company:a.company,role:a.title,status:a.status,match_score:a.match_score,skill_gaps:parsed(a.skill_gaps,[]),resume_version:a.resume_version,
+      resume_url:a.resume_path?`/resumes/${id}/${a.id}/download`:null,prep_guide_url:guides.some(g=>g.application_id===a.id)?`/applications/${a.id}/prep-guide`:null,
+      failure_reason:a.failure_reason,manual_action_url:a.manual_action_url,applied_at:a.applied_at,created_at:a.created_at,attempts:a.attempts,
+      status_history:history.filter(h=>h.application_id===a.id).map(({application_id,...h})=>h)})),total:count!.n,page,page_size:size});
+  }
+  if((match=path.match(/^\/resumes\/(\d+)(?:\/(\d+)\/download)?$/)) && method==='GET') {
+    const id=number(match[1]); await requireUser(request,env,id);
+    if(!match[2]) {
+      const rows=await all(env,`SELECT r.version,r.created_at AS generated_at,a.id AS application_id,j.company,j.title AS role FROM resumes r JOIN applications a ON a.id=r.application_id JOIN jobs j ON j.id=a.job_id WHERE a.user_id=? ORDER BY r.created_at DESC,r.version DESC`,id);
+      return json({items:rows.map(r=>({...r,download_url:`/resumes/${id}/${r.application_id}/download?version=${r.version}`}))});
+    }
+    const app=await first(env,'SELECT * FROM applications WHERE id=? AND user_id=?',number(match[2]),id);
+    if(!app) throw new ApiError(404,'Resume not found');
+    const version=url.searchParams.has('version')?number(url.searchParams.get('version')):app.resume_version;
+    if(!app.resume_path && !url.searchParams.has('version')) throw new ApiError(404,'Resume needs to be regenerated. Refresh the weekly plan.');
+    const resume=await first(env,'SELECT object_key FROM resumes WHERE application_id=? AND version=?',app.id,version);
+    if(!resume) throw new ApiError(404,'Resume not found');
+    return privateFile(env,resume.object_key,'application/pdf',`${app.job_id}_resume_v${version}.pdf`);
+  }
+  if((match=path.match(/^\/report\/(\d+)\/(generate|latest)(?:\/(html|email))?$/))) {
+    const id=number(match[1]); await requireUser(request,env,id);
+    if(method==='POST' && match[2]==='generate'&&!match[3]) return json(await generateReport(env,id));
+    if(method==='POST' && match[2]==='latest'&&match[3]==='email') return json(await emailReport(env,id));
+    if(method==='GET' && match[2]==='latest') {
+      const report=await latestReport(env,id);
+      return match[3]==='html'?privateFile(env,report.html_path,'text/html; charset=utf-8'):!match[3]?json(report):json({detail:'Not found'},404);
+    }
+  }
+  if(path==='/hiring/shortlist'&&method==='POST') {
+    const owner=await requireUser(request,env); const data=await readJson(request);
+    if(typeof data.jd_text!=='string'||!data.jd_text.trim()||data.jd_text.length>30000) throw new ApiError(422,'Provide a job description up to 30000 characters');
+    const applicants=typeof data.applicants==='string'?parseCsv(data.applicants):data.applicants;
+    if(!Array.isArray(applicants)||applicants.length>200) throw new ApiError(422,'Provide up to 200 applicants as JSON or CSV');
+    const size=number(String(data.shortlist_size??20),20,200);
+    const scored=applicants.map((a:Row,i:number)=>{
+      if(!a||typeof a.name!=='string') throw new ApiError(422,'Every applicant needs a name');
+      const profile={...a,skills:typeof a.skills==='string'?a.skills.split(/[;,|]/).map((s:string)=>s.trim()):a.skills||[]};
+      if(!Array.isArray(profile.skills)) throw new ApiError(422,'Applicant skills must be a list');
+      const match=scoreMatch(profile,{title:data.jd_text.split('\n')[0],description:data.jd_text});
+      return {...a,score:match.score,matched_skills:match.matched,skill_gaps:match.gaps,input_index:i};
+    }).sort((a,b)=>b.score-a.score||a.input_index-b.input_index);
+    const shortlist=scored.filter(a=>a.matched_skills.length).slice(0,size).map(({input_index,...a})=>a);
+    const result=await run(env,'INSERT INTO shortlists(user_id,jd_text,candidates,applicant_count) VALUES(?,?,?,?)',owner,data.jd_text,JSON.stringify(shortlist),applicants.length);
+    return json({id:result.meta.last_row_id,shortlist,applicant_count:applicants.length,shortlisted_count:shortlist.length,summary:`Selected ${shortlist.length} of ${applicants.length} applicants with matching JD skills.`});
+  }
+  throw new ApiError(404,'Not found');
+}
+export function parseCsv(csv: string): Row[] {
+  const rows:string[][]=[]; let row:string[]=[]; let cell='';let quoted=false;
+  for(let i=0;i<csv.length;i++) {
+    const c=csv[i];
+    if(c==='"'){if(quoted&&csv[i+1]==='"'){cell+='"';i++;}else quoted=!quoted;}
+    else if(!quoted&&(c===','||c==='\n')){row.push(cell.trim());cell='';if(c==='\n'){rows.push(row);row=[];}}
+    else if(c!=='\r')cell+=c;
+  }
+  if(quoted)throw new ApiError(422,'Malformed CSV quoting');
+  if(cell||row.length){row.push(cell.trim());rows.push(row);}
+  const headers=rows.shift()||[];
+  if(!headers.includes('name'))throw new ApiError(422,'CSV needs a name column');
+  return rows.filter(r=>r.some(Boolean)).map(r=>Object.fromEntries(headers.map((h,i)=>[h,r[i]||''])));
+}
+
+export default {
+  async fetch(request: Request, env: Env): Promise<Response> {
+    const origin=request.headers.get('origin'); const origins=(env.ALLOWED_ORIGINS||'').split(',').map((s:string)=>s.trim()).filter(Boolean);
+    const allowed=!origin||origins.includes(origin)||origin===new URL(request.url).origin;
+    let response:Response;
+    try {
+      if(!allowed)throw new ApiError(403,'Origin is not allowed');
+      if(request.method==='OPTIONS')response=new Response(null,{status:204});
+      else response=await route(request,env);
+    } catch(error) {
+      if(!(error instanceof ApiError))console.error(JSON.stringify({event:'request_failed',path:new URL(request.url).pathname}));
+      response=json({detail:error instanceof ApiError?error.message:'The request could not be completed. Please try again.'},error instanceof ApiError?error.status:503);
+    }
+    const headers=new Headers(response.headers);
+    if(origin&&allowed){headers.set('Access-Control-Allow-Origin',origin);headers.set('Access-Control-Allow-Credentials','true');headers.set('Vary','Origin');}
+    headers.set('Access-Control-Allow-Methods','GET, POST, PATCH, OPTIONS'); headers.set('Access-Control-Allow-Headers','Content-Type, X-HireFlow-Access-Code');
+    headers.set('X-Content-Type-Options','nosniff');
+    return new Response(response.body,{status:response.status,headers});
+  },
+  async queue(batch: MessageBatch<Task>, env: Env) {
+    for(const message of batch.messages){
+      try { await processTask(env,message); }
+      catch { console.error(JSON.stringify({event:'queue_processing_failed',application_id:message.body?.application_id})); message.retry({delaySeconds:120}); }
+    }
+  },
+  async scheduled(_event: ScheduledController, env: Env) { await scheduledRecovery(env); },
+} satisfies ExportedHandler<Env,Task>;

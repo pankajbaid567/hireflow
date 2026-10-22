@@ -34,6 +34,13 @@ class ProfileCreate(BaseModel):
     projects: list[dict[str, Any]] = Field(default_factory=list)
     education: list[dict[str, Any]] | dict[str, Any] | str | None = None
     min_stipend: int | None = Field(default=None, ge=0)
+    min_salary: int | None = Field(default=None, ge=0)
+    summary: str = Field(default="", max_length=3000)
+    links: list[dict[str, str]] = Field(default_factory=list)
+    certifications: list[str] = Field(default_factory=list)
+    achievements: list[str] = Field(default_factory=list)
+    languages: list[str] = Field(default_factory=list)
+    blacklist_companies: list[str] = Field(default_factory=list)
     confirmation_mode: Literal["batch", "individual"] = "batch"
 
     model_config = ConfigDict(extra="allow")
@@ -44,6 +51,11 @@ class ProfileCreate(BaseModel):
         "preferred_locations",
         "experience",
         "projects",
+        "links",
+        "certifications",
+        "achievements",
+        "languages",
+        "blacklist_companies",
         mode="before",
     )
     @classmethod
@@ -54,6 +66,11 @@ class ProfileCreate(BaseModel):
     @classmethod
     def normalize_experience_years(cls, value):
         return 0 if value is None else value
+
+    @field_validator("min_stipend", "min_salary", mode="before")
+    @classmethod
+    def normalize_optional_compensation(cls, value):
+        return None if value in (None, "", "null") else value
 
     @field_validator("email")
     @classmethod
@@ -190,6 +207,11 @@ async def _profile_from_request(
             "experience",
             "education",
             "projects",
+            "links",
+            "certifications",
+            "achievements",
+            "languages",
+            "blacklist_companies",
         ):
             if field in overrides:
                 raw = overrides[field]
@@ -198,7 +220,7 @@ async def _profile_from_request(
                 except json.JSONDecodeError:
                     if field == "education":
                         overrides[field] = raw
-                    elif field in {"skills", "target_roles", "preferred_locations"}:
+                    elif field in {"skills", "target_roles", "preferred_locations", "certifications", "achievements", "languages", "blacklist_companies"}:
                         overrides[field] = [
                             s.strip() for s in raw.split(",") if s.strip()
                         ]

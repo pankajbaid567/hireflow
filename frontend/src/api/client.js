@@ -1,7 +1,8 @@
 import axios from 'axios';
 
 export const API_BASE = (import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '');
-const client = axios.create({ baseURL: API_BASE, timeout: 120000 });
+export const isCloudflare = () => import.meta.env.VITE_DEPLOYMENT_TARGET === 'cloudflare';
+const client = axios.create({ baseURL: API_BASE, timeout: 120000, withCredentials: isCloudflare() });
 
 export function errorMessage(error) {
   const detail = error?.response?.data?.detail;
@@ -32,6 +33,11 @@ export function artifactUrl(path) {
 export const api = {
   getProfile: id => client.get(`/profile/${id}`).then(r => r.data),
   saveProfile: (data, id) => (id ? client.patch(`/profile/${id}`, data) : client.post('/profile', data)).then(r => r.data),
+  getSession: () => client.get('/session').then(r => r.data),
+  logoutSession: () => client.post('/session/logout').then(r => r.data),
+  consumeTransfer: token => client.post('/session/transfer/consume', { token }).then(r => r.data),
+  discoverJobs: id => client.post(`/jobs/${id}/discover`).then(r => r.data),
+  addJob: (id, data) => client.post(`/jobs/${id}`, data).then(r => r.data),
   getPlan: id => client.get(`/weekly-plan/${id}`).then(r => r.data),
   swapJob: (id, remove_job_id, add_job_id) => client.post(`/weekly-plan/${id}/swap`, { remove_job_id, add_job_id }).then(r => r.data),
   confirmPlan: (id, confirmed_job_ids) => client.post(`/weekly-plan/${id}/confirm`, { confirmed_job_ids }).then(r => r.data),

@@ -26,6 +26,7 @@ env/
 *.swp
 *.swo
 .DS_Store
+/Screenshot*.png
 
 # Testing
 .pytest_cache/
@@ -51,6 +52,7 @@ data/reports/
 *.synctex.gz
 
 # Node / Frontend
+node_modules/
 frontend/node_modules/
 frontend/.next/
 frontend/dist/
@@ -72,3 +74,14 @@ test-results/
 # Internal planning files - not for contributors
 cowork-hireflow-prompt.md
 hireflow-ai-blueprint*
+
+# Cloudflare local state and secrets
+cloudflare/node_modules/
+cloudflare/.wrangler/
+cloudflare/.dev.vars
+cloudflare/.dev.vars.*
+!cloudflare/.dev.vars.example
+cloudflare/coverage/
+.dev.vars
+.vercel/
+frontend/.vercel/

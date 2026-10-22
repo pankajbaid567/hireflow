@@ -128,3 +128,27 @@ def test_create_profile_from_pdf(client):
     assert data["name"] == "Test Student"
     assert data["email"] == "pdf@example.com"
     assert data["master_profile"]["skills"] == ["Python", "FastAPI"]
+
+
+def test_extended_profile_preferences_survive_multipart_resume_save(client):
+    import json
+    fields = {
+        "name": "Test Student", "email": "details@example.com", "mode": "job",
+        "summary": "Built a project.", "min_salary": "1200000", "min_stipend": "",
+        "confirmation_mode": "individual",
+        "links": json.dumps([{"label": "GitHub", "url": "https://github.com/example"}]),
+        "certifications": json.dumps(["Example certification"]),
+        "achievements": json.dumps(["Hackathon finalist"]),
+        "languages": json.dumps(["English"]),
+        "blacklist_companies": json.dumps(["Excluded Company"]),
+        "projects": json.dumps([{"name": "Actual project", "description": "Actual work"}]),
+    }
+    response = client.post("/profile", data=fields, files={"resume": ("resume.pdf", b"%PDF-1.4", "application/pdf")})
+    assert response.status_code == 201
+    profile = response.json()["master_profile"]
+    assert profile["links"][0]["url"] == "https://github.com/example"
+    assert profile["blacklist_companies"] == ["Excluded Company"]
+    assert profile["languages"] == ["English"]
+    assert profile["min_salary"] == 1200000
+    assert profile["min_stipend"] is None
+    assert response.json()["confirmation_mode"] == "individual"

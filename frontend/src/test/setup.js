@@ -13,4 +13,4 @@ vi.stubGlobal('localStorage', {
   key: index => [...storage.keys()][index] ?? null,
   get length() { return storage.size; },
 });
-afterEach(() => { cleanup(); localStorage.clear(); });
+afterEach(() => { cleanup(); localStorage.clear(); vi.unstubAllEnvs(); });

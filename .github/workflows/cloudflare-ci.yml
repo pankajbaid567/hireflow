@@ -1,0 +1,31 @@
+name: Cloudflare CI
+
+on:
+  pull_request:
+    paths: ['cloudflare/**', 'frontend/**', 'scripts/verify_cloudflare_dashboard.mjs', '.github/workflows/cloudflare-ci.yml']
+  push:
+    branches: [main, dev]
+    paths: ['cloudflare/**', 'frontend/**', 'scripts/verify_cloudflare_dashboard.mjs', '.github/workflows/cloudflare-ci.yml']
+
+jobs:
+  test-worker:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: cloudflare
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: cloudflare/package-lock.json
+      - run: npm ci
+      - run: npx playwright-core install --with-deps chromium
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm ci --prefix ../frontend
+      - name: Verify React dashboard against isolated Worker, D1 and R2
+        run: node ../scripts/verify_cloudflare_dashboard.mjs
+      - name: Verify deployment package without publishing
+        run: npx wrangler deploy --dry-run

@@ -1,0 +1,12 @@
+# Vercel project rootDirectory is frontend. Upload only that application.
+*
+!frontend/
+!frontend/**
+frontend/.env*
+frontend/.dev.vars*
+frontend/.vercel/
+frontend/node_modules/
+frontend/dist/
+frontend/coverage/
+frontend/src/test/
+frontend/server/*.test.js

@@ -1,208 +1,82 @@
 # HireFlow AI
 
-Career autopilot for students. HireFlow discovers jobs and internships, tailors your resume for each one, applies on your behalf, and gives you a prep guide - all in one weekly cycle.
+HireFlow helps students and job seekers build a reviewed application plan, prepare truthful resume PDFs, track supported automatic applications, and study for interviews. Applications require explicit confirmation. Blocked forms, CAPTCHAs, expired vacancies, and uncertain submissions are recorded for manual action.
 
-NST Engineering - HireFlow
-Framework: Build, Understand, Defend
+**Live dashboard:** [hireflow-dashboard.pages.dev](https://hireflow-dashboard.pages.dev/profile). The frontend and backend are hosted on Cloudflare: Pages serves React and the same-origin API proxy, and the [API Worker](https://hireflow-api.baidpankaj567.workers.dev/health) handles application data and work. Release verification on 23 October 2026 (IST) passed: PDF-only signup, structured profile edits, plan/PDF review, one controlled form submission, tracking, prep, report, downloads, mobile and logout. Old-browser workspace transfer and replay rejection passed in a separate browser run. Production discovery imported six verified active listings. The old Vercel origin is retained temporarily as a session-migration bridge.
 
----
+The original specification is **not fully complete**. Read the [milestone audit](docs/milestone-audit.md) for implemented, partial, missing, and unverified requirements.
 
-## What Does HireFlow Do?
+## Current application
 
-You tell HireFlow:
-- Your resume and skills
-- How many applications you want per week (e.g. 10)
-- What roles you are targeting ("AI Engineer Intern", "ML Developer")
-- Mode: Internship or Full-time Job
+| Component | Runtime / resource |
+| --- | --- |
+| React dashboard and private `/api` proxy | Cloudflare Pages project `hireflow-dashboard` |
+| API, application queue consumer, recovery cron | Cloudflare Worker `hireflow-api` |
+| Profiles, ownership sessions, jobs, applications, guides, reports | D1 database `hireflow` |
+| Private uploads, versioned resume PDFs, HTML reports | Workers KV namespace `hireflow-files`; R2 adapter optional |
+| Confirmed application work | Queue `hireflow-applications` and Browser Run |
+| PDF extraction / text generation | Gemini / configured Groq or Gemini provider |
 
-HireFlow then:
-1. Imports openings with the Lever, Greenhouse, or generic career-page scrapers
-2. Scores every listing against your profile and picks the best matches
-3. Builds a weekly plan with versioned resume PDFs for your review
-4. Lets you swap listings and select the applications you want to confirm
-5. Applies to confirmed listings using Playwright, retaining a timestamped status trail
-6. Flags CAPTCHAs, missing answers, and uncertain submissions for manual review
-7. Builds interview prep guides and a weekly HTML report with skills to study
-8. Supports explicit report delivery through configurable SendGrid or Resend
+[Deployment and resource details](docs/cloudflare.md) include the actual bindings, secrets, quotas, commands, and verification status. No provider secret belongs in browser code.
 
-It also works in reverse - companies can use HireFlow to shortlist the best applicants from a pile of 100+ resumes.
+## User flow
 
----
+1. Upload a PDF and save the profile, or enter details manually. The browser receives a private session automatically; normal users enter no operator code or profile ID.
+2. Review extracted facts and edit experience, projects, education, summary, links, certifications, achievements, and spoken languages. Set internship/job mode, target roles, locations, minimum compensation, excluded companies, weekly quota, and batch or individual review.
+3. Choose **Find opportunities** or add an actual listing URL and full job description. Discovery verifies a bounded set of individual postings; it does not promise every portal or a 100+ listing pool.
+4. Review the ranked plan, skill gaps, and PDF versions. Swap listings or change the selection. Confirm only the opportunities you authorize.
+5. Track the result and any manual instructions. Open private resume versions, interview guides, and the weekly HTML report.
 
-## Two Modes
+The deployed Worker uses **weighted lexical matching**, with aliases and cached scores. Its resume tailoring asks Groq to select verified profile facts and two or three relevant projects for each JD, then composes a mode-specific summary without accepting invented accomplishments. Provider failures use a visible deterministic fallback. Immutable PDF versions retain the method, model and profile version. It does not run FAISS/sentence-transformers; the separate Python embedding helpers are not part of that deployed path.
 
-**Internship Mode**
-- Targets internship listings (Internshala, Wellfound, LinkedIn internships, company pages)
-- Filters by stipend range
-- Resume and prep guide tuned for fresher and early-career profiles
-- Interview prep covers lighter, shorter rounds typical of internship hiring
+Automatic submission supports suitable forms; arbitrary employer portals, authenticated application systems, and durable multi-step checkpoints remain limited. There is no blanket guarantee that a listing can be applied to automatically. **Production email is not configured:** SendGrid/Resend integration exists, but a provider key and verified sender are still needed, and no real delivery is claimed.
 
-**Job Mode**
-- Targets full-time job listings (LinkedIn, Naukri, Greenhouse, Lever, company pages)
-- Filters by salary range
-- Resume tailored for experienced or final-year profiles
-- Interview prep covers multi-round structured hiring processes
+## Existing workspace migration
 
-The user selects a mode at profile setup. Both modes use the same core pipeline - scrapers, scorer, resume engine, application agent, and prep guide generator.
+The migration release routes old dashboard pages through a temporary bridge instead of mirroring the frontend. A signed-in old browser receives a single-use transfer valid for five minutes; Pages consumes it and creates a new private session. A signed-out browser reaches the Pages profile screen. **Continue an existing workspace** on Pages opens the same bridge. No ID/email-only login or operator-code prompt is used. Lost/expired sessions and a different device still require operator-assisted recovery. See [session migration](docs/cloudflare.md#existing-browser-session-migration).
 
----
+## Local development
 
-## Tech Stack
+There are two independent backends. Cloudflare uses TypeScript/D1/KV; the original local/container path uses Python/FastAPI/PostgreSQL. They do not share database records automatically.
 
-| What | Tool |
-|------|------|
-| Application Execution | FastAPI background tasks and Python agents |
-| LLM | Groq (free), Gemini (free), Ollama (local), OpenAI or Anthropic (paid) |
-| Web Scraping | Playwright and BeautifulSoup |
-| Vector Matching | FAISS and Sentence Transformers |
-| Backend API | FastAPI |
-| Frontend Dashboard | React, Vite, React Router, Axios, and responsive CSS |
-| Database | PostgreSQL |
-| Resume Generation | ReportLab for dashboard previews; optional LaTeX pipeline |
-| Email Delivery | SendGrid or Resend |
-| Web Search | Tavily or SerpAPI |
-| Deployment | Local Docker Compose; Railway/Render instructions prepared |
+For the original Docker app:
 
----
-
-## Project Structure
-
-```
-hireflow-ai/
-- src/
-  - agents/        (Application, preparation, company research, report, shortlist)
-  - scrapers/      (Job discovery scrapers - Lever, Greenhouse, generic)
-  - pipelines/     (Match scoring, embedding, resume generation)
-  - automation/    (Form filler, CAPTCHA handler)
-  - api/           (FastAPI routes)
-  - models/        (Data models - User, Job, Application, PrepGuide)
-  - templates/     (LaTeX resume templates)
-  - utils/         (Shared helpers)
-  - config/        (Configuration and settings)
-- tests/           (Unit and integration tests)
-- notebooks/       (Exploration and experimentation)
-- data/            (Sample data, fixtures)
-- docs/            (Architecture diagrams, module docs)
-- frontend/        (React dashboard)
-- .env.example     (Copy to .env and fill in your keys)
-- requirements.txt (Python dependencies)
-- docker-compose.yml
-- README.md
-```
-
----
-
-## Getting Started (Local Setup)
-
-### Prerequisites
-- Python 3.11 or higher
-- Node.js 20.19 or higher (for frontend)
-- Docker (optional but recommended)
-- PostgreSQL
-
-### Step 1 - Clone the repo
-```bash
-git clone https://github.com/pankajbaid567/hireflow.git
-cd hireflow
-```
-
-### Step 2 - Set up Python environment
-```bash
-python -m venv venv
-source venv/bin/activate
-
-pip install -r requirements.txt
-playwright install chromium
-```
-
-### Step 3 - Configure environment variables
 ```bash
 cp .env.example .env
-# Open .env and fill in your API keys
-```
-
-### Step 4 - Run with Docker (easiest)
-```bash
+# Configure local provider keys and database settings.
 docker compose up --build -d --wait
 ```
 
-Or run manually:
+Open <http://localhost:3000>; FastAPI docs are at <http://localhost:8000/docs>. The Python API currently trusts numeric user IDs, so keep this path in a trusted local environment until authenticated ownership is added. [Container setup, persistence, and migrations](docs/deployment.md) explain the details.
+
+For Worker/Pages development, use **Node 22 or newer** and follow [the Cloudflare guide](docs/cloudflare.md#local-development-and-checks). Python development requires Python 3.11+, the project virtual environment, dependencies, and Playwright Chromium; [workflow.md](docs/workflow.md) covers those commands.
+
+## Checks
+
 ```bash
-alembic upgrade head
-uvicorn src.api.main:app --reload
+npm ci --prefix frontend
+npm test --prefix frontend
+npm run build --prefix frontend
+npm ci --prefix cloudflare
+npm run check --prefix cloudflare
+# With the configured Python virtualenv and Chromium installed:
+venv/bin/python -m pytest tests/ -v
 ```
 
-In another terminal, run `cd frontend && npm ci && npm run dev`. Open
-<http://localhost:3000>; API documentation is at <http://localhost:8000/docs>.
-For a local SQLite setup, set `DATABASE_URL=sqlite:///./hireflow.db` before
-running migrations and the API. Docker uses PostgreSQL automatically.
+Latest local checks: **294 Python tests, 264 Worker tests and 73 frontend tests passed**; typecheck, frontend build and Worker deploy dry run passed. Seven opt-in live tests were skipped by default; actual providers and the production browser flow were verified separately.
 
-See [the workflow guide](docs/workflow.md) for discovery, API routes, provider
-configuration, and test commands. See [deployment instructions](docs/deployment.md)
-for container setup, migrations, backups, and future Railway/Render deployment.
-No public deployment has been created.
+Default tests use isolated data and controlled forms. Live provider/browser verification requires explicit run switches and consumes account usage. It must target HireFlow's synthetic QA form, never a real employer application. Local test success does not by itself prove a complete production UI workflow or compliance with Workers Free CPU limits.
 
-Note: Docker is optional for development. Students working on individual modules only need steps 1 to 3. Docker is required for deployment.
+## Repository map
 
----
+| Path | Purpose |
+| --- | --- |
+| `frontend/` | React dashboard, Pages Functions proxy, temporary Vercel migration bridge |
+| `cloudflare/` | Worker API, D1 migrations, file adapter, queue, browser automation, PDF/report generation |
+| `src/`, `tests/` | Original Python agents, scrapers, scoring, FastAPI, SQLAlchemy, tests |
+| `scripts/` | Controlled browser/provider verification helpers |
+| `docs/cloudflare.md` | Pages/Worker deployment, resources, sessions, limits, provider setup |
+| `docs/deployment.md` | Deployment status, local Docker operations, persistence and migration notes |
+| `docs/milestone-audit.md` | Requirement-by-requirement audit and remaining work |
 
-## Pod Structure
-
-| Role | Count | Responsibility |
-|------|-------|----------------|
-| Maintainer | 1 | Repo architecture, PR reviews, LangGraph orchestration, integration |
-| Contributor 1 | 1 | M2 - Job Discovery Engine |
-| Contributor 2 | 1 | M3 and M4 - Match Scorer and Resume Tailoring |
-| Contributor 3 | 1 | M5 and M4 - Application Automation Agent |
-| Contributor 4 | 1 | M6 and M7 - Prep Guide Generator and Weekly Report |
-
----
-
-## Milestones (8 Sprints, around 3 days each)
-
-| # | Milestone | Key Output |
-|---|-----------|------------|
-| M1 | Project Scaffold and User Onboarding | DB schema, profile model, profile intake API |
-| M2 | Job Discovery Engine | Scrapers for 3 portal types and spam classifier |
-| M3 | Job-Profile Match Scorer | Embedding pipeline, FAISS, multi-factor scorer |
-| M4 | Weekly Quota Selector and Resume Engine | Top-N selector and LaTeX resume generator |
-| M5 | Application Automation Agent | Playwright form filler and error recovery |
-| M6 | Preparation Guide Generator | Interview rounds prediction, resources, mock questions |
-| M7 | Weekly Report and Hiring Side Module | Email report and hiring shortlist agent |
-| M8 | Dashboard, Integration and Demo | React dashboard, end-to-end testing, demo video |
-
----
-
-## How to Contribute
-
-Read CONTRIBUTING.md for the full workflow. Short version:
-
-1. Find an open issue assigned to your milestone
-2. Comment "I am working on this" to claim it
-3. Create a branch: `git checkout -b feature/your-feature-name`
-4. Write your code, commit with clear messages
-5. Open a PR, Maintainer reviews, merge only when all criteria are met
-
-AI tools are allowed. But you must be able to explain every decision in your code. If you used LangChain, know why. If you chose FAISS over ChromaDB, know why.
-
----
-
-## Milestone Q&A (Accountability Sessions)
-
-Every 2 to 3 days, students sit with faculty for a short Q&A on what was built in that sprint:
-- Contributors: Why this solution? What other approaches exist?
-- Maintainer: Why did you approve this PR? What did you check?
-- Faculty probes: Edge cases, error handling, design decisions
-
----
-
-## Links
-
-- Project Board - HireFlow Sprint Tracker (add GitHub Projects link)
-- Issues (add GitHub Issues link)
-- Blueprint - Full Spec (hireflow-ai-blueprint)
-
----
-
-NST Engineering - HireFlow
-Framework: Build, Understand, Defend
+NST Engineering — HireFlow

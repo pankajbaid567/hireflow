@@ -1,0 +1,9 @@
+{
+  "$schema": "../cloudflare/node_modules/wrangler/config-schema.json",
+  "name": "hireflow-dashboard",
+  "pages_build_output_dir": "./dist",
+  "compatibility_date": "2026-10-21",
+  "compatibility_flags": ["nodejs_compat"],
+  "services": [{ "binding": "API", "service": "hireflow-api" }],
+  "vars": { "WORKER_API_URL": "https://hireflow-api.baidpankaj567.workers.dev" }
+}

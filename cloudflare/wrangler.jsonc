@@ -1,0 +1,71 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "hireflow-api",
+  "account_id": "e644f1ced37b126db54d62bf6afd4d1a",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-21",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "workers_dev": true,
+  "observability": {
+    "enabled": true,
+    "traces": {
+      "enabled": true,
+      "head_sampling_rate": 0.01
+    }
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "hireflow",
+      "database_id": "e4664667-cedb-4f84-9da6-32610a77c127",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "kv_namespaces": [
+    {
+      "binding": "FILES_KV",
+      "id": "b2c25a76089c4c11aacf1d0fef9b1b51"
+    }
+  ],
+  "browser": {
+    "binding": "BROWSER"
+  },
+  "queues": {
+    "producers": [
+      {
+        "binding": "APPLICATION_QUEUE",
+        "queue": "hireflow-applications"
+      }
+    ],
+    "consumers": [
+      {
+        "queue": "hireflow-applications",
+        "max_batch_size": 1,
+        "max_batch_timeout": 5,
+        "max_retries": 100,
+        "max_concurrency": 1,
+        "retry_delay": 40
+      }
+    ]
+  },
+  "triggers": {
+    "crons": [
+      "*/5 * * * *"
+    ]
+  },
+  "vars": {
+    "ALLOWED_ORIGINS": "https://hireflow-dashboard.pages.dev,https://hireflow-blue-seven.vercel.app",
+    "PUBLIC_BASE_URL": "https://hireflow-dashboard.pages.dev/api",
+    "COOKIE_SAME_SITE": "Lax",
+    "LLM_PROVIDER": "groq",
+    "GROQ_MODEL": "openai/gpt-oss-20b",
+    "GEMINI_MODEL": "gemini-3.8-flash",
+    "GEMINI_FALLBACK_MODEL": "gemini-3.5-flash-lite",
+    "BROWSER_DAILY_BUDGET_SECONDS": "540",
+    "BROWSER_ENABLED": "true",
+    "EMAIL_PROVIDER": "resend",
+    "FROM_EMAIL": "hireflow@example.com"
+  }
+}

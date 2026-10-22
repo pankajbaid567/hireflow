@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { artifactUrl, errorMessage, externalUrl } from '../api/client';
 describe('API response helpers', () => {
   it('routes relative artifacts through the API and preserves absolute URLs', () => {
@@ -14,4 +14,13 @@ describe('API response helpers', () => {
     expect(errorMessage({ request: {} })).toMatch('Cannot reach HireFlow');
     expect(errorMessage({ code: 'ECONNABORTED' })).toMatch('took too long');
   });
+});
+
+it('sends cross-origin cookies only for Cloudflare deployments', async () => {
+  const { default: original } = await import('../api/client');
+  expect(original.defaults.withCredentials).toBe(false);
+  vi.stubEnv('VITE_DEPLOYMENT_TARGET', 'cloudflare');
+  vi.resetModules();
+  const { default: cloud } = await import('../api/client');
+  expect(cloud.defaults.withCredentials).toBe(true);
 });

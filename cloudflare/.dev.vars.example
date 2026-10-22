@@ -1,0 +1,12 @@
+# Copy to .dev.vars for local development only. Do not commit actual secrets.
+ACCESS_CODE=replace-with-a-long-random-access-code
+ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
+PUBLIC_BASE_URL=http://localhost:3000/api
+GROQ_API_KEY=
+GEMINI_API_KEY=
+# Optional PDF extraction recovery after transient primary-model failures.
+GEMINI_FALLBACK_MODEL=gemini-3.5-flash-lite
+TAVILY_API_KEY=
+SERPAPI_API_KEY=
+RESEND_API_KEY=
+SENDGRID_API_KEY=
