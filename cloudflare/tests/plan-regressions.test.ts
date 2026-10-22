@@ -29,6 +29,25 @@ beforeEach(async()=>{
 afterEach(async()=>{await mf?.dispose();},30000);
 
 describe('Cloudflare plan regressions',()=>{
+  it('prepares, reuses and confirms a profile stored with whitespace and different JSON key ordering',async()=>{
+    await addJobs(1);
+    const original=await db.prepare('SELECT master_profile,profile_version FROM users WHERE id=?').bind(id).first<any>();
+    const formatted=JSON.stringify(Object.fromEntries(Object.entries(JSON.parse(original!.master_profile)).reverse()),null,2);
+    expect(formatted).not.toBe(original!.master_profile);
+    await db.prepare('UPDATE users SET master_profile=? WHERE id=?').bind(formatted,id).run();
+    const current=await plan();expect(current.preparing).toBe(false);expect(current.plan).toHaveLength(1);expect(current.plan[0].resume_url).toBeTruthy();
+    const pdf=await request(current.plan[0].resume_url);expect(pdf.status).toBe(200);expect((await pdf.text()).startsWith('%PDF-')).toBe(true);
+    const cached=await plan();expect(cached.plan[0].resume_version).toBe(current.plan[0].resume_version);expect(cached.plan[0].resume_url).toBe(current.plan[0].resume_url);
+    expect((await db.prepare('SELECT count(*) AS n FROM resumes').first<any>())!.n).toBe(1);
+    expect((await request(`/weekly-plan/${id}/confirm`,'POST',{confirmed_job_ids:[current.plan[0].job_id]})).status).toBe(200);
+    expect(await db.prepare('SELECT master_profile,profile_version FROM users WHERE id=?').bind(id).first<any>()).toEqual({master_profile:formatted,profile_version:original!.profile_version});
+  });
+  it('returns the real source, listing URL, location and mode for review',async()=>{
+    const listing={title:'Python Intern',company:'Verified Company',description:'A Python engineering internship working on documented projects.',url:'https://internshala.com/internship/detail/python-internship-at-example12345',location:'Bengaluru',listing_type:'internship'};
+    expect((await request(`/jobs/${id}`,'POST',listing)).status).toBe(201);
+    const current=await plan();
+    expect(current.plan[0]).toMatchObject({url:listing.url,source:'Internshala',location:'Bengaluru',listing_type:'internship'});
+  });
   it('prepares large plans in bounded batches and refuses unprepared confirmation',async()=>{
     await addJobs(5);const first=await plan();expect(first.plan).toHaveLength(5);expect(first.preparing).toBe(true);expect(first.plan.filter((a:any)=>a.resume_url)).toHaveLength(3);
     expect((await request(`/weekly-plan/${id}/confirm`,'POST',{confirmed_job_ids:first.plan.map((a:any)=>a.job_id)})).status).toBe(400);

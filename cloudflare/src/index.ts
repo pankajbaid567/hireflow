@@ -55,12 +55,12 @@ async function route(request: Request, env: Env): Promise<Response> {
     const id=number(match[1]); await requireUser(request,env,id);
     if(match[2]) {
       const user=await userById(env,id);
-      let jobs: Row[]; const warnings:string[]=[];
-      try { jobs=await discoverJobs(env,user.master_profile,{warn:message=>warnings.push(message),trace:data=>console.log(JSON.stringify({event:'job_discovery',...data}))}); }
+      let jobs: Row[]; const warnings:string[]=[],sources:Row[]=[];
+      try { jobs=await discoverJobs(env,user.master_profile,{warn:message=>warnings.push(message),report:rows=>sources.push(...rows),trace:data=>console.log(JSON.stringify({event:'job_discovery',...data}))}); }
       catch(error) {
         const status=typeof (error as {status?:unknown})?.status==='number'?(error as {status:number}).status:null;
         console.warn(JSON.stringify({event:'job_discovery_unavailable',status}));
-        throw new ApiError(503,'Job search could not finish. Please try again, or paste a current job-detail URL and its full description below.');
+        return json({detail:'Job search could not finish. Please try again, or paste a current job-detail URL and its full description below.',sources,warnings},503);
       }
       // Search results are untrusted; discard malformed URLs/listings individually.
       const valid=jobs.slice(0,10).filter(job=>{
@@ -74,7 +74,7 @@ async function route(request: Request, env: Env): Promise<Response> {
       const message=imported?`${imported} active opportunities added. Refresh your plan to review the job details and resumes.`:
         valid.length&&!fresh.length?'These active listings are already in your opportunities. Review your weekly plan or broaden your target role.':
         'No new active listings could be verified. Try a broader target role or location, or paste a current job-detail URL and its full description below.';
-      return json({imported,discovered:valid.length,already_known:valid.length-fresh.length,warnings,message});
+      return json({imported,discovered:valid.length,already_known:valid.length-fresh.length,sources,warnings,message});
     }
     const count=await addJobs(env,id,[await readJson(request)]); return json({imported:count,message:count?'Opportunity added. Refresh your plan.':'This listing is not eligible for the current profile.'},201);
   }

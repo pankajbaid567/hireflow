@@ -5,7 +5,8 @@ type JobInput = { title: string; description?: string; listing_type?: string; lo
 type SearchResult = { title: string; url: string; content: string; published_date?: string; company?: string; location?: string };
 type DiscoveredJob = { title: string; company: string; url: string; description: string; location?: string; listing_type: 'job' | 'internship'; posted_date?: string };
 type DiscoveryTrace = Record<string, string | number | boolean>;
-type DiscoveryDiagnostics = { warn(message: string): void; trace?(data: DiscoveryTrace): void };
+export type DiscoverySourceSummary = { id: string; name: string; searched: number; verified: number; restricted: number; status: 'ok' | 'empty' | 'restricted' | 'unavailable' | 'budget_limited'; search_calls: number };
+type DiscoveryDiagnostics = { warn(message: string): void; trace?(data: DiscoveryTrace): void; report?(sources: DiscoverySourceSummary[]): void };
 const VOCABULARY = ['Python', 'JavaScript', 'TypeScript', 'Java', 'Go', 'Rust', 'C++', 'C#', 'SQL', 'HTML', 'CSS', 'React', 'Next.js', 'Node.js', 'FastAPI', 'Django', 'Flask', 'Spring', 'LangChain', 'LangGraph', 'RAG', 'multi-agent systems', 'Docker', 'Kubernetes', 'AWS', 'Azure', 'GCP', 'PostgreSQL', 'MongoDB', 'Redis', 'Git', 'Linux', 'TensorFlow', 'PyTorch', 'scikit-learn', 'Pandas', 'NumPy', 'machine learning', 'deep learning', 'data structures', 'algorithms', 'system design', 'REST', 'GraphQL', 'Terraform', 'CI/CD', 'Kotlin', 'Swift', 'Ruby', 'PHP', 'Vue', 'Angular', 'Excel'];
 const ALIASES: Record<string, string[]> = {
   JavaScript: ['js'], TypeScript: ['ts'], 'Node.js': ['nodejs'], 'Next.js': ['nextjs'], React: ['reactjs'],
@@ -313,20 +314,20 @@ class Budget {
   }
 }
 function searchReady(env: Env): boolean { return Boolean(key(env.TAVILY_API_KEY) || key(env.SERPAPI_API_KEY)); }
-async function search(env: Env, query: string, budget: Budget, news = false, jobs = false, domains?: string[]): Promise<SearchResult[]> {
+async function search(env: Env, query: string, budget: Budget, news = false, jobs = false, domains?: string[], jobLimit = 8): Promise<SearchResult[]> {
   let response: Response;
   if (key(env.TAVILY_API_KEY)) {
-    response = await budget.fetch('https://api.tavily.com/search', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ api_key: key(env.TAVILY_API_KEY), query: text(query, 500), max_results: jobs ? 8 : 6, topic: news ? 'news' : 'general', ...(news ? { time_range: 'year' } : jobs ? { time_range: 'month', include_published_date: true, include_raw_content: 'text', ...(domains ? { include_domains: domains } : {}) } : {}) }) });
+    response = await budget.fetch('https://api.tavily.com/search', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ api_key: key(env.TAVILY_API_KEY), query: text(query, 500), max_results: jobs ? jobLimit : 6, topic: news ? 'news' : 'general', ...(news ? { time_range: 'year' } : jobs ? { time_range: 'month', include_published_date: true, include_raw_content: 'text', ...(domains ? { include_domains: domains } : {}) } : {}) }) });
   } else if (key(env.SERPAPI_API_KEY)) {
     const url = new URL('https://serpapi.com/search.json');
-    url.search = new URLSearchParams({ api_key: key(env.SERPAPI_API_KEY), q: `${text(query, 500)}${jobs && domains ? ` (${domains.map(domain => `site:${domain}`).join(' OR ')})` : ''}`, engine: 'google', num: jobs ? '8' : '6', ...(news ? { tbm: 'nws', tbs: 'qdr:m3' } : jobs ? { tbs: 'qdr:m' } : {}) }).toString();
+    url.search = new URLSearchParams({ api_key: key(env.SERPAPI_API_KEY), q: `${text(query, 500)}${jobs && domains ? ` (${domains.map(domain => `site:${domain}`).join(' OR ')})` : ''}`, engine: 'google', num: jobs ? String(jobLimit) : '6', ...(news ? { tbm: 'nws', tbs: 'qdr:m3' } : jobs ? { tbs: 'qdr:m' } : {}) }).toString();
     response = await budget.fetch(url.toString());
   } else throw new IntelligenceError('Configure TAVILY_API_KEY or SERPAPI_API_KEY for live discovery and research');
   const data = await jsonResponse(response, 'Search provider', budget.remaining());
   if (data.error) throw new IntelligenceError('Search provider could not complete the query');
   const values = data.results || (news ? data.news_results : data.organic_results) || [];
   if (!Array.isArray(values)) throw new IntelligenceError('Search provider returned invalid results');
-  return values.filter(r => r && typeof r === 'object' && !Array.isArray(r)).slice(0, jobs ? 8 : 6).map((r: Data) => ({ title: text(r.title, 300), url: text(r.url || r.link, 2048), content: text(jobs ? r.raw_content || r.content || r.snippet : r.content || r.snippet, jobs ? 30000 : 2000), published_date: text(r.published_date || r.published_at || r.date, 100), company: text(r.company, 200), location: text(r.location, 200) }));
+  return values.filter(r => r && typeof r === 'object' && !Array.isArray(r)).slice(0, jobs ? jobLimit : 6).map((r: Data) => ({ title: text(r.title, 300), url: text(r.url || r.link, 2048), content: text(jobs ? r.raw_content || r.content || r.snippet : r.content || r.snippet, jobs ? 30000 : 2000), published_date: text(r.published_date || r.published_at || r.date, 100), company: text(r.company, 200), location: text(r.location, 200) }));
 }
 async function accessible(raw: unknown, budget: Budget): Promise<string | null> {
   let url = publicUrl(raw);
@@ -435,14 +436,14 @@ export async function buildPrepGuide(env: Env, profile: Data, job: Data): Promis
 function listingUrl(raw: unknown): string | null {
   const safe = publicUrl(raw); if (!safe) return null;
   const url = new URL(safe), host = url.hostname.replace(/^www\./, ''), path = url.pathname;
-  if (/^(jobs\.lever\.co|(?:job-)?boards\.greenhouse\.io|jobs\.ashbyhq\.com)$/.test(host)) url.protocol = 'https:';
+  if (/^(jobs\.(?:eu\.)?lever\.co|(?:job-)?boards\.greenhouse\.io|jobs\.ashbyhq\.com)$/.test(host)) url.protocol = 'https:';
   if (/(^|\.)(linkedin\.com)$/.test(host) && !/^\/jobs\/view\/[^/]+/.test(path)) return null;
   if (host === 'internshala.com' && !/^\/(internship|job)\/detail\/[^/]+/.test(path)) return null;
   if (host === 'naukri.com' && !/^\/job-listings-[^/]+/.test(path)) return null;
   if (/(^|\.)(indeed\.com|indeed\.co\.in)$/.test(host) && !(url.searchParams.get('jk') && /\/(viewjob|rc\/clk)/.test(path))) return null;
   if (/(^|\.)lever\.co$/.test(host) && !/^\/[^/]+\/[^/]+/.test(path)) return null;
   if (/(^|\.)ashbyhq\.com$/.test(host) && !/^\/[^/]+\/[^/]+/.test(path)) return null;
-  if (!/\/(jobs?|careers?|positions?|openings?|vacancies|job-listing|internship)\/.+/i.test(path) && !/^(jobs\.lever\.co|jobs\.ashbyhq\.com|naukri\.com|internshala\.com)$/.test(host) && !/\.myworkdayjobs\.com$/.test(host) && !/(^|\.)indeed\./.test(host)) return null;
+  if (!/\/(jobs?|careers?|positions?|openings?|vacancies|job-listing|internship)\/.+/i.test(path) && !/^(jobs\.(?:eu\.)?lever\.co|jobs\.ashbyhq\.com|naukri\.com|internshala\.com)$/.test(host) && !/\.myworkdayjobs\.com$/.test(host) && !/(^|\.)indeed\./.test(host)) return null;
   for (const name of [...url.searchParams.keys()]) if (/^(utm_|ref$|referrer$|source$|trackingid$|gh_src$)/i.test(name)) url.searchParams.delete(name);
   return url.toString();
 }
@@ -506,12 +507,12 @@ function sourcedNames(result: SearchResult, url: string): { title: string; compa
     const parts = title.split(/\s+[–|]\s+|\s+-\s+/);
     if (parts.length >= 2) {
       const role = /\b(engineer|developer|intern|internship|analyst|designer|associate|research|scientist|manager|specialist)\b/i;
-      if (/lever\.co$/.test(new URL(url).hostname) && role.test(parts.slice(1).join(' ')) && !role.test(parts[0])) { company ||= parts.shift()!; title = parts.join(' - '); }
+      if (/^jobs\.(?:eu\.)?lever\.co$/.test(new URL(url).hostname) && role.test(parts.slice(1).join(' ')) && !role.test(parts[0])) { company ||= parts.shift()!; title = parts.join(' - '); }
       else if (!role.test(parts.at(-1)!)) { company ||= parts.pop()!; title = parts.join(' - '); }
     }
   }
   const parsed = new URL(url);
-  if (!company && /^(jobs\.lever\.co|(?:job-)?boards\.greenhouse\.io|jobs\.ashbyhq\.com)$/.test(parsed.hostname)) company = parsed.pathname.split('/').filter(Boolean)[0] || '';
+  if (!company && /^(jobs\.(?:eu\.)?lever\.co|(?:job-)?boards\.greenhouse\.io|jobs\.ashbyhq\.com)$/.test(parsed.hostname)) company = parsed.pathname.split('/').filter(Boolean)[0] || '';
   return { title: text(title, 300), company: text(company, 300) };
 }
 async function listingDetails(result: SearchResult, url: string, budget: Budget, trace?: (data: DiscoveryTrace) => void): Promise<DiscoveredJob | null> {
@@ -568,34 +569,89 @@ async function listingDetails(result: SearchResult, url: string, budget: Budget,
 export async function discoverJobs(env: Env, profile: Data, diagnostics?: DiscoveryDiagnostics): Promise<DiscoveredJob[]> {
   if (!searchReady(env)) throw new IntelligenceError('Configure TAVILY_API_KEY or SERPAPI_API_KEY for live job discovery');
   const trace = diagnostics?.trace;
-  const budget = new Budget(Date.now() + 35000, trace), results: DiscoveredJob[] = [], seen = new Set<string>();
-  const mode = profile.mode === 'internship' ? 'internship' : 'job', roles = strings(profile.target_roles).slice(0, 2), role = roles[0] || 'software engineer';
+  let currentSource: DiscoverySourceSummary | undefined;
+  const budget = new Budget(Date.now() + 35000, event => {
+    trace?.(event);
+    if (currentSource && event.stage === 'fetch' && [0, 403, 429, 999].includes(Number(event.status))) currentSource.restricted++;
+  });
+  const results: DiscoveredJob[] = [], seen = new Set<string>();
+  const mode = profile.mode === 'internship' ? 'internship' : 'job';
+  const roles = strings(profile.target_roles).slice(0, 2), role = roles.join(' OR ') || 'software engineer';
   const location = strings(profile.preferred_locations).slice(0, 2).join(' '), skill = strings(profile.skills)[0] || '';
-  const groups = [['jobs.lever.co', 'job-boards.greenhouse.io', 'boards.greenhouse.io', 'jobs.ashbyhq.com', 'wellfound.com'], ['internshala.com', 'linkedin.com', 'naukri.com', 'indeed.com', 'workatastartup.com']];
-  let skipped = 0, searchResults = 0;
+  const definitions = {
+    internshala: { name: 'Internshala', domains: ['internshala.com'] },
+    wellfound: { name: 'Wellfound', domains: ['wellfound.com'] },
+    greenhouse: { name: 'Greenhouse', domains: ['job-boards.greenhouse.io', 'boards.greenhouse.io'] },
+    lever: { name: 'Lever', domains: ['jobs.lever.co', 'jobs.eu.lever.co'] },
+    linkedin: { name: 'LinkedIn', domains: ['linkedin.com'] },
+    naukri: { name: 'Naukri', domains: ['naukri.com'] },
+  };
+  const selected: (keyof typeof definitions)[] = mode === 'internship'
+    ? ['internshala', 'wellfound', 'greenhouse', 'lever', 'linkedin']
+    : ['naukri', 'linkedin', 'greenhouse', 'lever'];
+  const pools = selected.map(id => ({ ...definitions[id], summary: { id, name: definitions[id].name, searched: 0, verified: 0, restricted: 0, status: 'empty', search_calls: 0 } as DiscoverySourceSummary, found: [] as SearchResult[], cursor: 0 }));
+  const report = () => diagnostics?.report?.(pools.map(pool => ({ ...pool.summary })));
+  const query = `${role} ${mode === 'internship' ? 'internship' : 'job'} ${location} ${skill}`.replace(/\s+/g, ' ').trim();
   trace?.({ stage: 'profile', mode, role_count: roles.length, skill_count: strings(profile.skills).length, location_count: strings(profile.preferred_locations).length });
-  for (let round = 0; round < groups.length; round++) {
-    if (results.length >= 8) break;
-    let found: SearchResult[];
-    try { found = await search(env, `${roles[round] || role} ${mode === 'internship' ? 'internship' : 'job'} ${location} ${skill}`.replace(/\s+/g, ' ').trim(), budget, false, true, groups[round]); }
-    catch (error) { if (!results.length && !budget.exhausted) throw error; diagnostics?.warn('Some job sites could not be searched within the time limit. Showing the verified listings found so far.'); break; }
-    searchResults += found.length;
-    trace?.({ stage: 'search', round: round + 1, result_count: found.length });
-    for (const result of found) {
-      const url = listingUrl(result.url); if (!url || seen.has(listingIdentity(url))) { skipped++; continue; }
-      seen.add(listingIdentity(url));
-      // A senior role mentioning that internship experience does not count is
-      // not an internship. Classify the title, never an arbitrary JD mention.
-      if (mode === 'internship' && /\b(senior|principal|staff|lead|director|manager)\b/i.test(result.title) && !/\b(intern(?:ship)?|trainee|apprentice)\b/i.test(result.title)) { skipped++; continue; }
-      try {
-        const job = await listingDetails(result, url, budget, trace);
-        if (!job || job.listing_type !== mode || results.some(value => listingIdentity(value.url) === listingIdentity(job.url))) { skipped++; continue; }
-        results.push(job); if (results.length >= 8) break;
-      } catch { skipped++; if (budget.exhausted) break; }
+  // Each portal gets its own actual provider request. Start every source before
+  // checking details so a successful first portal cannot prevent other searches.
+  const searched = await Promise.allSettled(pools.map(async pool => {
+    if (budget.exhausted) { pool.summary.status = 'budget_limited'; return; }
+    pool.summary.search_calls = 1;
+    const found = await search(env, query, budget, false, true, pool.domains, 4);
+    // Provider domain filters are advisory. Enforce attribution locally too.
+    pool.found = found.filter(result => {
+      try { const host = new URL(result.url).hostname.toLowerCase(); return pool.domains.some(domain => host === domain || host.endsWith(`.${domain}`)); }
+      catch { return false; }
+    });
+    pool.summary.searched = pool.found.length;
+    trace?.({ stage: 'search', source: pool.summary.id, result_count: pool.found.length, search_calls: 1 });
+  }));
+  for (let index = 0; index < searched.length; index++) {
+    if (searched[index].status === 'rejected') {
+      pools[index].summary.status = 'unavailable';
+      diagnostics?.warn(`${pools[index].name} could not be searched. Results from other available sources are shown.`);
+      trace?.({ stage: 'search', source: pools[index].summary.id, result_count: 0, search_calls: pools[index].summary.search_calls, unavailable: true });
     }
   }
+  if (searched.every(result => result.status === 'rejected')) {
+    report();
+    throw (searched.find(result => result.status === 'rejected') as PromiseRejectedResult).reason;
+  }
+  let skipped = 0;
+  // Advance one candidate per source per pass. Invalid, expired or restricted
+  // details do not let another portal monopolize the first verified slots.
+  while (results.length < 8 && !budget.exhausted && pools.some(pool => pool.cursor < pool.found.length)) {
+    for (const pool of pools) {
+      if (results.length >= 8 || budget.exhausted) break;
+      const result = pool.found[pool.cursor++]; if (!result) continue;
+      const url = listingUrl(result.url);
+      if (!url || seen.has(listingIdentity(url))) { skipped++; continue; }
+      seen.add(listingIdentity(url));
+      if (mode === 'internship' && /\b(senior|principal|staff|lead|director|manager)\b/i.test(result.title) && !/\b(intern(?:ship)?|trainee|apprentice)\b/i.test(result.title)) { skipped++; continue; }
+      currentSource = pool.summary; const restrictedBefore = pool.summary.restricted;
+      try {
+        const job = await listingDetails(result, url, budget, trace);
+        const host = job ? new URL(job.url).hostname.toLowerCase() : '';
+        // A redirect to another portal is not a verified listing from this one.
+        if (!job || !pool.domains.some(domain => host === domain || host.endsWith(`.${domain}`)) || job.listing_type !== mode || results.some(value => listingIdentity(value.url) === listingIdentity(job.url))) { skipped++; continue; }
+        results.push(job); pool.summary.verified++;
+      } catch {
+        skipped++;
+        if (!budget.exhausted && pool.summary.restricted === restrictedBefore) pool.summary.restricted++;
+      } finally { currentSource = undefined; }
+    }
+  }
+  for (const pool of pools) {
+    if (pool.summary.status === 'unavailable' || pool.summary.status === 'budget_limited' && !pool.summary.search_calls) continue;
+    pool.summary.status = budget.exhausted && pool.cursor < pool.found.length ? 'budget_limited'
+      : pool.summary.verified ? 'ok' : pool.summary.restricted ? 'restricted' : 'empty';
+  }
+  if (budget.exhausted) diagnostics?.warn('The search time or request limit was reached. Verified opportunities found so far are shown.');
   if (!results.length) diagnostics?.warn('No active individual listings could be verified. Try a broader target role or location, or paste a current job-detail URL and its description.');
   else if (skipped) diagnostics?.warn('Expired roles, search pages, duplicates, and pages blocked by job sites were omitted.');
+  const searchResults = pools.reduce((total, pool) => total + pool.summary.searched, 0);
   trace?.({ stage: 'summary', search_results: searchResults, unique_candidates: seen.size, verified: results.length, skipped, requests: budget.used });
+  report();
   return results;
 }

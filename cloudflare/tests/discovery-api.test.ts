@@ -24,7 +24,13 @@ afterEach(async () => { await mf?.dispose(); }, 30000);
 
 describe('discovery API import truthfulness', () => {
   it('imports verified full JDs once and reports already-known listings without inflating additions', async () => {
-    const first = await request(`/jobs/${userId}/discover`); expect(first.status, await first.clone().text()).toBe(200); expect(await first.json()).toMatchObject({ imported: 1, discovered: 1, already_known: 0 });
+    const first = await request(`/jobs/${userId}/discover`); expect(first.status, await first.clone().text()).toBe(200);
+    const result = await first.json() as any;
+    expect(result).toMatchObject({ imported: 1, discovered: 1, already_known: 0 });
+    expect(result.sources.map((source:any)=>source.id).sort()).toEqual(['greenhouse','internshala','lever','linkedin','wellfound']);
+    expect(result.sources.reduce((n:number,source:any)=>n+source.search_calls,0)).toBe(5);
+    expect(result.sources.find((source:any)=>source.id==='wellfound')).toMatchObject({verified:1,status:'ok'});
+    expect(result.sources.reduce((n:number,source:any)=>n+source.verified,0)).toBe(1);
     const second = await request(`/jobs/${userId}/discover`); expect(second.status).toBe(200); const duplicate = await second.json() as any;
     expect(duplicate).toMatchObject({ imported: 0, discovered: 1, already_known: 1 }); expect(duplicate.message).toContain('already in your opportunities');
     const db = await mf.getD1Database('DB'); const applications = await db.prepare('SELECT count(*) AS n FROM applications').first<any>(); expect(applications!.n).toBe(1);
@@ -33,6 +39,7 @@ describe('discovery API import truthfulness', () => {
   it('returns an actionable sanitized provider failure without adding listings or exposing credentials', async () => {
     providerStatus = 401; const response = await request(`/jobs/${userId}/discover`); expect(response.status).toBe(503); const body = await response.text();
     expect(body).toContain('paste a current job-detail URL'); expect(body).not.toContain('mock-provider-key'); expect(body).not.toContain('private error detail');
+    const failure=JSON.parse(body);expect(failure.sources).toHaveLength(5);expect(failure.sources.every((source:any)=>source.status==='unavailable'&&source.verified===0&&source.search_calls===1)).toBe(true);
     const db = await mf.getD1Database('DB'); expect((await db.prepare('SELECT count(*) AS n FROM jobs').first<any>())!.n).toBe(0);
   });
 });

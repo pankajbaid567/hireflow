@@ -6,6 +6,19 @@ import { validatePublicUrl } from './automation';
 import { files } from './files';
 import { hasTailoringProvider, tailorResume } from './resume_tailoring';
 
+function sourceName(raw: string): string {
+  try {
+    const host = new URL(raw).hostname.toLowerCase().replace(/^www\./, '');
+    for (const [domain, label] of [
+      ['internshala.com', 'Internshala'], ['wellfound.com', 'Wellfound'],
+      ['linkedin.com', 'LinkedIn'], ['naukri.com', 'Naukri'],
+      ['greenhouse.io', 'Greenhouse'], ['lever.co', 'Lever'],
+      ['ashbyhq.com', 'Ashby'], ['indeed.com', 'Indeed'],
+    ]) if (host === domain || host.endsWith(`.${domain}`)) return label;
+    return host;
+  } catch { return ''; }
+}
+
 export function eligible(row: Row, user: Row) {
   const blocked = user.master_profile?.blacklist_companies || [];
   return !row.is_spam && row.listing_type === user.mode &&
@@ -86,7 +99,7 @@ export async function getPlan(env: Env, userId: number) {
       if (!lease) continue;
       try {
         const reserved = await first(env, `UPDATE applications SET resume_version=resume_version+1 WHERE id=? AND status='planned' AND resume_path IS NULL
-          AND (SELECT master_profile FROM users WHERE id=?)=? AND EXISTS(SELECT 1 FROM resume_preparations WHERE application_id=? AND token=?) RETURNING resume_version`,application.id,userId,JSON.stringify(user.master_profile),application.id,token);
+          AND (SELECT profile_version FROM users WHERE id=?)=? AND EXISTS(SELECT 1 FROM resume_preparations WHERE application_id=? AND token=?) RETURNING resume_version`,application.id,userId,user.profile_version,application.id,token);
         if(!reserved) continue;
         const version = reserved.resume_version;
         const key = `resumes/${userId}/${application.job_id}_resume_v${version}.pdf`;
@@ -102,10 +115,10 @@ export async function getPlan(env: Env, userId: number) {
           env.DB.prepare(`INSERT INTO resumes(application_id,version,object_key,tailoring_metadata)
             SELECT ?,?,?,? WHERE EXISTS(SELECT 1 FROM applications a JOIN resume_preparations p ON p.application_id=a.id
               WHERE a.id=? AND a.status='planned' AND a.resume_version=? AND a.resume_path IS NULL AND p.token=? AND p.expires_at>?
-                AND (SELECT master_profile FROM users WHERE id=?)=?) ON CONFLICT(application_id,version) DO NOTHING RETURNING id`).bind(application.id,version,key,metadata,application.id,version,token,new Date().toISOString(),userId,JSON.stringify(user.master_profile)),
+                AND (SELECT profile_version FROM users WHERE id=?)=?) ON CONFLICT(application_id,version) DO NOTHING RETURNING id`).bind(application.id,version,key,metadata,application.id,version,token,new Date().toISOString(),userId,user.profile_version),
           env.DB.prepare(`UPDATE applications SET resume_path=? WHERE id=? AND resume_version=? AND status='planned' AND resume_path IS NULL
-            AND (SELECT master_profile FROM users WHERE id=?)=? AND EXISTS(SELECT 1 FROM resumes WHERE application_id=? AND version=? AND object_key=?)
-            AND EXISTS(SELECT 1 FROM resume_preparations WHERE application_id=? AND token=?) RETURNING id`).bind(key,application.id,version,userId,JSON.stringify(user.master_profile),application.id,version,key,application.id,token),
+            AND (SELECT profile_version FROM users WHERE id=?)=? AND EXISTS(SELECT 1 FROM resumes WHERE application_id=? AND version=? AND object_key=?)
+            AND EXISTS(SELECT 1 FROM resume_preparations WHERE application_id=? AND token=?) RETURNING id`).bind(key,application.id,version,userId,user.profile_version,application.id,version,key,application.id,token),
         ]);
         if(!saved[1].results.length) await files(env).delete(key);
         generated++;
@@ -116,6 +129,7 @@ export async function getPlan(env: Env, userId: number) {
   const finalPlanned = await all(env,`${planQuery} WHERE a.user_id=? AND a.status='planned' ORDER BY a.match_score DESC,a.id`,userId);
   const alternatives = candidates.filter(a => !finalPlanned.some(p => p.id === a.id)).slice(0, 40);
   const item = (a: Row) => {const metadata=parsed<Row>(a.tailoring_metadata,{});return ({ application_id: a.id, job_id: a.job_id, role_title: a.title, company_name: a.company,
+    url:a.url,source:sourceName(a.url),location:a.location || '',listing_type:a.listing_type,
     match_score: a.match_score, skill_gaps: parsed(a.skill_gaps, []), resume_version: a.resume_version,
     resume_url: a.resume_path ? `/resumes/${userId}/${a.id}/download` : null,
     resume_summary: a.resume_path ? metadata.summary || 'Review your resume before confirming.' : 'Refresh the plan to prepare this resume.',
@@ -154,7 +168,7 @@ export async function confirmPlan(env: Env, userId: number, ids: number[]) {
       AND (SELECT count(*) FROM applications a JOIN json_each(?) k ON a.id=json_extract(k.value,'$.id')
         WHERE a.status='planned' AND a.cycle_start=? AND a.resume_path=json_extract(k.value,'$.resume'))=?
       AND (SELECT count(*) FROM applications WHERE user_id=? AND cycle_start=? AND status NOT IN ('pending','planned'))+? <= (SELECT weekly_quota FROM users WHERE id=?)
-      AND (SELECT master_profile FROM users WHERE id=?)=? RETURNING id`).bind(new Date().toISOString(), userId, keys, keys, start, ids.length, userId, start, ids.length, userId, userId, JSON.stringify(user.master_profile)),
+      AND (SELECT profile_version FROM users WHERE id=?)=? RETURNING id`).bind(new Date().toISOString(), userId, keys, keys, start, ids.length, userId, start, ids.length, userId, userId, user.profile_version),
     env.DB.prepare(`INSERT INTO outbox(application_id,kind) SELECT id,'apply' FROM applications WHERE user_id=? AND status='confirmed' AND id IN (SELECT json_extract(value,'$.id') FROM json_each(?)) ON CONFLICT(application_id,kind) DO NOTHING`).bind(userId, keys),
   ]);
   if (results[0].results.length !== ids.length) throw new ApiError(409, 'Plan or quota changed. Refresh before confirming');

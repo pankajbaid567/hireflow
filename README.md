@@ -2,7 +2,7 @@
 
 HireFlow helps students and job seekers build a reviewed application plan, prepare truthful resume PDFs, track supported automatic applications, and study for interviews. Applications require explicit confirmation. Blocked forms, CAPTCHAs, expired vacancies, and uncertain submissions are recorded for manual action.
 
-**Live dashboard:** [hireflow-dashboard.pages.dev](https://hireflow-dashboard.pages.dev/profile). The frontend and backend are hosted on Cloudflare: Pages serves React and the same-origin API proxy, and the [API Worker](https://hireflow-api.baidpankaj567.workers.dev/health) handles application data and work. Release verification on 23 October 2026 (IST) passed: PDF-only signup, structured profile edits, plan/PDF review, one controlled form submission, tracking, prep, report, downloads, mobile and logout. Old-browser workspace transfer and replay rejection passed in a separate browser run. Production discovery imported six verified active listings. The old Vercel origin is retained temporarily as a session-migration bridge.
+**Live dashboard:** [hireflow-dashboard.pages.dev](https://hireflow-dashboard.pages.dev/profile). The frontend and backend are hosted on Cloudflare: Pages serves React and the same-origin API proxy, and the [API Worker](https://hireflow-api.baidpankaj567.workers.dev/health) handles application data and work. Release verification on 23 October 2026 (IST) passed: PDF-only signup, structured profile edits, plan/PDF review, one controlled form submission, tracking, prep, report, downloads, mobile and logout. Old-browser workspace transfer and replay rejection passed in a separate browser run. Production UI discovery made five separate searches and verified eight listings across Internshala, Wellfound and Greenhouse; source counts and original listing links are visible. The old Vercel origin is retained temporarily as a session-migration bridge.
 
 The original specification is **not fully complete**. Read the [milestone audit](docs/milestone-audit.md) for implemented, partial, missing, and unverified requirements.
 
@@ -23,7 +23,7 @@ The original specification is **not fully complete**. Read the [milestone audit]
 
 1. Upload a PDF and save the profile, or enter details manually. The browser receives a private session automatically; normal users enter no operator code or profile ID.
 2. Review extracted facts and edit experience, projects, education, summary, links, certifications, achievements, and spoken languages. Set internship/job mode, target roles, locations, minimum compensation, excluded companies, weekly quota, and batch or individual review.
-3. Choose **Find opportunities** or add an actual listing URL and full job description. Discovery verifies a bounded set of individual postings; it does not promise every portal or a 100+ listing pool.
+3. Choose **Find opportunities** or add an actual listing URL and full job description. Internship mode makes five separate source searches (Internshala, Wellfound, Greenhouse, Lever, LinkedIn); job mode makes four (Naukri, LinkedIn, Greenhouse, Lever). Candidates are verified in rotation, with up to eight accepted listings per search. Repeated listings are deduplicated; the UI shows per-site results, restrictions and original listing links. This is not a 100+ listing pool or authenticated portal integration.
 4. Review the ranked plan, skill gaps, and PDF versions. Swap listings or change the selection. Confirm only the opportunities you authorize.
 5. Track the result and any manual instructions. Open private resume versions, interview guides, and the weekly HTML report.
 
@@ -63,7 +63,7 @@ npm run check --prefix cloudflare
 venv/bin/python -m pytest tests/ -v
 ```
 
-Latest local checks: **294 Python tests, 264 Worker tests and 73 frontend tests passed**; typecheck, frontend build and Worker deploy dry run passed. Seven opt-in live tests were skipped by default; actual providers and the production browser flow were verified separately.
+Latest local checks: **294 Python tests, 274 Worker tests and 93 frontend tests passed**; typecheck, frontend build and Worker deploy dry run passed. Seven opt-in live tests were skipped by default; actual providers and the production browser flow were verified separately.
 
 Default tests use isolated data and controlled forms. Live provider/browser verification requires explicit run switches and consumes account usage. It must target HireFlow's synthetic QA form, never a real employer application. Local test success does not by itself prove a complete production UI workflow or compliance with Workers Free CPU limits.
 

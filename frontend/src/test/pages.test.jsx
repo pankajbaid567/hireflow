@@ -159,7 +159,7 @@ describe('weekly plan', () => {
     api.getPlan.mockResolvedValue({ plan: [firstJob, secondJob], alternatives: [], confirmation_mode: 'individual' }); api.confirmPlan.mockResolvedValue({ message: 'One application queued.' });
     mount(<WeeklyPlanPage />, { userId: '7', profile: saved }); const user = userEvent.setup();
     const first = await screen.findByRole('checkbox', { name: 'Include AI Intern' }); const second = screen.getByRole('checkbox', { name: 'Include Backend Intern' });
-    expect(first).toBeChecked(); expect(second).not.toBeChecked(); await user.click(second); expect(first).not.toBeChecked(); expect(second).toBeChecked();
+    await waitFor(() => expect(first).toBeChecked()); expect(second).not.toBeChecked(); await user.click(second); expect(first).not.toBeChecked(); expect(second).toBeChecked();
     await user.click(screen.getByRole('button', { name: 'Confirm this opportunity', exact: true }));
     await waitFor(() => expect(api.confirmPlan).toHaveBeenCalledWith('7', [12]));
     expect(await screen.findByRole('heading', { name: 'AI Intern', exact: true })).toBeInTheDocument();

@@ -2,7 +2,7 @@
 
 ## Current public deployment target
 
-The live frontend is **Cloudflare Pages**, project `hireflow-dashboard`, at [hireflow-dashboard.pages.dev/profile](https://hireflow-dashboard.pages.dev/profile). The live API Worker is [hireflow-api.baidpankaj567.workers.dev](https://hireflow-api.baidpankaj567.workers.dev/health). Release verification passed on 23 October 2026 (IST): public availability/private ownership, the complete controlled Pages UI application cycle, and a separate old-cookie migration/replay/logout browser run. Pages deployment is `115fbb66`; Worker version is `a16cf206-9a60-4bf7-8979-b3f29bc2da49`, with D1 migrations through `0003`. No real employer application or email was sent during QA.
+The live frontend is **Cloudflare Pages**, project `hireflow-dashboard`, at [hireflow-dashboard.pages.dev/profile](https://hireflow-dashboard.pages.dev/profile). The live API Worker is [hireflow-api.baidpankaj567.workers.dev](https://hireflow-api.baidpankaj567.workers.dev/health). Release verification passed on 23 October 2026 (IST): public availability/private ownership, the complete controlled Pages UI application cycle, and a separate old-cookie migration/replay/logout browser run. Current Pages deployment is `fa07b297`; Worker version is `e400aaf9-f123-4f13-86df-da5cc22394b4`, with D1 migrations through `0003`. The subsequent production multi-source UI check verified eight current opportunities across three sites using five separate searches, with original links and source statuses displayed. No real employer application or email was sent during QA.
 
 | Resource | Actual project / binding |
 | --- | --- |
