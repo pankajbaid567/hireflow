@@ -28,5 +28,7 @@ jobs:
       - run: npm ci --prefix ../frontend
       - name: Verify React dashboard against isolated Worker, D1 and R2
         run: node ../scripts/verify_cloudflare_dashboard.mjs
+      - name: Build Cloudflare dashboard with its public deployment configuration
+        run: npm run build:cloudflare --prefix ../frontend
       - name: Verify deployment package without publishing
         run: npx wrangler deploy --dry-run
