@@ -1,8 +1,8 @@
 # HireFlow: remaining work and future roadmap
 
-Updated: **23 October 2026 (IST)**. Baseline: verified release `b215a7b`.
+Updated: **23 October 2026 (IST)**. P0 implemented and published; [verification and runtime boundaries](docs/p0-verification.md).
 
-This is the prioritized backlog for finishing the original project, improving its AI and engineering quality, and considering new capabilities. **Everything below is planned work or pending verification, not a claim of implementation.** The eight original milestones remain partial; completing optional ideas does not close their acceptance gaps.
+This is the prioritized backlog for finishing the original project, improving its AI and engineering quality, and considering new capabilities. **P0 is implemented with the scoped evidence linked below; unchecked P1/P2/P3 items remain planned or pending verification.** The eight original milestones remain partial; completing optional ideas does not close their acceptance gaps.
 
 Sources: [original milestones](MILESTONES.md), [expectation-versus-reality audit](docs/milestone-audit.md), [current application](README.md), and [Cloudflare deployment and limits](docs/cloudflare.md). The audit contains the detailed evidence; this file describes what to do next.
 
@@ -13,7 +13,7 @@ Sources: [original milestones](MILESTONES.md), [expectation-versus-reality audit
 - Discovery already makes **five separate source searches in Internship mode** and **four in Job mode**. The production Internship UI verified eight JDs across Internshala, Wellfound and Greenhouse. Search is bounded to eight verified results per request; it is not a demonstrated 100+ listing cycle.
 - Deployed matching is weighted lexical matching. Groq selects existing facts/projects for tailoring; generation falls back visibly when unavailable. Embeddings, a vector index and measured semantic ranking are not connected to the deployed matching path.
 - A controlled production application cycle passed against an owned QA form. This does not establish automatic submission compatibility with real employer portals. Production email delivery and a complete weekly scheduler remain unconfigured/incomplete.
-- Baseline checks passed: **294 Python, 274 Worker and 93 frontend tests**, plus production browser verification and all three GitHub CI workflows. Functional tests are not an AI-quality benchmark.
+- P0 checks passed: **299 Python, 369 Worker and 112 frontend tests**, local real-browser integration and all three GitHub CI workflows. Production passkey/recovery and the controlled Pages application cycle were also exercised. Functional tests are not an AI-quality benchmark.
 
 ## Priority and tracking rules
 
@@ -30,40 +30,42 @@ Priority expresses importance, not a completion-time promise. Provider credentia
 
 ## P0 — user trust and reliable operation
 
+**Completed for the Cloudflare application**, with Python ownership/recovery also secured. [P0 verification](docs/p0-verification.md) links behavior, tests and production evidence. Public native ATS-shaped fixtures establish conditional support; they do not certify real employer portals.
+
 ### P0-01 — Verified account recovery and ownership
 
-- [ ] **Improvement / Verification · M1, M8:** Add a verified sign-in/recovery flow for an expired/lost session and another device. Preserve the existing secure cookie ownership and single-use migration protections; an email address or numeric profile ID alone must not grant access.
+- [x] **Improvement / Verification · M1, M8:** Add a verified sign-in/recovery flow for an expired/lost session and another device. Preserve the existing secure cookie ownership and single-use migration protections; an email address or numeric profile ID alone must not grant access.
 - **Done when:** an owner can recover the same workspace on a new browser, revoke sessions and log out; expired/replayed recovery links and cross-user access to profiles, resumes, guides and reports fail in integration tests.
-- **Related remaining work:** authenticate the Python API before any public deployment. Its current trusted-local numeric-ID access must not be described as public multi-user authentication. An identity provider or verified-email method needs an explicit implementation/configuration choice.
+- **Implemented choice:** Cloudflare supports user-verified passkeys and single-use recovery keys; Python now enforces cookie ownership and supports recovery keys, with passkeys explicitly unavailable. Email ownership is not asserted. Full Python/Worker feature parity remains P2-09.
 
 ### P0-02 — Per-opportunity resume edit, reject and reapproval
 
-- [ ] **Remaining · M4, M8; issues 24–25:** Add an editor for each planned resume, a clear reject/regenerate action, a comparison with its previous version and explicit review of the final version.
+- [x] **Remaining · M4, M8; issues 24–25:** Add an editor for each planned resume, a clear reject/regenerate action, a comparison with its previous version and explicit review of the final version.
 - **Done when:** edits create immutable versions; a profile, resume or material JD change invalidates the old approval; confirmation submits exactly the version the user reviewed. Rejected drafts cannot be submitted. Existing historical applications retain their original PDF.
 - **Product decision:** retain preview generation **before** “Confirm and Apply,” as required by issue 24. Document the conflict with M4's older wording instead of claiming both timing rules are satisfied.
 
 ### P0-03 — Portal compatibility and durable multi-step forms
 
-- [ ] **Remaining / Verification · M5:** Extend the existing shared form engine with explicit portal adapters, beginning with permitted public Greenhouse/Lever forms. Add step detection, required-answer validation, a final review gate and safe checkpoints for multi-page applications; retain the existing file-upload support.
+- [x] **Remaining / Verification · M5:** Extend the existing shared form engine with explicit portal adapters, beginning with permitted public Greenhouse/Lever forms. Add step detection, required-answer validation, a final review gate and safe checkpoints for multi-page applications; retain the existing file-upload support.
 - **Done when:** a controlled four-step form can recover from a pre-submission failure without losing approved facts or duplicating submission; expired jobs, login walls, CAPTCHA, unknown required questions and uncertain submission outcomes produce specific manual instructions. Publish a compatibility matrix that distinguishes discovery, JD verification, form filling and submission.
 - **Verification boundary:** use owned forms and sanctioned test environments. Real employer submission requires the user's explicit authorization for that opportunity; searching a portal does not provide it. Internshala login flows and LinkedIn Easy Apply are separate, currently unsupported integrations. Do not attempt CAPTCHA solving or bypass access restrictions.
 
 ### P0-04 — Provider degradation and actionable recovery
 
-- [ ] **Improvement · M1, M4–M6:** Improve the existing visible fallback with a bounded, user-triggered retry/regeneration flow, clear readiness/error states and provider health information. Recheck configured model availability through opt-in diagnostics rather than assuming a model name remains valid forever.
+- [x] **Improvement · M1, M4–M6:** Improve the existing visible fallback with a bounded, user-triggered retry/regeneration flow, clear readiness/error states and provider health information. Recheck configured model availability through opt-in diagnostics rather than assuming a model name remains valid forever.
 - **Done when:** 429s, timeouts, unavailable models and malformed responses are distinguishable; retry limits prevent expensive loops; regenerated PDFs require review. No failed extraction silently saves an empty profile, and no missing experience or answer is invented. Test recovery with both Groq and Gemini outages.
 - **Existing behavior to retain:** the saved-profile check produced nine ready PDFs, with three provider-selected drafts and six explicit deterministic fallbacks. Fallback is already implemented; reducing its frequency and improving recovery are the work here.
 
 ### P0-05 — Production capacity, cost visibility and alerts
 
-- [ ] **Improvement / Verification · M2, M5, M8:** Measure representative Worker CPU/memory, queue wait, browser usage, provider latency, failures and per-cycle consumption. Add redacted correlation IDs and actionable alerts for repeated failures, stuck work and exhausted budgets.
+- [x] **Improvement / Verification · M2, M5, M8:** Measure representative Worker CPU/memory, queue wait, browser usage, provider latency, failures and per-cycle consumption. Add redacted correlation IDs and actionable alerts for repeated failures, stuck work and exhausted budgets.
 - **Done when:** a repeatable load check reports percentiles and relevant failures, and the UI explains budget exhaustion without claiming success. Existing atomic claims, browser spacing, idempotency and no-repeat-after-uncertain-submit protections remain intact.
 - **Remaining M5 detail:** expose and verify configurable delays between submissions within provider minimum spacing and daily budgets; configuration must not allow those safeguards to be disabled.
 - **Constraint:** the current conservative application budget permits at most nine browser reservations/day; a quota of ten is not a promise of ten automatic applications in one day. Measure sustainable capacity before increasing limits. Keep credentials, PDF contents and session tokens out of telemetry; do not enable paid plans automatically.
 
 ### P0-06 — Answer review and queued-application cancellation
 
-- [ ] **Improvement · M4, M5, M8:** Let users review generated free-text answers alongside the selected PDF and cancel an authorized application before execution starts. Bind approved answers and the resume version to the authorization; protect against instructions embedded in an external JD/form changing the permitted task or exposing private facts.
+- [x] **Improvement · M4, M5, M8:** Let users review generated free-text answers alongside the selected PDF and cancel an authorized application before execution starts. Bind approved answers and the resume version to the authorization; protect against instructions embedded in an external JD/form changing the permitted task or exposing private facts.
 - **Done when:** queued cancellation is atomic against worker claims; editing an answer requires reapproval; unknown eligibility, work-authorization, availability or sensitive answers require user input. After execution/submission may have started, display an accurate state and reconciliation instructions instead of falsely promising the external application was withdrawn.
 - **Preserve:** existing no-repeat-after-uncertain-submission behavior. A local cancel action cannot undo an application already accepted by an employer.
 
@@ -116,6 +118,11 @@ Priority expresses importance, not a completion-time promise. Provider credentia
 
 - [ ] **Improvement / Verification · M1, M4:** Expand the quality corpus for long/multi-column resumes, unusual layouts, sparse profiles, links and non-ASCII names/content. Improve Unicode/font support where the current PDF renderer is limited, while retaining complete facts, readable wrapping and explicit size/content bounds.
 - **Done when:** extracted facts and selected resume facts are checked against the source; rendered pages have no clipping, missing sections or broken links across representative PDFs. Distinguish text-based extraction from OCR support rather than silently claiming scanned PDFs work. Regression evidence should include visual inspection and machine-readable text checks.
+
+### P1-09 — Reduce measured Worker CPU tail
+
+- [ ] **Improvement / Verification · M8:** Profile the deployed account, PDF/review, plan and telemetry paths, reduce avoidable CPU and repeat a representative load sample. The first post-P0 window had no invocation errors but CPU P95/P99 of 14.581/24.715 ms exceeded the published Free 10 ms HTTP allowance; occasional platform flexibility is not sustainable headroom.
+- **Done when:** measured route/cycle percentiles and failure rates justify the documented free-tier usage envelope. Retain bounded work, private telemetry and safe manual handoff; do not activate paid infrastructure automatically. [Measured evidence](docs/p0-operations.md#post-deployment-sample).
 
 ## P2 — scale discovery and finish delivery/preparation features
 
@@ -226,3 +233,11 @@ For an AI internship portfolio, the highest-value proof after the trust fixes is
 - [ ] Keep test identities/evidence sanitized and use owned application forms; never include keys, cookies, private resumes or real user data in public artifacts.
 
 Do not present planned features, restricted-source search results, mocked email delivery, an unused embedding helper, a generic form fixture or an estimated interview process as verified real-world capability.
+
+| Priority | Estimated elapsed time |
+|---|---:|
+| P0 | 10–20 hrs |
+| P1 | 10–20 hrs |
+| P2 | 15–30 hrs |
+| P3 | 5–10 hrs |
+| Total | 40–80 hrs |

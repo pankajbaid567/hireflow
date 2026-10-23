@@ -1,6 +1,8 @@
 # Cloudflare Pages and Workers deployment
 
-**Live frontend:** [hireflow-dashboard.pages.dev/profile](https://hireflow-dashboard.pages.dev/profile), Pages deployment `fa07b297`. **Live backend:** [hireflow-api.baidpankaj567.workers.dev](https://hireflow-api.baidpankaj567.workers.dev/health), Worker version `e400aaf9-f123-4f13-86df-da5cc22394b4`. D1 migrations through `0003` are applied. Public profile/deep-link, same-origin API health, anonymous-session and private-profile access checks passed. On 23 October 2026 (IST), the real production UI made five separate source searches in 10.834 seconds and verified eight listings: Internshala three, Wellfound three, Greenhouse two. Four were new and four already known. Nine ranked cards from three sites displayed original listing links; LinkedIn restrictions were shown. No application was confirmed during this check. The API service binding and server bootstrap secret are configured. The strict production Pages UI cycle passed through PDF-only signup, structured edits, plan/swap/private PDF, explicit controlled submission (`applied`, one attempt), prep with five questions/nine resources, report, library downloads, mobile, reload and logout. The separate legacy-session browser run passed same-owner transfer, private new-host cookie, fragment removal, replay rejection and both-origin logout. No employer application or real email was sent.
+**Current deployment, 23 October 2026:** [Pages dashboard](https://hireflow-dashboard.pages.dev/profile), deployment `ede2bc0b` ([deployment URL](https://ede2bc0b.hireflow-dashboard.pages.dev)); [API Worker](https://hireflow-api.baidpankaj567.workers.dev/health), version `cdaf5730-d2ea-4544-86b2-746b3694feb6`. D1 migrations through `0007` are applied. P0 local checks and the new production account-recovery/Pages application cycle passed; [verification](p0-verification.md) records the separate transfer rerun and evidence boundaries. Pages assets are `index-mGKqgBbi.js` and `index-BMktSa3T.css`. Publish with `npm run build:cloudflare` to select the Cloudflare API capabilities.
+
+**Historical baseline evidence:** public/deep-link, API health, anonymous-session and private-profile checks passed. Production UI made five source searches in 10.834 seconds and verified eight listings: Internshala three, Wellfound three, Greenhouse two; four new and four known. Nine cards displayed original links, with LinkedIn restrictions shown. No application was confirmed during discovery. The baseline controlled UI cycle passed PDF-only signup, edits, plan/swap/PDF, one controlled submission, prep, report/library, mobile and logout. Separate old-host migration passed same-owner transfer, fragment removal, replay rejection and both-origin logout. These earlier runs do not establish the new P0 production contract. No employer application or real email was sent.
 
 This runtime is separate from the original Python/PostgreSQL application. It runs the React dashboard on Pages and the API on a TypeScript Worker with D1, private KV files, Queues, and Browser Run. See the [milestone audit](milestone-audit.md) for original specification gaps and evidence.
 
@@ -32,6 +34,7 @@ The API's configured variables are:
 | `ALLOWED_ORIGINS` | `https://hireflow-dashboard.pages.dev,https://hireflow-blue-seven.vercel.app` during migration |
 | `PUBLIC_BASE_URL` | `https://hireflow-dashboard.pages.dev/api` |
 | `COOKIE_SAME_SITE` | `Lax` |
+| `WEBAUTHN_RP_ID` | Optional; defaults to the `PUBLIC_BASE_URL` hostname and must match it exactly |
 | `LLM_PROVIDER` / `GROQ_MODEL` | `groq` / `openai/gpt-oss-20b` |
 | `GEMINI_MODEL` | `gemini-3.8-flash` primary |
 | `GEMINI_FALLBACK_MODEL` | `gemini-3.5-flash-lite`; blank disables alternate models |
@@ -52,6 +55,11 @@ Pages runtime configuration uses service binding `API=hireflow-api`, public orig
 
 Keep `ACCESS_CODE`, `WORKSPACE_ACCESS_CODE`, `GROQ_API_KEY`, `GEMINI_API_KEY`, search keys, email keys, and sessions out of Git, command arguments, logs, screenshots, PDFs, and browser bundles. Never prefix a secret with `VITE_`. Normal users do not enter the operator credential.
 
+The new checkpoint implementation also derives its private-state encryption key
+from `ACCESS_CODE`. Rotation prevents restoration of earlier encrypted browser
+state; those attempts must hand off safely. Preserve durable no-replay markers
+rather than deleting them to force a retry.
+
 ## Deploy or redeploy
 
 Use Node 22+ and the locked Wrangler dependency in `cloudflare/`. Check the intended account, resource IDs, and current authorization before mutations. Existing resources already exist; **do not recreate them**.
@@ -65,7 +73,14 @@ npm run db:remote --prefix cloudflare
 npm run deploy --prefix cloudflare
 ```
 
-`check` runs type checking, tests, and a deployment dry run. `db:remote` applies every pending migration: `0002` adds single-use session transfers; `0003` adds draft-generation leases and immutable per-version tailoring metadata. Apply migrations before publishing code that uses those tables/columns. Back up D1 before schema changes. Deployment does not copy local database contents.
+`check` runs type checking, tests, and a deployment dry run. `db:remote` applies
+every pending migration: `0002` adds transfers; `0003` adds draft leases and
+tailoring metadata; `0004` adds account/passkey/recovery tables, session metadata
+and source-bound atomic transfers; `0005` adds private automation checkpoints;
+`0006` adds immutable answer/PDF review authorization; `0007` adds operational
+telemetry/diagnostics. Apply all pending migrations before code publication.
+Back up D1 first; deployment does not copy local database contents. Existing
+sessions survive `0004`, but old unbound transfer links require reminting.
 
 Build and publish Pages **from `frontend`**, so the Functions directory and Pages configuration resolve correctly:
 
@@ -73,13 +88,16 @@ Build and publish Pages **from `frontend`**, so the Functions directory and Page
 cd frontend
 npm ci
 npm test -- --run
-VITE_DEPLOYMENT_TARGET=cloudflare VITE_API_URL=/api \
-  VITE_PREVIOUS_DASHBOARD_URL=https://hireflow-blue-seven.vercel.app npm run build
+npm run build:cloudflare
 ../cloudflare/node_modules/.bin/wrangler pages deploy dist \
   --project-name hireflow-dashboard --branch main --commit-dirty=true
 ```
 
 In installed Wrangler 4.151.3, routine deployment of this existing Pages project uses the command above, without `--force`. Creating a new project has a separate compatibility path that may require `pages project create --force`; inspect that command’s installed help before provisioning another project. Check `pages deploy --help` before changing CLI versions. Do not run frontend publication from `cloudflare/` or create a second API Worker. Project creation is not part of routine redeployment.
+
+Use `build:cloudflare` for Pages: it selects the tracked public
+`frontend/.env.cloudflare` values. A generic `npm run build` targets the separate
+local/Python runtime and is not a substitute for the Pages release build.
 
 Configure the matching Pages bootstrap secret securely through the CLI prompt when setting up or rotating it:
 
@@ -101,15 +119,36 @@ The editor supports identity, skills, human-readable education, experience years
 
 Preferences include internship/job mode, target roles, preferred locations, minimum stipend in INR/month or salary in INR/year, excluded companies, weekly quota, and batch/individual review. Individual review authorizes one selected opportunity at a time. **Exclude company** persists the company in profile preferences, so it stays out of future plans until removed there. Setting a quota does not schedule autonomous submissions; every application still requires confirmation.
 
-Creation grants a 30-day host-only `HttpOnly; Secure; SameSite=Lax` cookie. D1 stores a hash of its random token. Private profile reads, edits, PDFs, reports and guides require the owning session. A numeric ID or known email is never ownership proof. Return in the same browser to restore the workspace. Sign out revokes that session; expiry, cleared cookies and a new device still need operator-assisted recovery.
+Creation grants a 30-day host-only `HttpOnly; Secure; SameSite=Lax` cookie. D1
+stores its token hash. Private reads, edits and artifacts require the owner;
+numeric IDs and email addresses are not credentials. New P0 account security
+supports authenticated passkey enrollment, signed-assertion login, eight
+single-use hashed recovery keys, and session listing/revocation. Save a recovery
+method before clearing cookies. Signed-out recovery is under **Already have a
+workspace? Sign in**; no operator code is requested. No email verification or
+email-only recovery is claimed. See [account security](account-security.md) for
+configuration, atomic recovery, capabilities and proof. The production virtual-authenticator/key-recovery flow passed on the canonical Pages origin.
 
 ### Existing browser session migration
 
 The old Vercel site is a **temporary migration bridge**, not a frontend mirror or the new hosting target. Deployment `dpl_DdxZgWdzsT78RJzRLLrokTJWMp5T` is promoted. Visiting an old dashboard SPA path automatically runs the bridge. Signed-out `/profile`, `/weekly-plan`, and `/applications` requests were verified to return HTTP 303 to the Pages profile screen, with `private, no-store` caching. The old API health check returns 200 and private profile reads return 401. A signed-in browser can transfer its workspace; that complete public transfer is a separate acceptance check. **Continue an existing workspace** on Pages opens the same old-origin bridge. Private old `/api/*` routes and the controlled QA asset remain temporarily for migration and bookmarks.
 
-The fixed bridge asks the Worker for an authenticated, single-use transfer and redirects with HTTP 303 to the approved Pages profile URL. The transfer appears only in a URL fragment, expires after five minutes, and is stored hashed in D1. Pages clears the fragment immediately, consumes it once through `/api/session/transfer/consume`, and receives a new host-only session. Atomic consumption rejects replay; user-supplied IDs, emails and redirect destinations cannot select the workspace.
+The bridge asks the Worker for an authenticated transfer and redirects with HTTP
+303 to the approved Pages profile URL. The five-minute token appears only in a
+fragment and is stored hashed. Pages clears the fragment and consumes it once
+through `/api/session/transfer/consume`. The new `0004` contract requires its
+source session to remain active and atomically claims the link, inserts the new
+session and consumes it. Logout/individual revocation invalidates pending links;
+a storage failure does not spend a link. Legacy unbound links are rejected and
+must be reminted from a signed-in browser. IDs, emails and caller-supplied
+destinations cannot choose an owner.
 
-Keep the old origin and bridge available until existing users have migrated and the public transfer flow is verified. The bridge cannot recover a lost or expired old cookie. Administrative `POST /session/login` still requires email plus the separate private operator credential; there is no public email-only, password, or magic-link recovery UI. Do not share migration links or record token-bearing fragments in proofs.
+Keep the old bridge available while owners still need migration. It cannot
+recover a lost old cookie; a previously saved passkey or recovery key is the
+normal new recovery path. Administrative `POST /session/login` remains a
+separate private operator mechanism, not the public sign-in UI. Do not share
+transfer links or record token-bearing fragments in proofs. The stricter P0
+transfer/recovery contract is deployed. New production proof passed same-owner migration, fragment removal and replay rejection. The separate transfer rerun also passed logout on both origins; [release evidence](p0-verification.md) retains the earlier timeout accurately.
 
 ## Resume extraction and PDF quality
 
@@ -196,7 +235,18 @@ The private profile request must return 401 without a session. Also verify deep 
 
 Record exact deployment IDs, provider models, results and limits with release verification and the [audit](milestone-audit.md). Earlier Vercel evidence is historical; it does not prove the final Pages release.
 
-Release checks on 23 October 2026 (IST): Python **294 passed / 3 opt-in skipped**; Worker **274 passed / 4 opt-in skipped**, typecheck and deployment dry run passed; frontend **93 passed**, production build passed; isolated React/workerd/D1/file-storage browser E2E passed. Production proof is split between the complete Pages cycle (`06be6dc4268c`, `pagesPipelineStatus=passed`) and the transfer-only rerun (`67cd69ac3e90`, `status=passed`). The first run reached all migration/security assertions but hit the harness’s 30-second old-host logout timeout; the rerun used a JSON logout body and the existing 65-second API deadline and verified logout on both hosts. Private proof/screenshots stay outside Git. Synthetic QA records were scoped for cleanup; the real profile, immutable resume versions and discovered opportunities are retained.
+Final P0 checks: Python **299 passed / 3 opt-in skipped**; Worker **369
+passed / 4 opt-in skipped**, typecheck/dry-run passed; frontend **112 passed**,
+both builds passed; isolated React/workerd/D1/file-storage browser E2E passed.
+All three GitHub CI workflows passed for `a664041`, including PostgreSQL
+migration rollback/checks. New live account recovery passed, and the new Pages
+PDF-upload → exact review → controlled Browser Run → prep/report/mobile/logout
+cycle passed. The combined script’s last old-Vercel logout POST timed out;
+the official transfer-only rerun passed migration, replay rejection and logout
+on both origins. See [P0 verification](p0-verification.md)
+for exact scopes, private proof locations and measured CPU/capacity limits.
+No real employer application or real email was sent. Private proofs stay outside
+Git; existing real profiles, artifacts, opportunities and browser usage remain.
 
 Discovery makes separate parallel provider requests per configured source, then verifies candidates in rotation. Internship mode searches Internshala, Wellfound, Greenhouse, Lever and LinkedIn; job mode searches Naukri, LinkedIn, Greenhouse and Lever. Each request asks for up to four candidates; the combined operation accepts at most eight verified listings within 24 total requests and 35 seconds. Provider domain filters are enforced again locally. Partial site failures preserve other results; total provider failure returns a sanitized 503 with current per-site statuses. Source inclusion does not imply authenticated feeds or portal-specific auto-application. The actual production search UI and 390 px mobile layout passed separately from the earlier controlled submission cycle.
 
