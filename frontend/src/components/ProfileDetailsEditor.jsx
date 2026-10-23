@@ -17,7 +17,7 @@ function EntrySection({ title, kind, items, create, onChange, children }) {
     })}</fieldset>)}
   </section>;
 }
-export default function ProfileDetailsEditor({ form, onChange, initiallyOpen = false }) {
+export default function ProfileDetailsEditor({ form, onChange, initiallyOpen = false, helpText = 'Include only accurate details. Changes update future drafts; resumes already submitted stay in your library.' }) {
   const experiences = list(form.experience), projects = list(form.projects), links = list(form.links);
   return <details className="profile-details" open={initiallyOpen || undefined}><summary><span><strong>Resume details</strong><small>Review experience, projects, links, and other details.</small></span><ChevronDown size={18} /></summary><div className="profile-details-body">
     <Field title="Professional summary" label="Professional summary" multiline maxLength={3000} placeholder="Describe your actual background and the work you enjoy." value={form.summary} onChange={value => onChange('summary', value)} />
@@ -33,6 +33,6 @@ export default function ProfileDetailsEditor({ form, onChange, initiallyOpen = f
       {links.map((link, index) => <div className="profile-link-row" key={index}><Field title="Label" label={`Link ${index + 1} label`} value={link.label} maxLength={100} placeholder="e.g. Portfolio" onChange={value => onChange('links', links.map((item, position) => position === index ? { ...item, label: value } : item))} /><Field title="URL" label={`Link ${index + 1} URL`} value={link.url} type="url" maxLength={2048} placeholder="https://" onChange={value => onChange('links', links.map((item, position) => position === index ? { ...item, url: value } : item))} /><button type="button" className="icon-button" aria-label={`Remove link ${index + 1}`} onClick={() => onChange('links', links.filter((_, position) => position !== index))}><Trash2 size={16} /></button></div>)}
     </section>
     <div className="form-grid profile-detail-section"><Field title="Certifications · one per line" label="Certifications" multiline value={text(form.certifications)} onChange={value => onChange('certifications', value)} /><Field title="Achievements · one per line" label="Achievements" multiline value={text(form.achievements)} onChange={value => onChange('achievements', value)} /><Field title="Spoken languages · separated by commas" label="Spoken languages" value={list(form.languages).join(', ')} onChange={value => onChange('languages', value)} /></div>
-    <p className="field-help">Include only accurate details. Changes update future drafts; resumes already submitted stay in your library.</p>
+    <p className="field-help">{helpText}</p>
   </div></details>;
 }

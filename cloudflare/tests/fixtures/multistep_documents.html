@@ -1,0 +1,7 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Controlled application step 3</title></head><body>
+<h1>Controlled four-step application — documents</h1>
+<form id="application-form" data-qa="application-form" data-application-step="3">
+<label>Why do you want to work here?<textarea name="motivation" required></textarea></label><label>Resume PDF<input name="resume" type="file" accept=".pdf" required></label>
+<button type="submit">Review application</button></form>
+<script>document.querySelector('form').onsubmit=event=>{event.preventDefault();sessionStorage.setItem('application_flow_token','documents');const data=new FormData(event.target),file=data.get('resume');localStorage.setItem('documents',JSON.stringify({motivation:data.get('motivation'),resume:{name:file.name,type:file.type,size:file.size}}));location.assign('/multi/review');};</script>
+</body></html>

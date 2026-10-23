@@ -310,10 +310,18 @@ def verify(client: CurlSession, proof: dict[str, Any]) -> None:
     # The URL was constructed above from the exact owner-controlled fixture.
     # This single confirmation is never retried, including on HTTP failure.
     proof["stage"] = "confirm_controlled_fixture"
+    review_draft, _ = client.json(f"/applications/{app_id}/review")
+    approved, _ = client.json(
+        f"/applications/{app_id}/review",
+        method="POST", expected=201,
+        data={"resume_version": review_draft["resume_version"],
+              "profile_version": review_draft["profile_version"], "reviewed": True,
+              "answers": {item["question"]: item["answer"] for item in review_draft["questions"] if item["answer"].strip()}},
+    )
     confirmation, _ = client.json(
         f"/weekly-plan/{user_id}/confirm",
         method="POST",
-        data={"confirmed_job_ids": [job_id]},
+        data={"confirmed_job_ids": [job_id], "review_ids": [approved["review_id"]]},
     )
     require(
         confirmation.get("status") == "success", "Synthetic confirmation was rejected"

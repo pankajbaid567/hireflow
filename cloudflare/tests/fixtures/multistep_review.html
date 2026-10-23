@@ -1,0 +1,5 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Controlled final review</title></head><body>
+<h1>Controlled application — final review</h1><pre id="review"></pre>
+<form data-application-step="4" method="post" action="/multi/sent"><button type="submit">Submit application</button></form>
+<script>const state={session_token:sessionStorage.getItem('application_flow_token'),...JSON.parse(localStorage.getItem('contact')||'{}'),...JSON.parse(localStorage.getItem('background')||'{}'),...JSON.parse(localStorage.getItem('documents')||'{}')};document.querySelector('#review').textContent=JSON.stringify(state);window.submissionCount=0;document.querySelector('form').onsubmit=async event=>{event.preventDefault();window.submissionCount++;window.submitted=state;const response=await fetch('/multi/sent',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(state)});if(response.ok)document.body.insertAdjacentHTML('beforeend','<p>Application submitted successfully</p>');};</script>
+</body></html>

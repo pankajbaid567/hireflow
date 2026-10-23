@@ -2,19 +2,24 @@ import { ApiError, type Env, json } from './types';
 import { first, run } from './storage';
 
 const cookieName = 'hireflow_session';
+export async function sessionHash(request: Request): Promise<string | null> {
+  const token=request.headers.get('cookie')?.split(';').map(value=>value.trim()).find(value=>value.startsWith(`${cookieName}=`))?.slice(cookieName.length+1);
+  return token && /^[a-f0-9]{64}$/.test(token) ? digest(token) : null;
+}
 export async function digest(value: string) {
   return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value))), n => n.toString(16).padStart(2, '0')).join('');
 }
 export async function sessionUser(request: Request, env: Env): Promise<number | null> {
-  const token = request.headers.get('cookie')?.split(';').map(s => s.trim()).find(s => s.startsWith(`${cookieName}=`))?.slice(cookieName.length + 1);
-  if (!token || !/^[a-f0-9]{64}$/.test(token)) return null;
-  const row = await first(env, 'SELECT user_id FROM sessions WHERE token_hash=? AND expires_at>?', await digest(token), new Date().toISOString());
+  const tokenHash=await sessionHash(request);
+  if (!tokenHash) return null;
+  const row = await first(env, 'SELECT user_id FROM sessions WHERE token_hash=? AND expires_at>?', tokenHash, new Date().toISOString());
   return row?.user_id ?? null;
 }
 export async function requireUser(request: Request, env: Env, id?: number) {
   const userId = await sessionUser(request, env);
   if (!userId) throw new ApiError(401, 'Your session is unavailable. Open your profile page to continue.');
   if (id !== undefined && userId !== id) throw new ApiError(404, 'Resource not found');
+  if (env.OPERATION_CONTEXT) env.OPERATION_CONTEXT.user_id=userId;
   return userId;
 }
 export async function checkAccessCode(request: Request, env: Env, supplied?: string) {
@@ -58,11 +63,17 @@ function cookie(token: string, maxAge: number, request: Request, env: Env) {
   const sameSite = env.COOKIE_SAME_SITE === 'None' && secure ? 'None' : 'Lax';
   return `${cookieName}=${token}; Path=/; HttpOnly; SameSite=${sameSite}; Max-Age=${maxAge}${secure}`;
 }
-export async function startSession(request: Request, env: Env, userId: number) {
+export async function prepareSession(request: Request, env: Env, userId: number) {
   const bytes = crypto.getRandomValues(new Uint8Array(32));
   const token = Array.from(bytes, n => n.toString(16).padStart(2, '0')).join('');
-  await run(env, 'INSERT INTO sessions(token_hash,user_id,expires_at) VALUES(?,?,?)', await digest(token), userId, new Date(Date.now() + 30 * 86400000).toISOString());
-  return cookie(token, 30 * 86400, request, env);
+  const agent=request.headers.get('user-agent') || '';
+  const label=/Firefox/i.test(agent)?'Firefox':/Edg\//i.test(agent)?'Edge':/Chrome|Chromium/i.test(agent)?'Chrome':/Safari/i.test(agent)?'Safari':'Browser session';
+  return {token_hash:await digest(token),user_id:userId,expires_at:new Date(Date.now()+30*86400000).toISOString(),id:crypto.randomUUID(),created_at:new Date().toISOString(),label,cookie:cookie(token,30*86400,request,env)};
+}
+export async function startSession(request: Request, env: Env, userId: number) {
+  const session=await prepareSession(request,env,userId);
+  await run(env, 'INSERT INTO sessions(token_hash,user_id,expires_at,id,created_at,label) VALUES(?,?,?,?,?,?)',session.token_hash,session.user_id,session.expires_at,session.id,session.created_at,session.label);
+  return session.cookie;
 }
 export async function logout(request: Request, env: Env) {
   const token = request.headers.get('cookie')?.match(/(?:^|;\s*)hireflow_session=([a-f0-9]{64})/)?.[1];

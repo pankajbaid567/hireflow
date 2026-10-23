@@ -64,6 +64,8 @@
     "GEMINI_MODEL": "gemini-3.8-flash",
     "GEMINI_FALLBACK_MODEL": "gemini-3.5-flash-lite",
     "BROWSER_DAILY_BUDGET_SECONDS": "540",
+    "SUBMISSION_DELAY_SECONDS": "21",
+    "OPERATIONS_RETENTION_DAYS": "7",
     "BROWSER_ENABLED": "true",
     "EMAIL_PROVIDER": "resend",
     "FROM_EMAIL": "hireflow@example.com"

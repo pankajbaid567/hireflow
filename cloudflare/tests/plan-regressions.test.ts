@@ -12,6 +12,11 @@ async function request(path:string,method='GET',body?:unknown,authenticated=true
   return mf.dispatchFetch(`https://worker.example${path}`,{method,headers:{'Content-Type':'application/json','X-HireFlow-Access-Code':code,...(authenticated?{Cookie:cookie}:{})},...(body!==undefined?{body:JSON.stringify(body)}:{})});
 }
 async function plan(){const response=await request(`/weekly-plan/${id}`);expect(response.status,await response.clone().text()).toBe(200);return response.json() as Promise<any>;}
+async function reviewedPayload(items:any[]){
+  const user=await (await request(`/profile/${id}`)).json() as any,review_ids=[];
+  for(const item of items){const response=await request(`/applications/${item.application_id}/review`,'POST',{resume_version:item.resume_version,profile_version:user.profile_version,reviewed:true,answers:{}});expect(response.status,await response.clone().text()).toBe(201);review_ids.push((await response.json() as any).review_id);}
+  return{confirmed_job_ids:items.map(item=>item.job_id),review_ids};
+}
 async function addJobs(n:number){
   for(let i=0;i<n;i++){
     const response=await request(`/jobs/${id}`,'POST',{title:`Python ${i} Intern`,company:'Test Co',description:`Python and Docker internship. ${i===0?'LangChain RAG':'TypeScript'}`,url:`https://example.com/apply/${i}`,listing_type:'internship'});
@@ -39,7 +44,7 @@ describe('Cloudflare plan regressions',()=>{
     const pdf=await request(current.plan[0].resume_url);expect(pdf.status).toBe(200);expect((await pdf.text()).startsWith('%PDF-')).toBe(true);
     const cached=await plan();expect(cached.plan[0].resume_version).toBe(current.plan[0].resume_version);expect(cached.plan[0].resume_url).toBe(current.plan[0].resume_url);
     expect((await db.prepare('SELECT count(*) AS n FROM resumes').first<any>())!.n).toBe(1);
-    expect((await request(`/weekly-plan/${id}/confirm`,'POST',{confirmed_job_ids:[current.plan[0].job_id]})).status).toBe(200);
+    expect((await request(`/weekly-plan/${id}/confirm`,'POST',await reviewedPayload(current.plan))).status).toBe(200);
     expect(await db.prepare('SELECT master_profile,profile_version FROM users WHERE id=?').bind(id).first<any>()).toEqual({master_profile:formatted,profile_version:original!.profile_version});
   });
   it('returns the real source, listing URL, location and mode for review',async()=>{
@@ -52,7 +57,7 @@ describe('Cloudflare plan regressions',()=>{
     await addJobs(5);const first=await plan();expect(first.plan).toHaveLength(5);expect(first.preparing).toBe(true);expect(first.plan.filter((a:any)=>a.resume_url)).toHaveLength(3);
     expect((await request(`/weekly-plan/${id}/confirm`,'POST',{confirmed_job_ids:first.plan.map((a:any)=>a.job_id)})).status).toBe(400);
     const ready=await plan();expect(ready.preparing).toBe(false);expect(ready.plan.every((a:any)=>a.resume_url)).toBe(true);
-    expect((await request(`/weekly-plan/${id}/confirm`,'POST',{confirmed_job_ids:ready.plan.map((a:any)=>a.job_id)})).status).toBe(200);
+    expect((await request(`/weekly-plan/${id}/confirm`,'POST',await reviewedPayload(ready.plan))).status).toBe(200);
     const stored=await db.prepare("SELECT count(*) AS n FROM applications WHERE status='confirmed'").first<any>();expect(stored!.n).toBe(5);
   });
   it('invalidates reviewed drafts after a profile edit, refreshes five scores at a time, and preserves historical PDFs',async()=>{
@@ -67,7 +72,8 @@ describe('Cloudflare plan regressions',()=>{
   });
   it('enforces a reduced quota and preserves submitted PDFs across later profile edits',async()=>{
     await addJobs(2);const old=await plan();const first=old.plan[0];
-    expect((await request(`/weekly-plan/${id}/confirm`,'POST',{confirmed_job_ids:[first.job_id]})).status).toBe(200);
+    expect((await request(`/weekly-plan/${id}/confirm`,'POST',await reviewedPayload([first]))).status).toBe(200);
+    await db.prepare("UPDATE applications SET status='applied' WHERE id=?").bind(first.application_id).run();
     expect((await request(`/profile/${id}`,'PATCH',{weekly_quota:1,skills:['Python','Docker']})).status).toBe(200);
     const current=await plan();expect(current.plan).toHaveLength(0);
     expect((await request(first.resume_url)).status).toBe(200);
@@ -84,7 +90,7 @@ describe('Cloudflare plan regressions',()=>{
     expect((await request(`/weekly-plan/${id}/confirm`,'POST',{confirmed_job_ids:[initial.plan[0].job_id]})).status).toBe(400);
   });
   it('commits at most one confirmation when the same plan is confirmed concurrently',async()=>{
-    await addJobs(1);const draft=await plan();const payload={confirmed_job_ids:[draft.plan[0].job_id]};
+    await addJobs(1);const draft=await plan();const payload=await reviewedPayload(draft.plan);
     const results=await Promise.all([request(`/weekly-plan/${id}/confirm`,'POST',payload),request(`/weekly-plan/${id}/confirm`,'POST',payload)]);
     expect(results.filter(r=>r.status===200)).toHaveLength(1);
     const events=await db.prepare("SELECT count(*) AS n FROM application_status_events WHERE status='confirmed'").first<any>();expect(events!.n).toBe(1);

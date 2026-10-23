@@ -1,8 +1,7 @@
-
 from src.config.settings import get_settings
 from src.models import Application, ApplicationStatus, Job, ListingType
 from src.pipelines.match_scorer import score_jobs_for_user
-from tests.helpers import seed_application
+from tests.helpers import seed_application, authenticate_client
 
 
 def test_profile_null_optional_fields_are_normalized_and_bad_projects_rejected(
@@ -58,6 +57,7 @@ def test_profile_changes_require_review_and_keep_all_resume_versions(
 ):
     monkeypatch.setattr(get_settings(), "local_storage_path", str(tmp_path))
     app = seed_application(db_session, ApplicationStatus.pending)
+    authenticate_client(api_client, db_session, app.user_id)
     app.user.mode = "internship"
     app.user.weekly_quota = 1
     db_session.commit()
@@ -93,6 +93,7 @@ def test_latest_report_email_is_explicit_and_uses_profile_recipient(
 ):
     monkeypatch.setattr(get_settings(), "local_storage_path", str(tmp_path))
     application = seed_application(db_session, ApplicationStatus.applied)
+    authenticate_client(api_client, db_session, application.user_id)
     from src.agents.report_generator import ReportGenerator
 
     report = ReportGenerator(db_session).generate(application.user_id)

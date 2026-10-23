@@ -25,3 +25,33 @@
 
 /* Verified discovery sources */
 .discovery-results{margin-top:22px}.discovery-results h3{font-size:12px;color:#52694b}.discovery-results>p{font-size:10px;color:#84917b;line-height:1.8;margin-top:5px}.discovery-results ul{list-style:none;padding:0;margin:13px 0 0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.discovery-results li{border:1px solid var(--line);border-radius:8px;padding:12px 14px;display:flex;justify-content:space-between;align-items:flex-start;gap:13px;min-width:0}.discovery-results li>div{min-width:0}.discovery-results strong{display:block;font-size:11px;font-weight:550;overflow-wrap:anywhere}.discovery-results span{display:block;font-size:9px;color:#8a9680;line-height:1.8;margin-top:4px}.discovery-source-result{text-align:right}.discovery-source-result strong{color:#6d835e;white-space:nowrap}.job-meta{flex-wrap:wrap;row-gap:5px}.job-actions a.text-button{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}@media(max-width:680px){.discovery-results ul{grid-template-columns:1fr}.discovery-results li{padding:12px}.job-meta{column-gap:8px}}
+/* Review remains readable on mobile and keeps all version/answer actions inside
+   the modal rather than allowing the background confirmation controls. */
+.application-review{width:min(1100px,96vw);height:auto;max-height:92vh;display:flex;flex-direction:column}
+.workspace-recovery{padding:18px 22px;margin-bottom:24px;font-size:13px}
+.workspace-recovery>summary{font-weight:650;color:var(--green)}
+.workspace-recovery .card{margin-top:20px;max-width:720px;display:grid;gap:14px}
+.workspace-recovery form{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:end}
+.account-security{margin-top:26px;padding:24px;font-size:13px}
+.account-security>p{margin:10px 0 16px;max-width:850px;color:#637166;line-height:1.7}
+.account-security>h3{margin-top:25px;margin-bottom:10px}
+.account-security>label{max-width:420px;margin-bottom:12px}
+.account-security ul{list-style:none;display:grid;gap:12px;margin:16px 0;overflow-wrap:anywhere}
+.account-security li{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.account-security li button,.account-security [aria-label="New recovery keys"] button{color:var(--green);text-decoration:underline;padding:7px}
+.account-security textarea{margin:12px 0;overflow-wrap:anywhere;font-family:monospace}
+.application-review header p{margin:5px 0;color:var(--muted,#58645f)}
+.review-body{padding:24px;overflow-y:auto;overscroll-behavior:contain}
+.review-tabs{flex-wrap:wrap;margin-bottom:20px}
+.review-answers{margin:24px 0}
+.review-answer{border:1px solid var(--border,#dce2dd);border-radius:12px;padding:16px;margin:12px 0;display:grid;gap:12px;min-width:0}
+.review-consent{display:flex;align-items:flex-start;gap:10px;margin:22px 0;font-weight:600}
+.review-consent input{width:auto;flex-shrink:0;margin-top:4px}
+.review-maintenance{border-top:1px solid var(--border,#dce2dd);margin-top:28px;padding-top:16px;display:flex;gap:16px;flex-wrap:wrap}
+.review-maintenance p{width:100%}
+.resume-comparison{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin:18px 0}
+.resume-comparison section{min-width:0;padding:16px;background:var(--surface,#f6f8f5);border-radius:12px}
+.resume-comparison pre{white-space:pre-wrap;overflow-wrap:anywhere;font:inherit;font-size:13px;max-height:480px;overflow-y:auto}
+.job-review-state{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:12px 24px;border-top:1px solid var(--border,#dce2dd);font-size:13px}
+@media(max-width:640px){.review-body{padding:16px}.resume-comparison{grid-template-columns:1fr}.application-review{max-height:95vh}.job-review-state{padding:12px 16px}.review-tabs .button{flex:1}}
+@media(max-width:640px){.workspace-recovery form{grid-template-columns:1fr}.account-security{padding:18px}.account-security .button{white-space:normal}}

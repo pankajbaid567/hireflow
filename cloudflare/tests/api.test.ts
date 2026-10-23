@@ -38,6 +38,12 @@ async function plan(userId: number, cookie: string) {
   const response = await request(`/weekly-plan/${userId}`, { cookie }); expect(response.status, await response.clone().text()).toBe(200);
   return response.json() as Promise<any>;
 }
+async function reviewed(userId:number,cookie:string,items:any[]){
+  const user=await (await request(`/profile/${userId}`,{cookie})).json() as any;
+  const review_ids=[];
+  for(const item of items){const response=await request(`/applications/${item.application_id}/review`,{cookie,body:{resume_version:item.resume_version,profile_version:user.profile_version,reviewed:true,answers:{}}});expect(response.status,await response.clone().text()).toBe(201);review_ids.push((await response.json() as any).review_id);}
+  return{confirmed_job_ids:items.map(item=>item.job_id),review_ids};
+}
 
 beforeAll(() => {
   bundle = buildSync({ entryPoints: [`${root}tests/runtime.ts`], bundle: true, format: 'esm', platform: 'browser', target: 'es2022', external: ['node:*', 'cloudflare:*'], write: false, logLevel: 'silent' }).outputFiles[0].text;
@@ -102,7 +108,7 @@ describe('Cloudflare API with isolated D1 and R2', () => {
     expect((await request(first.resume_url)).status).toBe(401);
     const swapped = await request(`/weekly-plan/${owner.user.id}/swap`, { cookie: owner.cookie, body: { remove_job_id: first.job_id, add_job_id: draft.alternatives[0].job_id } }); expect(swapped.status, await swapped.clone().text()).toBe(200);
     const current = await swapped.json() as any; expect(current.plan.some((item: any) => item.job_id === draft.alternatives[0].job_id)).toBe(true);
-    const confirmed = await request(`/weekly-plan/${owner.user.id}/confirm`, { cookie: owner.cookie, body: { confirmed_job_ids: current.plan.map((item: any) => item.job_id) } }); expect(confirmed.status, await confirmed.clone().text()).toBe(200);
+    const confirmed = await request(`/weekly-plan/${owner.user.id}/confirm`, { cookie: owner.cookie, body:await reviewed(owner.user.id,owner.cookie,current.plan) }); expect(confirmed.status, await confirmed.clone().text()).toBe(200);
     const rows = await db.prepare("SELECT status FROM applications WHERE user_id=? AND status='confirmed'").bind(owner.user.id).all<any>(); expect(rows.results).toHaveLength(2);
     const outbox = await db.prepare("SELECT dispatched_at FROM outbox WHERE kind='apply'").all<any>(); expect(outbox.results).toHaveLength(2); expect(outbox.results.every(row => row.dispatched_at)).toBe(true);
     const duplicate = await request(`/weekly-plan/${owner.user.id}/confirm`, { cookie: owner.cookie, body: { confirmed_job_ids: current.plan.map((item: any) => item.job_id) } }); expect(duplicate.status).toBeGreaterThanOrEqual(400);
@@ -110,8 +116,9 @@ describe('Cloudflare API with isolated D1 and R2', () => {
 
   it('records manual recovery, status history, prep guidance, and private weekly reports', async () => {
     const owner = await profile(); await job(owner.user.id, owner.cookie); const draft = await plan(owner.user.id, owner.cookie); const item = draft.plan[0];
-    expect((await request(`/weekly-plan/${owner.user.id}/confirm`, { cookie: owner.cookie, body: { confirmed_job_ids: [item.job_id] } })).status).toBe(200);
-    const processed = await request('/__test/queue', { body: { application_id: item.application_id, kind: 'apply' } }); expect(processed.status).toBe(200); expect(await processed.json()).toMatchObject({ acknowledged: true });
+    const payload=await reviewed(owner.user.id,owner.cookie,[item]);
+    expect((await request(`/weekly-plan/${owner.user.id}/confirm`, { cookie: owner.cookie, body:payload })).status).toBe(200);
+    const processed = await request('/__test/queue', { body: { application_id: item.application_id, kind: 'apply',review_id:payload.review_ids[0] } }); expect(processed.status).toBe(200); expect(await processed.json()).toMatchObject({ acknowledged: true });
     const tracker = await request(`/applications/${owner.user.id}?status=needs_action&page=1&page_size=1`, { cookie: owner.cookie }); expect(tracker.status).toBe(200); const data = await tracker.json() as any;
     expect(data.total).toBe(1); expect(data.items[0].failure_reason).toContain('disabled'); expect(data.items[0].manual_action_url).toBe('https://example.com/careers/python');
     expect(data.items[0].status_history.map((event: any) => event.status)).toEqual(expect.arrayContaining(['pending', 'planned', 'confirmed', 'needs_action']));

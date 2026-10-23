@@ -33,7 +33,8 @@ async function ready(url) {
   throw new Error(`Server did not start: ${url}`);
 }
 async function processTask(applicationId, kind) {
-  const response = await mf.dispatchFetch(`${backend}/__test/queue`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ application_id: applicationId, kind }) });
+  const db=await mf.getD1Database('DB'),row=await db.prepare('SELECT confirmed_review_id FROM applications WHERE id=?').bind(applicationId).first();
+  const response = await mf.dispatchFetch(`${backend}/__test/queue`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ application_id: applicationId, kind,...(kind==='apply'?{review_id:row.confirmed_review_id}:{}) }) });
   assert.equal(response.status, 200, await response.clone().text());
   assert.equal((await response.json()).acknowledged, true);
 }
@@ -125,8 +126,35 @@ try {
   await page.getByRole('dialog').waitFor({ state: 'hidden' });
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.screenshot({ path: '/tmp/hireflow-cloudflare-desktop.png', fullPage: true, animations: 'disabled' });
+  assert.equal(await page.getByRole('button',{name:'Confirm and Apply',exact:true}).isDisabled(),true);
+  await page.getByRole('button',{name:'Review AI Engineer Intern',exact:true}).click();
+  await page.getByRole('button',{name:'Edit this resume',exact:true}).click();
+  await page.getByLabel('Professional summary',{exact:true}).fill('Computer science student who built Python APIs and integration tests.');
+  await page.getByRole('button',{name:'Save new PDF version',exact:true}).click();
+  await page.getByRole('link',{name:'Open PDF v2',exact:true}).waitFor();
+  await page.getByRole('button',{name:'Compare versions',exact:true}).click();
+  assert.equal(await page.getByRole('link',{name:'Version 1',exact:true}).count(),1);
+  await page.getByRole('button',{name:'PDF and answers',exact:true}).click();
+  await page.getByRole('checkbox',{name:/I reviewed PDF v2/}).check();
+  await page.getByRole('button',{name:'Approve PDF and answers',exact:true}).click();
+  await page.getByRole('dialog').waitFor({state:'hidden'});
   await page.getByRole('button', { name: 'Confirm and Apply', exact: true }).click();
   await page.getByText(/1 applications confirmed and queued/).waitFor();
+  const firstAuthorization=(await db.prepare('SELECT confirmed_review_id FROM applications WHERE id=?').bind(application.application_id).first()).confirmed_review_id;
+  await navigation.getByRole('link',{name:'Applications',exact:true}).click();
+  await page.getByRole('button',{name:'Cancel queued application',exact:true}).click();
+  await page.getByText(/Cancelled before execution/).waitFor();
+  await navigation.getByRole('link',{name:'Weekly plan',exact:true}).click();
+  assert.equal(await page.getByRole('button',{name:'Confirm and Apply',exact:true}).isDisabled(),true);
+  await page.getByRole('button',{name:'Review AI Engineer Intern',exact:true}).click();
+  await page.getByRole('checkbox',{name:/I reviewed PDF v2/}).check();
+  await page.getByRole('button',{name:'Approve PDF and answers',exact:true}).click();
+  await page.getByRole('dialog').waitFor({state:'hidden'});
+  await page.getByRole('button',{name:'Confirm and Apply',exact:true}).click();
+  await page.getByText(/1 applications confirmed and queued/).waitFor();
+  const stale=await mf.dispatchFetch(`${backend}/__test/queue`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({application_id:application.application_id,kind:'apply',review_id:firstAuthorization})});
+  assert.equal((await stale.json()).acknowledged,true);
+  assert.equal((await db.prepare('SELECT status FROM applications WHERE id=?').bind(application.application_id).first()).status,'confirmed');
   await processTask(application.application_id, 'apply');
   await navigation.getByRole('link', { name: 'Applications', exact: true }).click();
   await page.getByText('Browser automation is disabled. Apply manually using the reviewed resume.').waitFor();
@@ -160,7 +188,7 @@ try {
   assert.equal((await context.request.get(`${dashboard}/api${application.resume_url}`)).status(), 401);
   assert.equal((await (await context.request.get(`${dashboard}/api/session`)).json()).authenticated, false);
   assert.deepEqual(errors, []);
-  const proof = { status: 'passed', checkedAt: new Date().toISOString(), checks: ['private profile/session', 'structured experience/project editor', 'summary/links/compensation/preferences persisted', 'manual job import', 'ranked plan and actual PDF preview', 'confirmation queue', 'needs_action tracker', 'prep guide', 'private HTML report', 'session reload', 'expanded profile mobile navigation and overflow', 'logout revokes private downloads'], pageErrors: errors, reportHtml: '/tmp/hireflow-cloudflare-report.html', screenshots: ['/tmp/hireflow-cloudflare-desktop.png', '/tmp/hireflow-cloudflare-mobile.png'] };
+  const proof = { status: 'passed', checkedAt: new Date().toISOString(), checks: ['private profile/session', 'structured experience/project editor', 'summary/links/compensation/preferences persisted', 'manual job import', 'ranked plan and actual PDF preview', 'immutable per-opportunity resume edit and PDF v2', 'version comparison and exact PDF/answer approval', 'queued cancellation and stale delivery rejection', 'confirmation queue', 'needs_action tracker', 'prep guide', 'private HTML report', 'session reload', 'expanded profile mobile navigation and overflow', 'logout revokes private downloads'], pageErrors: errors, reportHtml: '/tmp/hireflow-cloudflare-report.html', screenshots: ['/tmp/hireflow-cloudflare-desktop.png', '/tmp/hireflow-cloudflare-mobile.png'] };
   writeFileSync('/tmp/hireflow-cloudflare-e2e-proof.json', JSON.stringify(proof, null, 2));
   console.log(JSON.stringify(proof, null, 2));
 } finally {

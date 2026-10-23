@@ -1,4 +1,5 @@
 import type { Env } from './types';
+import { classifyProviderError, recordProviderOutcome, type ProviderName } from './provider_health';
 
 type Data = Record<string, any>;
 type JobInput = { title: string; description?: string; listing_type?: string; location?: string; company?: string };
@@ -104,7 +105,7 @@ export function scoreMatch(profile: Data, job: JobInput): { score: number; gaps:
 }
 
 class IntelligenceError extends Error {
-  constructor(message: string, readonly status?: number, readonly retryable = false, readonly category?: string) { super(message); }
+  constructor(message: string, readonly status?: number, readonly retryable = false, readonly category?: string, readonly retryAfter?: string | null) { super(message); }
 }
 const responseControllers = new WeakMap<Response, AbortController>();
 async function boundedFetch(url: string, init: RequestInit = {}, timeout = 15000): Promise<Response> {
@@ -120,13 +121,13 @@ async function boundedFetch(url: string, init: RequestInit = {}, timeout = 15000
   finally { clearTimeout(timer); }
 }
 async function jsonResponse(response: Response, label: string, timeout = 15000): Promise<Data> {
-  if (!response.ok) { await response.body?.cancel(); throw new IntelligenceError(`${label} request failed (HTTP ${response.status})`, response.status, [408, 429, 500, 502, 503, 504].includes(response.status)); }
+  if (!response.ok) { await response.body?.cancel(); throw new IntelligenceError(`${label} request failed (HTTP ${response.status})`, response.status, [408, 429, 500, 502, 503, 504].includes(response.status),undefined,response.headers.get('retry-after')); }
   const timer = setTimeout(() => responseControllers.get(response)?.abort(), timeout);
   try {
     const value: unknown = await response.json();
     if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error();
     return value as Data;
-  } catch { throw new IntelligenceError(`${label} returned an invalid response`, undefined, Boolean(responseControllers.get(response)?.signal.aborted)); }
+  } catch { const timedOut=Boolean(responseControllers.get(response)?.signal.aborted);throw new IntelligenceError(`${label} returned an invalid response`,undefined,timedOut,timedOut?'timeout':'malformed'); }
   finally { clearTimeout(timer); responseControllers.delete(response); }
 }
 function geminiKey(env: Env): string { return key(env.GEMINI_API_KEY) || key(env.GOOGLE_API_KEY); }
@@ -139,8 +140,9 @@ function responseText(data: Data): string {
   const steps = Array.isArray(data.steps) ? data.steps : Array.isArray(data.outputs) ? data.outputs : [];
   return steps.filter((s: Data) => !s.type || ['model_output', 'text'].includes(s.type)).flatMap((s: Data) => typeof s.text === 'string' ? [s.text] : Array.isArray(s.content) ? s.content.filter((p: Data) => p.type === 'text').map((p: Data) => text(p.text)) : []).join('\n').trim();
 }
-export async function generateText(env: Env, prompt: string): Promise<string> {
+async function generateTextRaw(env: Env, prompt: string): Promise<string> {
   const provider = text(env.LLM_PROVIDER) || 'groq';
+  const deadline=Date.now()+15000,remaining=()=>Math.max(1,deadline-Date.now());
   if (!['groq', 'gemini'].includes(provider)) throw new IntelligenceError('Configure LLM_PROVIDER as groq or gemini for the Worker runtime');
   let answer = '';
   if (provider === 'groq') {
@@ -149,7 +151,7 @@ export async function generateText(env: Env, prompt: string): Promise<string> {
     const data = await jsonResponse(await boundedFetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST', headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ model: text(env.GROQ_MODEL) || 'openai/gpt-oss-20b', messages: [{ role: 'user', content: text(prompt, 50000) }], temperature: 0, max_completion_tokens: 4096, reasoning_effort: 'low' }),
-    }, 60000), 'Groq');
+    }, remaining()), 'Groq',remaining());
     answer = text(data.choices?.[0]?.message?.content, 50000);
   } else {
     const apiKey = geminiKey(env);
@@ -157,12 +159,27 @@ export async function generateText(env: Env, prompt: string): Promise<string> {
     const data = await jsonResponse(await boundedFetch('https://generativelanguage.googleapis.com/v1beta/interactions', {
       method: 'POST', headers: { 'x-goog-api-key': apiKey, 'Content-Type': 'application/json' },
       body: JSON.stringify({ model: (text(env.GEMINI_MODEL) || 'gemini-3.8-flash').replace(/^models\//, ''), input: text(prompt, 50000), store: false, generation_config: { max_output_tokens: 4096, thinking_level: 'medium' } }),
-    }, 60000), 'Gemini');
+    }, remaining()), 'Gemini',remaining());
     if (data.status && data.status !== 'completed') throw new IntelligenceError('Gemini did not complete the response');
     answer = responseText(data);
   }
   if (!answer) throw new IntelligenceError(`${provider === 'groq' ? 'Groq' : 'Gemini'} returned no answer text`);
   return answer;
+}
+export async function generateText(env: Env, prompt: string): Promise<string> {
+  const provider: ProviderName = env.LLM_PROVIDER === 'gemini' ? 'gemini' : 'groq';
+  const model = provider === 'groq' ? env.GROQ_MODEL || 'openai/gpt-oss-20b' : env.GEMINI_MODEL || 'gemini-3.8-flash';
+  const started = Date.now();
+  try {
+    const answer = await generateTextRaw(env,prompt);
+    await recordProviderOutcome(env,provider,model,{success:true,latency_ms:Date.now()-started,operation:'provider_text'});
+    return answer;
+  } catch (error) {
+    const failure = classifyProviderError(provider,error,{notConfigured:!['groq','gemini'].includes(env.LLM_PROVIDER || 'groq')||!configured(env),retryAfter:error instanceof IntelligenceError?error.retryAfter:undefined});
+    await recordProviderOutcome(env,provider,model,{success:false,latency_ms:Date.now()-started,failure,operation:'provider_text'});
+    if (error instanceof Error) Object.assign(error,{provider_failure:failure});
+    throw error;
+  }
 }
 function jsonObject(raw: string): Data {
   const start = raw.indexOf('{'), end = raw.lastIndexOf('}');
@@ -172,7 +189,7 @@ function jsonObject(raw: string): Data {
     return value;
   } catch { throw new IntelligenceError('Profile extraction returned invalid JSON'); }
 }
-export async function extractProfile(env: Env, pdf: Uint8Array): Promise<Data> {
+async function extractProfileRaw(env: Env, pdf: Uint8Array): Promise<Data> {
   const apiKey = geminiKey(env);
   if (!apiKey) throw new IntelligenceError('PDF profile extraction requires GEMINI_API_KEY or GOOGLE_API_KEY');
   if (pdf.byteLength > 5 * 1024 * 1024) throw new IntelligenceError('PDF profile extraction supports files up to 5 MB');
@@ -256,6 +273,9 @@ export async function extractProfile(env: Env, pdf: Uint8Array): Promise<Data> {
         }, 'Gemini PDF extraction', budget);
         break;
       } catch (error) {
+        // A provider-wide rate limit is not solved by immediately changing the
+        // model. Let the user retry after the bounded Retry-After interval.
+        if(error instanceof IntelligenceError && error.status===429)throw error;
         if (!(error instanceof IntelligenceError) || !error.retryable || attempt === models.length - 1) throw error;
         // No provider body, applicant data, upload URL, or key enters logs.
         console.warn(JSON.stringify({ event: 'gemini_pdf_recovery', model: extractionModel, attempt: attempt + 1, status: error.status || 'network', category: error.category || 'http', next: models[attempt + 1] }));
@@ -278,6 +298,21 @@ export async function extractProfile(env: Env, pdf: Uint8Array): Promise<Data> {
         if (!response.ok && response.status !== 404) throw new Error();
       } catch { throw new IntelligenceError('Gemini temporary resume cleanup could not be confirmed; delete the uploaded file in Google AI Studio before retrying'); }
     }
+  }
+}
+export async function extractProfile(env: Env, pdf: Uint8Array): Promise<Data> {
+  const started=Date.now();
+  try {
+    const profile=await extractProfileRaw(env,pdf);
+    await recordProviderOutcome(env,'gemini',profile.resume_extraction_model || env.GEMINI_MODEL || 'gemini-3.8-flash',{success:true,latency_ms:Date.now()-started,operation:'provider_extract'});
+    return profile;
+  } catch(error) {
+    const failure=classifyProviderError('gemini',error,{notConfigured:!geminiKey(env),retryAfter:error instanceof IntelligenceError?error.retryAfter:undefined});
+    // Invalid uploads never become a failed model health check.
+    if(pdf.byteLength<=5*1024*1024 && new TextDecoder().decode(pdf.subarray(0,5))==='%PDF-' && geminiKey(env))
+      await recordProviderOutcome(env,'gemini',env.GEMINI_MODEL || 'gemini-3.8-flash',{success:false,latency_ms:Date.now()-started,failure,operation:'provider_extract'});
+    if(error instanceof Error) Object.assign(error,{provider_failure:failure});
+    throw error;
   }
 }
 
@@ -314,7 +349,7 @@ class Budget {
   }
 }
 function searchReady(env: Env): boolean { return Boolean(key(env.TAVILY_API_KEY) || key(env.SERPAPI_API_KEY)); }
-async function search(env: Env, query: string, budget: Budget, news = false, jobs = false, domains?: string[], jobLimit = 8): Promise<SearchResult[]> {
+async function searchRaw(env: Env, query: string, budget: Budget, news = false, jobs = false, domains?: string[], jobLimit = 8): Promise<SearchResult[]> {
   let response: Response;
   if (key(env.TAVILY_API_KEY)) {
     response = await budget.fetch('https://api.tavily.com/search', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ api_key: key(env.TAVILY_API_KEY), query: text(query, 500), max_results: jobs ? jobLimit : 6, topic: news ? 'news' : 'general', ...(news ? { time_range: 'year' } : jobs ? { time_range: 'month', include_published_date: true, include_raw_content: 'text', ...(domains ? { include_domains: domains } : {}) } : {}) }) });
@@ -328,6 +363,11 @@ async function search(env: Env, query: string, budget: Budget, news = false, job
   const values = data.results || (news ? data.news_results : data.organic_results) || [];
   if (!Array.isArray(values)) throw new IntelligenceError('Search provider returned invalid results');
   return values.filter(r => r && typeof r === 'object' && !Array.isArray(r)).slice(0, jobs ? jobLimit : 6).map((r: Data) => ({ title: text(r.title, 300), url: text(r.url || r.link, 2048), content: text(jobs ? r.raw_content || r.content || r.snippet : r.content || r.snippet, jobs ? 30000 : 2000), published_date: text(r.published_date || r.published_at || r.date, 100), company: text(r.company, 200), location: text(r.location, 200) }));
+}
+async function search(env: Env, query: string, budget: Budget, news = false, jobs = false, domains?: string[], jobLimit = 8): Promise<SearchResult[]> {
+  const provider:ProviderName=key(env.TAVILY_API_KEY)?'tavily':'serpapi',started=Date.now();
+  try {const result=await searchRaw(env,query,budget,news,jobs,domains,jobLimit);await recordProviderOutcome(env,provider,'search',{success:true,latency_ms:Date.now()-started,operation:'provider_search'});return result;}
+  catch(error){const failure=classifyProviderError(provider,error,{notConfigured:!searchReady(env),retryAfter:error instanceof IntelligenceError?error.retryAfter:undefined});await recordProviderOutcome(env,provider,'search',{success:false,latency_ms:Date.now()-started,failure,operation:'provider_search'});if(error instanceof Error)Object.assign(error,{provider_failure:failure});throw error;}
 }
 async function accessible(raw: unknown, budget: Budget): Promise<string | null> {
   let url = publicUrl(raw);

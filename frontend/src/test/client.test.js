@@ -16,9 +16,9 @@ describe('API response helpers', () => {
   });
 });
 
-it('sends cross-origin cookies only for Cloudflare deployments', async () => {
+it('sends ownership cookies for both supported backends', async () => {
   const { default: original } = await import('../api/client');
-  expect(original.defaults.withCredentials).toBe(false);
+  expect(original.defaults.withCredentials).toBe(true);
   vi.stubEnv('VITE_DEPLOYMENT_TARGET', 'cloudflare');
   vi.resetModules();
   const { default: cloud } = await import('../api/client');

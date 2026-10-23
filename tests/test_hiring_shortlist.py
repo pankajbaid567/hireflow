@@ -135,6 +135,17 @@ def test_shortlist_persisted_with_candidates_and_timestamp(db_session):
     ],
 )
 def test_shortlist_api_json_and_csv_persisted(api_client, db_session, applicants):
+    assert (
+        api_client.post(
+            "/profile",
+            json={
+                "name": "Hiring Owner",
+                "email": "hiring-owner@example.com",
+                "mode": "job",
+            },
+        ).status_code
+        == 201
+    )
     response = api_client.post(
         "/hiring/shortlist",
         json={"jd_text": JD, "applicants": applicants, "shortlist_size": 1},
@@ -154,4 +165,15 @@ def test_shortlist_api_json_and_csv_persisted(api_client, db_session, applicants
     ],
 )
 def test_shortlist_api_invalid_input_has_clean_error(api_client, payload):
+    assert (
+        api_client.post(
+            "/profile",
+            json={
+                "name": "Hiring Owner",
+                "email": "hiring-owner@example.com",
+                "mode": "job",
+            },
+        ).status_code
+        == 201
+    )
     assert api_client.post("/hiring/shortlist", json=payload).status_code == 422

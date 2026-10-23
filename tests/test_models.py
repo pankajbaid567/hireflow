@@ -10,7 +10,10 @@ def test_tables_exist():
     assert "weekly_reports" in tables
     assert "application_status_events" in tables
     assert "shortlists" in tables
-    assert len(tables) == 7
+    assert {"auth_sessions", "account_recovery_keys", "account_attempts"}.issubset(
+        tables
+    )
+    assert len(tables) == 10
 
 
 def test_users_table_columns():

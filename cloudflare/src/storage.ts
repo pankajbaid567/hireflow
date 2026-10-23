@@ -38,8 +38,10 @@ export async function dispatchOutbox(env: Env) {
   // Duplicate queue deliveries are safe: application claims and prep inserts are conditional.
   for (const task of tasks) {
     try {
-      await env.APPLICATION_QUEUE.send({ application_id: task.application_id, kind: task.kind });
-      await run(env, 'UPDATE outbox SET dispatched_at=? WHERE id=?', new Date().toISOString(), task.id);
+      await env.APPLICATION_QUEUE.send({ application_id: task.application_id, kind: task.kind, ...(task.kind === 'apply' && task.review_id ? {review_id: task.review_id} : {}) });
+      // Cancellation may remove a row while send() is in flight. SQLite can
+      // reuse its integer ID for a new approval; never mark that generation sent.
+      await run(env, 'UPDATE outbox SET dispatched_at=? WHERE id=? AND application_id=? AND kind=? AND review_id IS ? AND dispatched_at IS NULL', new Date().toISOString(), task.id,task.application_id,task.kind,task.review_id??null);
     } catch { break; } // Durable outbox is retried by the scheduled handler.
   }
 }

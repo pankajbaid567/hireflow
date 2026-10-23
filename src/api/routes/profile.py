@@ -4,7 +4,15 @@ from pathlib import Path
 from uuid import uuid4
 from typing import Any, Literal
 
-from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile, status
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException,
+    Request,
+    Response,
+    UploadFile,
+    status,
+)
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 from pypdf import PdfReader
 from sqlalchemy.exc import IntegrityError
@@ -16,6 +24,7 @@ from src.config.settings import get_settings
 from src.models.user import ConfirmationMode, User, UserMode
 from src.models import Application, ApplicationStatus
 from src.utils.llm_client import BaseLLMClient, LLMClientError, get_llm_client
+from src.api.security import issue_session
 
 router = APIRouter(prefix="/profile", tags=["profile"])
 
@@ -102,6 +111,7 @@ class ProfileResponse(BaseModel):
 @router.post("", response_model=ProfileResponse, status_code=status.HTTP_201_CREATED)
 async def create_profile(
     request: Request,
+    response: Response,
     db: Session = Depends(get_db),
 ) -> User:
     profile = await _profile_from_request(request)
@@ -118,6 +128,7 @@ async def create_profile(
         ) from exc
 
     db.refresh(user)
+    issue_session(response, request, db, user.id)
     return user
 
 
@@ -220,7 +231,15 @@ async def _profile_from_request(
                 except json.JSONDecodeError:
                     if field == "education":
                         overrides[field] = raw
-                    elif field in {"skills", "target_roles", "preferred_locations", "certifications", "achievements", "languages", "blacklist_companies"}:
+                    elif field in {
+                        "skills",
+                        "target_roles",
+                        "preferred_locations",
+                        "certifications",
+                        "achievements",
+                        "languages",
+                        "blacklist_companies",
+                    }:
                         overrides[field] = [
                             s.strip() for s in raw.split(",") if s.strip()
                         ]

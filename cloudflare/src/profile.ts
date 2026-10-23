@@ -2,6 +2,7 @@ import { ApiError, type Env, type Row, json } from './types';
 import { checkAccessCode, requireUser, startSession, reserveProfileCreation } from './auth';
 import { first, run, userById } from './storage';
 import { extractProfile } from './intelligence';
+import { classifyProviderError } from './provider_health';
 import { files } from './files';
 
 export const MAX_UPLOAD = 3 * 1024 * 1024;
@@ -107,15 +108,11 @@ export async function saveProfile(request: Request, env: Env, id?: number) {
           data.resume_extraction_fallback_used=extracted.resume_extraction_fallback_used;
           delete data.resume_extraction_warning;
         } catch(error) {
-          const message=error instanceof Error?error.message:'';
-          // Intelligence errors contain only our own labels/statuses, never
-          // provider response bodies, uploaded content or credentials.
-          console.warn(JSON.stringify({event:'resume_extraction_failed',
-            reason:/^(Gemini|PDF profile|Resume must|Profile extraction|External service)/.test(message)?message:'Resume processing failed',
-          }));
+          const failure=classifyProviderError('gemini',error);
+          console.warn(JSON.stringify({event:'resume_extraction_failed',kind:failure.kind,correlation_id:env.OPERATION_CONTEXT?.correlation_id}));
           // Never save a partly read PDF as a complete resume. Existing profile
           // data and its original file remain intact when extraction fails.
-          throw new ApiError(503,'We could not finish reading your resume. Please try uploading it again. Your saved profile has not been changed.');
+          return json({detail:`We could not finish reading your resume. ${failure.message} Your saved profile has not been changed.`,provider_failure:failure.toJSON()},failure.kind==='rate_limited'?429:503,failure.retry_after_seconds?{'Retry-After':String(failure.retry_after_seconds)}:{});
         }
       } else {
         data.resume_extraction_warning='Automatic resume reading is unavailable. Review your generated PDF and add your experience and projects before confirming applications.';

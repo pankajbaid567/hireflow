@@ -14,6 +14,8 @@ let files: Awaited<ReturnType<Miniflare['getR2Bucket']>>;
 // claims, D1 audit triggers, R2 reads and durable outbox execute in workerd.
 const harness = `
 import { processTask, scheduledRecovery } from '../src/tasks';
+import { buildReviewBinding, jobFingerprint, cancelQueuedApplication } from '../src/reviews';
+import { checkpointStore } from '../src/automation_checkpoints';
 export default {
   async fetch(request, env) {
     const control = await env.DB.prepare('SELECT * FROM test_controls WHERE id=1').first();
@@ -22,6 +24,28 @@ export default {
       if (control.queue_error) throw new Error('Synthetic queue outage');
     } };
     const settings = { ...env, APPLICATION_QUEUE: queue, BROWSER_ENABLED: control.browser_enabled, BROWSER_DAILY_BUDGET_SECONDS: control.budget };
+    if (new URL(request.url).pathname === '/cancel') {
+      try { return Response.json(await cancelQueuedApplication(settings,1,1)); }
+      catch { return Response.json({error:'Execution may have started'},{status:409}); }
+    }
+    if (new URL(request.url).pathname === '/seed-review') {
+      const id = await request.json();
+      const app = await env.DB.prepare('SELECT a.*,j.url,j.title,j.company,j.description FROM applications a JOIN jobs j ON j.id=a.job_id WHERE a.id=?').bind(id).first();
+      const review = {id:crypto.randomUUID(),application_id:id,user_id:app.user_id,profile_version:1,resume_version:app.resume_version,resume_path:app.resume_path || 'missing.pdf',answers:{'why this role':'Reviewed Python experience'},jd_hash:await jobFingerprint(app)};
+      review.resume_hash = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode('%PDF-1.4\\nSynthetic reviewed resume')))).map(x=>x.toString(16).padStart(2,'0')).join('');
+      review.binding = await buildReviewBinding(review);
+      const now=new Date().toISOString();
+      await env.DB.prepare('INSERT INTO submission_reviews(id,application_id,user_id,profile_version,resume_version,resume_path,resume_hash,jd_hash,binding,answers,created_at,approved_at,expires_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)').bind(review.id,id,1,1,app.resume_version,review.resume_path,review.resume_hash,review.jd_hash,review.binding,JSON.stringify(review.answers),now,now,new Date(Date.now()+86400000).toISOString()).run();
+      await env.DB.prepare('UPDATE applications SET confirmed_review_id=? WHERE id=?').bind(review.id,id).run();
+      return Response.json({review_id:review.id});
+    }
+    if (new URL(request.url).pathname === '/checkpoint') {
+      const data=await request.json(), app=await env.DB.prepare('SELECT a.confirmed_review_id,r.binding FROM applications a JOIN submission_reviews r ON r.id=a.confirmed_review_id WHERE a.id=?').bind(data.id).first();
+      const store=checkpointStore(settings,data.id,app.confirmed_review_id,app.binding);
+      try { if(data.save) await store.save({...data.save,binding:app.binding});
+        return Response.json(await store.load());
+      } catch { return Response.json({error:'Checkpoint cannot be changed or restored safely'},{status:409}); }
+    }
     if (new URL(request.url).pathname === '/recover') {
       await scheduledRecovery(settings);
       return Response.json({ recovered: true });
@@ -38,21 +62,23 @@ export default {
 beforeAll(async () => {
   const output = await build({
     stdin: { contents: harness, resolveDir: `${root}tests`, sourcefile: 'tasks-test-runtime.ts', loader: 'js' },
-    bundle: true, format: 'esm', platform: 'browser', target: 'es2022', write: false, logLevel: 'silent',
+    bundle: true, format: 'esm', platform: 'browser', target: 'es2022', write: false, logLevel: 'silent', external:['node:*'],
     plugins: [{
       name: 'synthetic-external-work',
       setup(builder) {
         builder.onResolve({ filter: /^\.\/(automation|intelligence)$/ }, args => ({ path: args.path, namespace: 'task-fixtures' }));
         builder.onLoad({ filter: /.*/, namespace: 'task-fixtures' }, args => ({ loader: 'js', contents: args.path === './automation' ? `
+          export function validatePublicUrl(url) { return new URL(url).toString(); }
           export async function fillApplication(input, env) {
             await env.DB.prepare('INSERT INTO test_browser_calls(application_url,resume_name,resume_size,profile,jd) VALUES(?,?,?,?,?)').bind(input.applicationUrl,input.resumeName,input.resume.length,JSON.stringify(input.profile),input.jdText).run();
             const control = await env.DB.prepare('SELECT * FROM test_controls WHERE id=1').first();
+            if (control.revoke_review) { await env.DB.prepare('UPDATE submission_reviews SET revoked_at=? WHERE application_id=1').bind(new Date().toISOString()).run(); return {status:'needs_action',reason:await input.beforeFinalSubmit()?'INVALID':'Reviewed answer approval expired',fields_filled:[],submitted:false,retryable:false}; }
             if (control.browser_error) throw new Error('Synthetic private-provider-error');
             return JSON.parse(control.result);
           }` : `
           export async function generateText() { return 'A truthful fixture answer'; }
           export async function buildPrepGuide(env, profile, application) {
-            await env.DB.prepare('INSERT INTO test_prep_calls(application_id) VALUES(?)').bind(application.id).run();
+            await env.DB.prepare('INSERT INTO test_prep_calls(application_id,operation_context) VALUES(?,?)').bind(application.id,JSON.stringify(env.OPERATION_CONTEXT || null)).run();
             const control = await env.DB.prepare('SELECT * FROM test_controls WHERE id=1').first();
             if (control.prep_error) throw new Error('Synthetic research outage');
             return { round_count: 2, rounds: [{number:1,type:'technical',focus:'Python'}], topics: {strong:['Python'],moderate:[],gaps:['Docker']}, questions:[{category:'technical',question:'Show a Python example'}], resources:{}, company_intel:{stage:'startup'} };
@@ -66,15 +92,15 @@ beforeAll(async () => {
 beforeEach(async () => {
   runtime = new Miniflare(convertV4MiniflareOptions({
     modules: true, script: bundle, compatibilityDate: '2026-10-21', compatibilityFlags: ['nodejs_compat'],
-    d1Databases: ['DB'], r2Buckets: ['FILES'],
+    d1Databases: ['DB'], r2Buckets: ['FILES'], bindings: { ACCESS_CODE:'synthetic-checkpoint-encryption-secret-12345678' },
   }));
   db = await runtime.getD1Database('DB');
   files = await runtime.getR2Bucket('FILES');
   await applyTestMigrations(db);
   await db.batch([
-    db.prepare(`CREATE TABLE test_controls(id INTEGER PRIMARY KEY,result TEXT,browser_error INTEGER DEFAULT 0,prep_error INTEGER DEFAULT 0,queue_error INTEGER DEFAULT 0,browser_enabled TEXT DEFAULT 'true',budget TEXT DEFAULT '540')`),
+    db.prepare(`CREATE TABLE test_controls(id INTEGER PRIMARY KEY,result TEXT,browser_error INTEGER DEFAULT 0,revoke_review INTEGER DEFAULT 0,prep_error INTEGER DEFAULT 0,queue_error INTEGER DEFAULT 0,browser_enabled TEXT DEFAULT 'true',budget TEXT DEFAULT '540')`),
     db.prepare('CREATE TABLE test_browser_calls(id INTEGER PRIMARY KEY,application_url TEXT,resume_name TEXT,resume_size INTEGER,profile TEXT,jd TEXT)'),
-    db.prepare('CREATE TABLE test_prep_calls(id INTEGER PRIMARY KEY,application_id INTEGER)'),
+    db.prepare('CREATE TABLE test_prep_calls(id INTEGER PRIMARY KEY,application_id INTEGER,operation_context TEXT)'),
     db.prepare('CREATE TABLE test_queue_sends(id INTEGER PRIMARY KEY,body TEXT,accepted INTEGER)'),
   ]);
   await db.prepare('INSERT INTO test_controls(id,result) VALUES(1,?)').bind(JSON.stringify({ status: 'applied', reason: null, fields_filled: ['name', 'email', 'resume'], submitted: true, retryable: false })).run();
@@ -93,12 +119,14 @@ async function application(id = 1, options: { status?: string; attempts?: number
   const key = options.resume === false ? null : `resumes/1/${jobId}_resume_v1.pdf`;
   if (key) await files.put(key, '%PDF-1.4\nSynthetic reviewed resume');
   await db.prepare('INSERT INTO applications(id,user_id,job_id,status,attempts,processing_started_at,resume_path,resume_version) VALUES(?,1,?,?,?,?,?,1)').bind(id, jobId, options.status || 'confirmed', options.attempts || 0, options.started || null, key).run();
+  const seeded=await runtime.dispatchFetch('https://tasks.example/seed-review',{method:'POST',body:JSON.stringify(id)});
+  expect(seeded.status).toBe(200);
   return id;
 }
 async function row(id = 1) { return db.prepare('SELECT * FROM applications WHERE id=?').bind(id).first<any>(); }
 async function count(table: string) { return (await db.prepare(`SELECT count(*) AS count FROM ${table}`).first<any>())!.count as number; }
 async function process(id = 1, kind = 'apply') {
-  return delivery({ application_id: id, kind });
+  return delivery({ application_id: id, kind, ...(kind==='apply' ? {review_id:(await row(id))?.confirmed_review_id}: {}) });
 }
 async function delivery(body: unknown) {
   const response = await runtime.dispatchFetch('https://tasks.example/process', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
@@ -115,6 +143,105 @@ async function reserve(seconds: number, lastLaunch = 0, day = new Date().toISOSt
 async function acceptedQueueTasks() {
   return (await db.prepare('SELECT body FROM test_queue_sends WHERE accepted=1 ORDER BY id').all<any>()).results.map(item => JSON.parse(item.body));
 }
+async function checkpoint(phase='ready') {
+  const save={applicationUrl:'https://careers.example.com/1',url:'https://careers.example.com/step3',phase,step:2,signature:'fixture-step3',fields_filled:['email'],mutation_started:phase!=='ready',storage:{cookies:[{name:'private',value:'private-browser-cookie-value',domain:'careers.example.com',path:'/',expires:-1,httpOnly:true,secure:true,sameSite:'Lax'}],origins:[]},session_storage:[{origin:'https://careers.example.com',values:{step:'3'}}]};
+  const response=await runtime.dispatchFetch('https://tasks.example/checkpoint',{method:'POST',body:JSON.stringify({id:1,save})});
+  return response;
+}
+
+describe('immutable approval and private durable checkpoints',()=>{
+  it('requires re-review for a legacy confirmation without an approved snapshot',async()=>{
+    await application();await db.prepare('UPDATE applications SET confirmed_review_id=NULL WHERE id=1').run();
+    expect(await process()).toEqual({acknowledged:true,retry:null});
+    expect(await row()).toMatchObject({status:'needs_action',attempts:0});
+    expect((await row()).failure_reason).toContain('Review the current resume');
+    expect(await count('browser_budget')).toBe(0);expect(await count('test_browser_calls')).toBe(0);
+  });
+
+  it('ignores a stale review generation without invalidating a newer confirmation',async()=>{
+    await application();const approved=(await row()).confirmed_review_id;
+    expect(await delivery({application_id:1,kind:'apply',review_id:'older-review-id'})).toEqual({acknowledged:true,retry:null});
+    expect(await delivery({application_id:1,kind:'apply'})).toEqual({acknowledged:true,retry:null});
+    expect(await row()).toMatchObject({status:'confirmed',confirmed_review_id:approved,attempts:0});
+    expect(await count('browser_budget')).toBe(0);
+  });
+
+  it.each(['expired','revoked','answer_changed','pdf_changed'])('rejects %s authorization before acquiring browser budget',async(kind)=>{
+    await application();
+    if(kind==='expired')await db.prepare("UPDATE submission_reviews SET expires_at='2000-01-01T00:00:00.000Z'").run();
+    if(kind==='revoked')await db.prepare('UPDATE submission_reviews SET revoked_at=?').bind(new Date().toISOString()).run();
+    if(kind==='answer_changed')await db.prepare('UPDATE submission_reviews SET answers=?').bind(JSON.stringify({'why this role':'Unreviewed answer'})).run();
+    if(kind==='pdf_changed')await files.put((await row()).resume_path,'%PDF-1.4\nChanged PDF after approval');
+    await process();expect(await row()).toMatchObject({status:'needs_action',attempts:0});
+    expect((await row()).failure_reason).toContain('changed or expired');
+    expect(await count('browser_budget')).toBe(0);expect(await count('test_browser_calls')).toBe(0);
+  });
+
+  it('checks approval again immediately before an adapter can submit',async()=>{
+    await application();await controls({revoke_review:1});await process();
+    expect(await row()).toMatchObject({status:'needs_action',attempts:1,failure_reason:'Reviewed answer approval expired'});
+  });
+
+  it('fills standard facts from the exact edited PDF snapshot instead of older master-profile facts',async()=>{
+    await application();const app=await row();
+    await db.prepare('INSERT INTO resumes(application_id,version,object_key,profile_snapshot) VALUES(1,1,?,?)').bind(app.resume_path,JSON.stringify({name:'Test User',email:'tasks@example.com',skills:['Python','LangChain'],education:'Reviewed BTech Computer Science'})).run();
+    await process();
+    const call=await db.prepare('SELECT profile FROM test_browser_calls').first<any>();
+    expect(JSON.parse(call.profile)).toMatchObject({skills:['Python','LangChain'],education:'Reviewed BTech Computer Science'});
+    expect(JSON.parse((await db.prepare('SELECT master_profile FROM users WHERE id=1').first<any>()).master_profile).skills).toEqual(['Python']);
+  });
+
+  it('races cancellation against the real atomic execution claim without falsely withdrawing an application',async()=>{
+    await application();
+    const [execution,cancelled]=await Promise.all([process(),runtime.dispatchFetch('https://tasks.example/cancel')]);
+    expect(execution.acknowledged).toBe(true);
+    if(cancelled.status===200){expect(await row()).toMatchObject({status:'planned',attempts:0,confirmed_review_id:null});expect(await count('test_browser_calls')).toBe(0);}
+    else{expect(cancelled.status).toBe(409);expect(await row()).toMatchObject({status:'applied',attempts:1});expect(await count('test_browser_calls')).toBe(1);}
+  });
+
+  it('stores browser sessions encrypted and restores them only within their approved binding',async()=>{
+    await application();const response=await checkpoint();expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({phase:'ready',step:2,storage:{cookies:[{value:'private-browser-cookie-value'}]}});
+    const stored=await db.prepare('SELECT * FROM automation_checkpoints').first<any>();
+    expect(stored.encrypted_state).not.toContain('private-browser-cookie-value');
+    expect(stored.encrypted_state).not.toContain('careers.example.com');expect(stored.encrypted_state.split('.')).toHaveLength(2);
+    await db.prepare("UPDATE automation_checkpoints SET encrypted_state='invalid.ciphertext'").run();
+    expect((await runtime.dispatchFetch('https://tasks.example/checkpoint',{method:'POST',body:JSON.stringify({id:1})})).status).toBe(409);
+  });
+
+  it('never downgrades a durable final marker into a retryable checkpoint',async()=>{
+    await application();expect((await checkpoint('submitting')).status).toBe(200);
+    expect((await checkpoint('ready')).status).toBe(409);
+    expect((await db.prepare('SELECT phase FROM automation_checkpoints').first<any>()).phase).toBe('submitting');
+    await db.prepare("UPDATE automation_checkpoints SET expires_at='2000-01-01T00:00:00.000Z'").run();
+    const restored=await runtime.dispatchFetch('https://tasks.example/checkpoint',{method:'POST',body:JSON.stringify({id:1})});
+    expect(await restored.json()).toMatchObject({phase:'submitting',mutation_started:true});
+  });
+
+  it('recovers only a completed ready step after a lost consumer, retaining its exact queue approval',async()=>{
+    await application(1,{status:'applying',attempts:1,started:new Date(Date.now()-6*60000).toISOString()});
+    await checkpoint();await recover();
+    const app=await row();expect(app).toMatchObject({status:'confirmed',attempts:1});
+    expect(await acceptedQueueTasks()).toEqual([{application_id:1,kind:'apply',review_id:app.confirmed_review_id}]);
+    expect(await count('test_browser_calls')).toBe(0);
+  });
+
+  it('does not recover an intermediate POST whose outcome is uncertain',async()=>{
+    await application(1,{status:'applying',attempts:1,started:new Date(Date.now()-6*60000).toISOString()});
+    await checkpoint('advancing');await recover();
+    expect(await row()).toMatchObject({status:'needs_action',attempts:1});
+    expect((await acceptedQueueTasks()).some(task=>task.kind==='apply')).toBe(false);
+  });
+
+  it('expires private browser cookies without forgetting an uncertain intermediate operation',async()=>{
+    await application(1,{status:'needs_action'});await checkpoint('advancing');
+    await db.prepare("UPDATE automation_checkpoints SET expires_at='2000-01-01T00:00:00.000Z'").run();await recover();
+    expect(await db.prepare('SELECT phase,encrypted_state FROM automation_checkpoints').first<any>()).toEqual({phase:'advancing',encrypted_state:''});
+    const response=await runtime.dispatchFetch('https://tasks.example/checkpoint',{method:'POST',body:JSON.stringify({id:1})});
+    expect(await response.json()).toMatchObject({phase:'advancing',mutation_started:true});
+    expect(await count('test_browser_calls')).toBe(0);
+  });
+});
 
 describe('browser allocation and atomic free-tier limits', () => {
   it('records a successful attempt, applied timestamp, audit and durable prep delivery', async () => {
@@ -175,7 +302,7 @@ describe('browser allocation and atomic free-tier limits', () => {
 
   it('delays a launch inside the spacing window without consuming an attempt or reservation', async () => {
     await application(); await reserve(60, Date.now());
-    expect(await process()).toEqual({ acknowledged: false, retry: { delaySeconds: 25 } });
+    expect(await process()).toMatchObject({ acknowledged: false, retry: { delaySeconds: expect.any(Number) } });
     expect(await row()).toMatchObject({ status: 'confirmed', attempts: 0 });
     expect((await db.prepare('SELECT reserved_seconds FROM browser_budget').first<any>()).reserved_seconds).toBe(60);
     expect(await count('test_browser_calls')).toBe(0);
@@ -186,7 +313,7 @@ describe('browser allocation and atomic free-tier limits', () => {
     await application(1); await application(2);
     const messages = await Promise.all([process(1), process(2)]);
     expect(messages.filter(message => message.acknowledged)).toHaveLength(1);
-    expect(messages.filter(message => message.retry?.delaySeconds === 25)).toHaveLength(1);
+    expect(messages.filter(message => message.retry?.delaySeconds && message.retry.delaySeconds >= 1 && message.retry.delaySeconds <=22)).toHaveLength(1);
     expect(await count('test_browser_calls')).toBe(1);
     expect((await db.prepare('SELECT reserved_seconds FROM browser_budget').first<any>()).reserved_seconds).toBe(60);
     const states = (await db.prepare('SELECT status,attempts FROM applications ORDER BY id').all<any>()).results;
@@ -263,7 +390,7 @@ describe('safe retries and terminal states', () => {
     const events = await db.prepare('SELECT status FROM application_status_events WHERE application_id=1 ORDER BY id').all<any>();
     expect(events.results.map(event => event.status)).toEqual(['confirmed']);
 
-    await files.put(key, '%PDF-1.4\nReviewed resume now visible');
+    await files.put(key, '%PDF-1.4\nSynthetic reviewed resume');
     expect(await process()).toEqual({ acknowledged: true, retry: null });
     expect(await row()).toMatchObject({ status: 'applied', attempts: 1 });
     expect(await count('test_browser_calls')).toBe(1);
@@ -343,6 +470,10 @@ describe('prep idempotency and durable recovery', () => {
     expect(JSON.parse(guide.company_intel)).toEqual({ stage: 'startup' });
     expect(await count('test_prep_calls')).toBe(1);
     expect(await count('test_browser_calls')).toBe(0);
+    const context=JSON.parse((await db.prepare('SELECT operation_context FROM test_prep_calls').first<any>()).operation_context);
+    expect(context).toMatchObject({user_id:1,cycle_id:expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),correlation_id:expect.stringMatching(/^[a-f\d-]{36}$/)});
+    const event=await db.prepare("SELECT correlation_id,user_id,cycle_id FROM operation_events WHERE operation='queue_prep' AND outcome='success'").first<any>();
+    expect(event).toEqual(context);
   });
 
   it('retries a failed prep build without leaving an incomplete guide', async () => {

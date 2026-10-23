@@ -11,7 +11,7 @@ import PrepGuidePage from '../pages/PrepGuidePage';
 import ResumeLibraryPage from '../pages/ResumeLibraryPage';
 import ReportsPage from '../pages/ReportsPage';
 
-vi.mock('../api/client', async importOriginal => ({ ...await importOriginal(), api: { getProfile: vi.fn(), saveProfile: vi.fn(), getPlan: vi.fn(), swapJob: vi.fn(), confirmPlan: vi.fn(), getApplications: vi.fn(), getPrepGuide: vi.fn(), getResumes: vi.fn(), getReport: vi.fn(), generateReport: vi.fn(), getSession: vi.fn(), logoutSession: vi.fn(), discoverJobs: vi.fn(), addJob: vi.fn() } }));
+vi.mock('../api/client', async importOriginal => ({ ...await importOriginal(), api: { getProfile: vi.fn(), saveProfile: vi.fn(), getPlan: vi.fn(), swapJob: vi.fn(), confirmPlan: vi.fn(), getApplications: vi.fn(), getPrepGuide: vi.fn(), getResumes: vi.fn(), getReport: vi.fn(), generateReport: vi.fn(), getSession: vi.fn(), logoutSession: vi.fn(), discoverJobs: vi.fn(), addJob: vi.fn(),cancelApplication:vi.fn() } }));
 const baseContext = { profile: null, userId: '', loading: false, error: '', activateProfile: vi.fn(), selectProfile: vi.fn(), clearProfile: vi.fn(), logoutProfile: vi.fn() };
 const saved = { id: 7, name: 'Alex Morgan', email: 'alex@example.com', mode: 'internship', weekly_quota: 10, master_profile: { skills: ['Python'] } };
 function mount(component, context = {}, path = '/') { return render(<MemoryRouter initialEntries={[path]}><ProfileContext.Provider value={{ ...baseContext, ...context }}>{component}</ProfileContext.Provider></MemoryRouter>); }
@@ -74,10 +74,10 @@ describe('profile setup', () => {
     expect(screen.getByRole('button', { name: 'Save profile' })).toBeEnabled();
     expect(screen.getByLabelText('Full name')).toHaveValue('Alex Morgan');
   });
-  it('opens an existing profile by its ID', async () => {
+  it('does not offer numeric IDs as authentication for an existing profile', async () => {
     const selectProfile = vi.fn().mockResolvedValue(saved); mount(<ProfilePage />, { selectProfile });
-    const user = userEvent.setup(); await user.type(screen.getByLabelText('Profile ID'), '7'); await user.click(screen.getByRole('button', { name: /Open profile/ }));
-    expect(selectProfile).toHaveBeenCalledWith('7'); expect(await screen.findByRole('status')).toHaveTextContent('Profile opened');
+    expect(screen.queryByLabelText('Profile ID')).not.toBeInTheDocument();expect(screen.queryByRole('button',{name:/Open profile/})).not.toBeInTheDocument();
+    expect(selectProfile).not.toHaveBeenCalled();
   });
   it('edits structured experience and projects with multiline highlights and technology lists', async () => {
     const profile = { ...saved, master_profile: { ...saved.master_profile, experience: [{ role: 'Intern', company: 'Example Lab', bullets: ['Built an API'], dates: '2025', location: 'Remote' }], projects: [] } };
@@ -132,6 +132,14 @@ const firstJob = { job_id: 11, application_id: 21, company_name: 'AIBridge', rol
 const secondJob = { job_id: 12, application_id: 22, company_name: 'NextCo', role_title: 'Backend Intern', match_score: 82, skill_gaps: [] };
 const replacement = { job_id: 13, company_name: 'FreshCo', role_title: 'Data Intern', match_score: 80, skill_gaps: [] };
 describe('weekly plan', () => {
+  it('requires approved review tokens for the selected exact resume versions',async()=>{
+    api.getPlan.mockResolvedValue({plan:[{...firstJob,resume_version:1,review_id:null}],alternatives:[],review_required:true});
+    const {unmount}=mount(<WeeklyPlanPage/>,{userId:'7',profile:saved});
+    expect(await screen.findByRole('button',{name:'Review AI Intern'})).toBeEnabled();expect(screen.getByRole('button',{name:'Confirm and Apply'})).toBeDisabled();unmount();
+    api.getPlan.mockResolvedValue({plan:[{...firstJob,resume_version:1,review_id:'approved-review-token'}],alternatives:[],review_required:true});api.confirmPlan.mockResolvedValue({message:'Reviewed application queued.'});
+    mount(<WeeklyPlanPage/>,{userId:'7',profile:saved});const button=await screen.findByRole('button',{name:'Confirm and Apply'});await waitFor(()=>expect(button).toBeEnabled());await userEvent.setup().click(button);
+    expect(api.confirmPlan).toHaveBeenCalledWith('7',[11],['approved-review-token']);
+  });
   it('requires a profile before requesting a plan', () => {
     mount(<WeeklyPlanPage />); expect(screen.getByRole('link', { name: /Set up profile/ })).toHaveAttribute('href', '/profile'); expect(api.getPlan).not.toHaveBeenCalled();
   });
@@ -196,6 +204,12 @@ describe('weekly plan', () => {
   });
 });
 describe('application tracker', () => {
+  it('cancels only queued work and keeps started applications explicit',async()=>{
+    api.getApplications.mockResolvedValue({total:2,items:[{id:1,role:'Queued role',company:'QA',status:'confirmed'},{id:2,role:'Started role',company:'QA',status:'applying'}]});
+    api.cancelApplication.mockResolvedValue({message:'Cancelled before execution.'});mount(<ApplicationTrackerPage/>,{userId:'7',profile:saved});
+    await userEvent.setup().click(await screen.findByRole('button',{name:'Cancel queued application'}));
+    expect(api.cancelApplication).toHaveBeenCalledWith(1);expect(await screen.findByRole('status')).toHaveTextContent('Cancelled before execution.');expect(screen.getByText(/Execution has started/)).toBeInTheDocument();
+  });
   it('shows manual recovery instructions and supports pagination and filtering', async () => {
     api.getApplications.mockImplementation((id, params) => Promise.resolve({ total: 21, page: params.page, items: [{ id: params.page, role: 'AI Intern', company: 'AIBridge', status: 'needs_action', match_score: 88, failure_reason: 'CAPTCHA detected', manual_action_url: 'https://example.com/apply', resume_url: '/resumes/7/21/download', created_at: '2026-10-21' }] }));
     mount(<ApplicationTrackerPage />, { userId: '7' }); const user = userEvent.setup();
@@ -252,7 +266,7 @@ describe('private Cloudflare workspace', () => {
     expect(screen.queryByLabelText('Profile ID')).not.toBeInTheDocument();
     expect(screen.queryByText(/access code/i)).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Open private workspace/ })).not.toBeInTheDocument();
-    expect(screen.getByText('Your profile is saved securely in this browser.')).toBeInTheDocument();
+    expect(screen.getByText('Your profile is protected by a private browser session.')).toBeInTheDocument();
     await user.type(screen.getByLabelText('Full name'), 'Alex Morgan');
     await user.type(screen.getByLabelText('Email address'), 'alex@example.com');
     const pdf = new File(['%PDF-1.4'], 'resume.pdf', { type: 'application/pdf' });

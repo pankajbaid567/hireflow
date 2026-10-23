@@ -12,8 +12,10 @@ from src.api.routes.reports import router as reports_router
 from src.api.routes.hiring import router as hiring_router
 from src.config.settings import get_settings
 from src.config.database import get_db
+from src.api.security import enforce_ownership
+from src.api.routes.account import router as account_router
 
-app = FastAPI(title="HireFlow API")
+app = FastAPI(title="HireFlow API", dependencies=[Depends(enforce_ownership)])
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -21,13 +23,23 @@ app.add_middleware(
     ],
     allow_methods=["*"],
     allow_headers=["*"],
+    allow_credentials=True,
 )
+app.include_router(account_router)
 app.include_router(profile_router)
 app.include_router(weekly_plan_router)
 app.include_router(applications_router)
 app.include_router(resumes_router)
 app.include_router(reports_router)
 app.include_router(hiring_router)
+
+
+@app.middleware("http")
+async def private_response_headers(request, call_next):
+    response = await call_next(request)
+    response.headers["Cache-Control"] = "private, no-store"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    return response
 
 
 @app.get("/health")

@@ -1,0 +1,7 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Controlled application step 1</title></head><body>
+<h1>Controlled four-step application — contact</h1>
+<form id="application_form" data-application-step="1">
+<label>Full name<input name="full_name" required></label><label>Email<input type="email" name="email" required></label><label>Phone<input name="phone" required></label>
+<button type="submit">Next</button></form>
+<script>document.querySelector('form').onsubmit=event=>{event.preventDefault();sessionStorage.setItem('application_flow_token','contact');localStorage.setItem('contact',JSON.stringify(Object.fromEntries(new FormData(event.target))));location.assign('/multi/background');};</script>
+</body></html>

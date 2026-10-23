@@ -12,6 +12,30 @@ from src.models import Application, ApplicationStatus, Base, Job, ListingType, U
 FIXTURES = Path(__file__).parent / "fixtures"
 
 
+def authenticate_client(client, db, user_id):
+    """Give an explicitly chosen, fixture-owned user a real persisted session."""
+    from datetime import datetime, timedelta, timezone
+    import secrets
+    from uuid import uuid4
+    from src.api.security import digest
+    from src.models import AuthSession
+
+    token = secrets.token_hex(32)
+    created = datetime.now(timezone.utc)
+    db.add(
+        AuthSession(
+            token_hash=digest(token),
+            id=str(uuid4()),
+            user_id=user_id,
+            created_at=created,
+            expires_at=created + timedelta(days=30),
+            label="Test browser",
+        )
+    )
+    db.commit()
+    client.cookies.set("hireflow_session", token)
+
+
 @pytest.fixture
 def db_session(tmp_path):
     engine = create_engine(

@@ -4,6 +4,7 @@ import { createServer } from 'node:http';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { chromium } from 'playwright-core';
 import type { Env } from '../src/types';
+import type { AutomationCheckpoint, AutomationCheckpointStore } from '../src/automation_checkpoints';
 
 const remote = vi.hoisted(() => ({ launch: vi.fn() }));
 const nativeFetch = globalThis.fetch;
@@ -16,7 +17,8 @@ const profile = { name: 'Test User', email: 'test@example.com', phone: '99999999
 const input = (overrides: Partial<ApplicationInput> = {}): ApplicationInput => ({
   applicationUrl: `${origin}/sample`, profile, resume: Buffer.from('%PDF-1.4\nFixture resume'),
   resumeName: 'test_resume.pdf', jdText: 'Python, FastAPI and LangChain AI Engineer Intern',
-  answer: async () => 'I want to build reliable Python agents with FastAPI and LangChain.', ...overrides,
+  approvedAnswers: { 'why do you want to work here': 'I want to build reliable Python agents with FastAPI and LangChain.' },
+  reviewBinding: 'reviewed-fixture-fingerprint', beforeFinalSubmit: async () => true, ...overrides,
 });
 const sample = readFileSync(new URL('../../tests/fixtures/sample_form.html', import.meta.url), 'utf8');
 const flaky = readFileSync(new URL('../../tests/fixtures/flaky_form.html', import.meta.url), 'utf8');
@@ -25,6 +27,13 @@ const manual = readFileSync(new URL('../../tests/fixtures/manual_action_form.htm
 const nativeForm = `<form method="post" action="/submit" enctype="multipart/form-data">
   <label>Name<input name="name" required></label><label>Email<input name="email" type="email" required></label>
   <label>Resume<input name="resume" type="file" required></label><button type="submit">Apply</button></form>`;
+const multiRoutes = () => Object.fromEntries(['contact','background','documents','review'].map(step => [`/multi/${step}`,readFileSync(new URL(`./fixtures/multistep_${step}.html`,import.meta.url),'utf8')])) as Record<string,string|FixtureResponse>;
+function memoryCheckpoint(initial: AutomationCheckpoint | null = null) {
+  let value = initial;
+  const saved: AutomationCheckpoint[] = [];
+  const store: AutomationCheckpointStore = { async load() { return value ? structuredClone(value) : null; }, async save(next) { value=structuredClone(next); saved.push(structuredClone(next)); } };
+  return { store,saved,get value() {return value;} };
+}
 
 beforeEach(() => { remote.launch.mockReset(); });
 afterEach(() => { vi.useRealTimers(); vi.restoreAllMocks(); });
@@ -86,25 +95,26 @@ describe('attempt lifecycle and budget', () => {
     expect(browser.close).toHaveBeenCalledOnce();
   });
 
-  it('includes the entire asynchronous LLM answer in the browser time budget', async () => {
+  it('includes durable checkpoint loading in the browser time budget', async () => {
     vi.useFakeTimers();
-    const question = { getAttribute: vi.fn(async (name: string) => name === 'required' ? '' : null), isDisabled: vi.fn(async () => false), isVisible: vi.fn(async () => true), evaluate: vi.fn().mockResolvedValueOnce('why do you want to work here').mockResolvedValueOnce('textarea') };
-    const form = { isVisible: vi.fn(async () => true), locator: vi.fn((selector: string) => selector === 'input[type="file"]' ? { count: async () => 1 } : { all: async () => [question] }) };
-    const page = { setDefaultTimeout: vi.fn(), setDefaultNavigationTimeout: vi.fn(), goto: vi.fn(async () => ({ status: () => 200 })), url: () => `${origin}/sample`, mainFrame: vi.fn(), locator: vi.fn((selector: string) => selector === 'form' ? { all: async () => [form] } : selector === 'body' ? { innerText: async () => 'Apply for an internship' } : { count: async () => 0 }) };
-    const context = { route: vi.fn(), newPage: vi.fn(async () => page) };
-    const browser = { newContext: vi.fn(async () => context), close: vi.fn(async () => {}) };
-    remote.launch.mockResolvedValue(browser);
-    const answer = vi.fn(() => new Promise<string>(() => {}));
-    const pending = fillApplication(input({ answer }), env);
+    const load = vi.fn(() => new Promise<never>(() => {}));
+    const pending = fillApplication(input({ checkpoints: { load, save: vi.fn() } }), env);
     await vi.advanceTimersByTimeAsync(42000);
-    expect(answer).toHaveBeenCalledOnce();
     expect(await pending).toMatchObject({ status: 'failed', submitted: false, retryable: true, reason: 'Browser time budget exceeded' });
-    expect(browser.close).toHaveBeenCalledOnce();
+    expect(remote.launch).not.toHaveBeenCalled();
+  });
+
+  it('bounds recovery writes after a browser failure instead of hanging cleanup',async()=>{
+    vi.useFakeTimers();remote.launch.mockRejectedValue(new Error('Temporary acquisition failure'));
+    const saved:AutomationCheckpoint={binding:input().reviewBinding!,applicationUrl:input().applicationUrl,url:input().applicationUrl,phase:'ready',step:0,signature:'',fields_filled:['email'],mutation_started:false,storage:{cookies:[],origins:[]},session_storage:[]};
+    const pending=fillApplication(input({checkpoints:{load:async()=>saved,save:()=>new Promise(()=>{})}}),env);
+    await vi.advanceTimersByTimeAsync(1001);
+    expect(await pending).toMatchObject({status:'needs_action',retryable:false,submitted:false,reason:'Private application recovery could not be saved. Continue manually.'});
   });
 });
 
 interface FixtureResponse { status?: number; headers?: Record<string, string>; body?: string; }
-interface BrowserProof { submitted?: any; submissionCount?: number; requests: { url: string; method: string }[]; close?: ReturnType<typeof vi.fn>; }
+interface BrowserProof { submitted?: any; submissionCount?: number; requests: { url: string; method: string }[]; requestBodies?:string[]; close?: ReturnType<typeof vi.fn>; }
 
 async function useLocalBrowser(routes: Record<string, string | FixtureResponse>, proof: BrowserProof, cookies: { name: string; value: string; url: string }[] = []) {
   vi.spyOn(globalThis, 'fetch').mockImplementation(async (url, options) => {
@@ -113,6 +123,7 @@ async function useLocalBrowser(routes: Record<string, string | FixtureResponse>,
     const value = routes[new URL(String(url)).pathname] ?? { status: 404, body: 'Not found' };
     const definition = typeof value === 'string' ? { body: value } : value;
     proof.requests.push({ url: String(url), method: options?.method || 'GET' });
+    if (options?.body && proof.requestBodies) proof.requestBodies.push(Buffer.from(options.body as ArrayBuffer).toString());
     return new Response(definition.body || '', { status: definition.status || 200, headers: { 'content-type': 'text/html', ...definition.headers } });
   });
   const browser = await chromium.launch({ headless: true, executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE || undefined });
@@ -152,17 +163,163 @@ const executable = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE || chromium.execut
 const localBrowserAvailable = existsSync(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE || chromium.executablePath()) || existsSync(executable);
 
 describe.skipIf(!localBrowserAvailable)('real local HTML form browser behavior', () => {
-  it('fills all standard fields, uploads PDF bytes and uses the JD-context LLM answer', async () => {
+  it.each(['greenhouse','lever'])('fills an owned %s-shaped public form and sends its PDF once',async portal=>{
+    const proof:BrowserProof={requests:[],requestBodies:[]};
+    await useLocalBrowser({'/sample':readFileSync(new URL(`./fixtures/public_${portal}_form.html`,import.meta.url),'utf8'),'/submit':'<h1>Application received</h1>'},proof);
+    const result=await fillApplication(input(),env);
+    expect(result).toMatchObject({status:'applied',submitted:true,retryable:false});
+    expect(result.fields_filled).toContain('resume');expect(result.fields_filled).toContain('email');
+    expect(result.fields_filled).toContain(portal==='greenhouse'?'first_name':'name');
+    expect(proof.requests.filter(item=>item.method==='POST')).toHaveLength(1);
+    expect(proof.requestBodies![0]).toContain(input().resume.toString());
+    expect(proof.requestBodies![0]).toContain('test_resume.pdf');expect(proof.requestBodies![0]).toContain(profile.email);
+  });
+  it('completes four controlled steps with reviewed facts and exactly one final POST',async () => {
+    const proof:BrowserProof={requests:[]},routes={...multiRoutes(),'/multi/sent':'OK'}, checkpoints=memoryCheckpoint();
+    await useLocalBrowser(routes,proof);
+    const beforeFinalSubmit=vi.fn(async()=>true);
+    const result=await fillApplication(input({applicationUrl:`${origin}/multi/contact`,checkpoints:checkpoints.store,beforeFinalSubmit}),env);
+    expect(result).toMatchObject({status:'applied',submitted:true,retryable:false});
+    expect(proof.requests.filter(item=>item.method==='POST')).toEqual([{url:`${origin}/multi/sent`,method:'POST'}]);
+    expect(proof.submitted).toMatchObject({full_name:profile.name,email:profile.email,education:profile.education,experience_years:'0',motivation:input().approvedAnswers!['why do you want to work here'],resume:{name:'test_resume.pdf',size:input().resume.length}});
+    expect(checkpoints.saved.filter(item=>item.phase==='ready').map(item=>item.step)).toContain(3);
+    expect(checkpoints.value?.phase).toBe('submitted');
+    expect(beforeFinalSubmit).toHaveBeenCalledTimes(4);
+  });
+
+  it('resumes the last completed step after a transient GET without repeating prior pages or final POST',async () => {
+    const proof:BrowserProof={requests:[]},routes=multiRoutes(),checkpoints=memoryCheckpoint();
+    routes['/multi/documents']={status:503,body:'Temporary controlled outage'};
+    await useLocalBrowser(routes,proof);
+    const application=input({applicationUrl:`${origin}/multi/contact`,checkpoints:checkpoints.store});
+    expect(await fillApplication(application,env)).toMatchObject({status:'failed',retryable:true,submitted:false});
+    expect(checkpoints.value).toMatchObject({phase:'ready',step:1,url:`${origin}/multi/background`});
+    routes['/multi/documents']=multiRoutes()['/multi/documents'];routes['/multi/sent']='OK';
+    vi.restoreAllMocks();await useLocalBrowser(routes,proof);
+    expect(await fillApplication(application,env)).toMatchObject({status:'applied',submitted:true,retryable:false});
+    expect(proof.requests.filter(item=>new URL(item.url).pathname==='/multi/contact')).toHaveLength(1);
+    expect(proof.requests.filter(item=>item.method==='POST')).toHaveLength(1);
+    expect(proof.submitted.full_name).toBe(profile.name);
+    expect(proof.submitted.session_token).toBe('documents');
+  });
+
+  it('requires a fresh final approval and refuses a revoked approval after three completed steps',async () => {
+    const proof:BrowserProof={requests:[]},checkpoints=memoryCheckpoint();await useLocalBrowser(multiRoutes(),proof);
+    let calls=0;
+    expect(await fillApplication(input({applicationUrl:`${origin}/multi/contact`,checkpoints:checkpoints.store,beforeFinalSubmit:async()=>++calls<4}),env)).toMatchObject({status:'needs_action',submitted:false,retryable:false});
+    expect(checkpoints.value?.phase).toBe('ready');
+    expect(proof.requests.every(item=>item.method==='GET')).toBe(true);
+  });
+
+  it('does not click any final control without an immutable review binding',async()=>{
+    const proof:BrowserProof={requests:[]};await useLocalBrowser({'/sample':sample},proof);
+    expect(await fillApplication(input({reviewBinding:undefined}),env)).toMatchObject({status:'needs_action',submitted:false,retryable:false});
+    expect(proof.submissionCount).toBe(0);
+  });
+
+  it('stops an unknown required question on a later step without submitting',async()=>{
+    const proof:BrowserProof={requests:[]},routes=multiRoutes();
+    routes['/multi/background']=String(routes['/multi/background']).replace('<button','<label>Do you need visa sponsorship?<select required name="sponsorship"><option value="">Choose</option><option>No</option></select></label><button');
+    await useLocalBrowser(routes,proof);
+    const result=await fillApplication(input({applicationUrl:`${origin}/multi/contact`}),env);
+    expect(result).toMatchObject({status:'needs_action',submitted:false,retryable:false});expect(result.reason).toContain('Required fields need answers');
+    expect(proof.requests).toHaveLength(2);
+  });
+
+  it('never replays a durable final-submit marker, even under a different review',async()=>{
+    const checkpoints=memoryCheckpoint({binding:'old-binding',applicationUrl:`${origin}/sample`,url:`${origin}/sample`,phase:'submitting',step:3,signature:'',fields_filled:[],mutation_started:true,storage:{cookies:[],origins:[]},session_storage:[]});
+    expect(await fillApplication(input({checkpoints:checkpoints.store}),env)).toMatchObject({status:'needs_action',submitted:false,retryable:false});
+    expect(remote.launch).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['CAPTCHA','<h1>Verify you are human</h1><div class="h-captcha"></div>','CAPTCHA detected'],
+    ['login','<h1>Sign in to continue</h1><input type="password">','account sign-in or registration'],
+    ['expired vacancy','<h1>This vacancy has now expired</h1>','expired or closed'],
+  ])('hands off a %s introduced on a later step',async(_kind,body,reason)=>{
+    const proof:BrowserProof={requests:[]},routes=multiRoutes();routes['/multi/background']=body;await useLocalBrowser(routes,proof);
+    const result=await fillApplication(input({applicationUrl:`${origin}/multi/contact`}),env);
+    expect(result).toMatchObject({status:'needs_action',submitted:false,retryable:false,manual_action_url:`${origin}/multi/background`});expect(result.reason).toContain(reason);
+    expect(proof.requests.every(item=>item.method==='GET')).toBe(true);
+  });
+
+  it('never retries an intermediate POST when its response cannot establish the next completed step',async()=>{
+    const proof:BrowserProof={requests:[]},checkpoints=memoryCheckpoint();
+    await useLocalBrowser({'/sample':nativeForm.replace('action="/submit"','action="/draft"').replace('>Apply<','>Next<'),'/draft':{status:503,body:'Uncertain draft response'}},proof);
+    const application=input({checkpoints:checkpoints.store});
+    expect(await fillApplication(application,env)).toMatchObject({status:'needs_action',submitted:false,retryable:false});
+    expect(checkpoints.value?.phase).toBe('uncertain');
+    expect(proof.requests.filter(item=>item.method==='POST')).toHaveLength(1);
+    const launches=remote.launch.mock.calls.length;
+    expect(await fillApplication(application,env)).toMatchObject({status:'needs_action',submitted:false,retryable:false});
+    expect(remote.launch).toHaveBeenCalledTimes(launches);
+  });
+
+  it('retains the specific CAPTCHA reason after an intermediate POST and still prohibits retry',async()=>{
+    const proof:BrowserProof={requests:[]};
+    await useLocalBrowser({'/sample':nativeForm.replace('>Apply<','>Next<'),'/submit':'<h1>Verify you are human</h1><div class="h-captcha"></div>'},proof);
+    expect(await fillApplication(input(),env)).toMatchObject({status:'needs_action',reason:'CAPTCHA detected',submitted:false,retryable:false});
+    expect(proof.requests.filter(item=>item.method==='POST')).toHaveLength(1);
+  });
+
+  it('keeps an uncertain final POST durable and never repeats it on another delivery',async()=>{
+    const proof:BrowserProof={requests:[]},checkpoints=memoryCheckpoint();
+    await useLocalBrowser({'/sample':nativeForm,'/submit':{status:503,body:'Unknown employer result'}},proof);
+    const application=input({checkpoints:checkpoints.store});
+    expect(await fillApplication(application,env)).toMatchObject({status:'needs_action',submitted:true,retryable:false});
+    expect(checkpoints.value?.phase).toBe('uncertain');const launches=remote.launch.mock.calls.length;
+    expect(await fillApplication(application,env)).toMatchObject({status:'needs_action',submitted:false,retryable:false});
+    expect(remote.launch).toHaveBeenCalledTimes(launches);expect(proof.requests.filter(item=>item.method==='POST')).toHaveLength(1);
+  });
+
+  it('blocks a site script that automatically repeats the final POST after an uncertain response',async()=>{
+    const proof:BrowserProof={requests:[]};
+    const form=nativeForm.replace('</form>',`</form><script>document.querySelector('form').onsubmit=async event=>{event.preventDefault();for(let i=0;i<2;i++){try{await fetch('/submit',{method:'POST',body:'same reviewed application'});}catch{}}};</script>`);
+    await useLocalBrowser({'/sample':form,'/submit':{status:503,body:'Unknown result'}},proof);
+    expect(await fillApplication(input(),env)).toMatchObject({status:'needs_action',submitted:true,retryable:false});
+    expect(proof.requests.filter(item=>item.method==='POST')).toHaveLength(1);
+  });
+
+  it('refuses unreviewed optional text and profile-default answer guesses',async()=>{
+    const proof:BrowserProof={requests:[]};await useLocalBrowser({'/sample':sample.replace('name="motivation" required','name="motivation"')},proof);
+    const result=await fillApplication(input({approvedAnswers:{},profile:{...profile,answers:{'why do you want to work here':'Unreviewed profile default'}}}),env);
+    expect(result).toMatchObject({status:'needs_action',submitted:false,retryable:false});expect(result.reason).toContain('written answer needs review');
+    expect(proof.submissionCount).toBe(0);
+  });
+
+  it('never substitutes the candidate identity for a required reference given name',async()=>{
+    const proof:BrowserProof={requests:[]};await useLocalBrowser({'/sample':sample.replace('<button','<label>Reference first name<input name="reference_first_name" required></label><button')},proof);
+    const result=await fillApplication(input(),env);
+    expect(result).toMatchObject({status:'needs_action',submitted:false,retryable:false});expect(result.reason).toContain('reference first name');expect(proof.submissionCount).toBe(0);
+  });
+
+  it.each([
+    '<label><input type="checkbox" name="consent" checked>I consent to data processing</label>',
+    '<label>Visa sponsorship<select name="sponsorship"><option selected>No</option><option>Yes</option></select></label>',
+  ])('does not authorize prefilled optional answers or consent: %s',async field=>{
+    const proof:BrowserProof={requests:[]};await useLocalBrowser({'/sample':sample.replace('<button',`${field}<button`)},proof);
+    expect(await fillApplication(input(),env)).toMatchObject({status:'needs_action',submitted:false,retryable:false});expect(proof.submissionCount).toBe(0);
+  });
+
+  it('stops before advancing when a durable checkpoint cannot be written',async()=>{
+    const proof:BrowserProof={requests:[]};await useLocalBrowser(multiRoutes(),proof);
+    const checkpoints={load:async()=>null,save:async()=>{throw new Error('Private storage outage');}};
+    const result=await fillApplication(input({applicationUrl:`${origin}/multi/contact`,checkpoints}),env);
+    expect(result).toMatchObject({status:'needs_action',submitted:false,retryable:false});expect(result.reason).toContain('recovery could not be saved');
+    expect(proof.requests).toHaveLength(1);
+  });
+
+  it('fills all standard fields, uploads PDF bytes and uses only the reviewed written answer', async () => {
     const proof: BrowserProof = { requests: [] };
     await useLocalBrowser({ '/sample': sample }, proof);
-    const answer = vi.fn(async (_question: string) => 'I want to build Python agents with FastAPI and LangChain.');
+    const answer = vi.fn(async () => 'UNREVIEWED LLM OUTPUT');
     const result = await fillApplication(input({ answer }), env);
     expect(result).toMatchObject({ status: 'applied', submitted: true, retryable: false, reason: null });
     expect(new Set(result.fields_filled)).toEqual(new Set(['name', 'email', 'phone', 'education', 'experience_years', 'skills', 'free_text', 'resume']));
-    expect(proof.submitted).toMatchObject({ full_name: 'Test User', email: profile.email, phone: profile.phone, education: 'BTech', experience_years: '0', skills: 'Python; FastAPI; LangChain', motivation: await answer.mock.results[0].value });
+    expect(proof.submitted).toMatchObject({ full_name: 'Test User', email: profile.email, phone: profile.phone, education: 'BTech', experience_years: '0', skills: 'Python; FastAPI; LangChain', motivation: input().approvedAnswers!['why do you want to work here'] });
     expect(proof.submitted.resume).toEqual({ name: 'test_resume.pdf', size: input().resume.length, type: 'application/pdf' });
     expect(proof.submissionCount).toBe(1);
-    expect(answer.mock.calls[0][0]).toContain(input().jdText);
+    expect(answer).not.toHaveBeenCalled();
     expect(proof.close).toHaveBeenCalledOnce();
   });
 
@@ -193,7 +350,7 @@ describe.skipIf(!localBrowserAvailable)('real local HTML form browser behavior',
   it('allows explicitly supplied required answers', async () => {
     const proof: BrowserProof = { requests: [] };
     await useLocalBrowser({ '/sample': manual }, proof);
-    expect(await fillApplication(input({ profile: { ...profile, answers: { 'work authorization': 'Yes', consent: true } } }), env)).toMatchObject({ status: 'applied', submitted: true });
+    expect(await fillApplication(input({ approvedAnswers: { 'are you authorized to work in this country': 'Yes', 'i consent to data processing': 'true' } }), env)).toMatchObject({ status: 'applied', submitted: true });
     expect(proof.submissionCount).toBe(1);
   });
 
@@ -201,21 +358,21 @@ describe.skipIf(!localBrowserAvailable)('real local HTML form browser behavior',
     const proof: BrowserProof = { requests: [] };
     const radios = '<label>Work authorization Yes<input type="radio" name="work_authorization" value="yes" required></label><label>Work authorization No<input type="radio" name="work_authorization" value="no" required></label>';
     await useLocalBrowser({ '/sample': sample.replace('<button type="submit">', `${radios}<button type="submit">`) }, proof);
-    expect(await fillApplication(input({ profile: { ...profile, answers: { 'work authorization': 'Yes' } } }), env)).toMatchObject({ status: 'applied', submitted: true });
+    expect(await fillApplication(input({ approvedAnswers: { ...input().approvedAnswers, 'work authorization yes': 'Yes', 'work authorization no': 'Yes' } }), env)).toMatchObject({ status: 'applied', submitted: true });
     expect(proof.submitted.work_authorization).toBe('yes');
   });
 
   it('never interprets an explicit false consent answer as permission', async () => {
     const proof: BrowserProof = { requests: [] };
     await useLocalBrowser({ '/sample': manual.replace('name="consent" required', 'name="consent" value="false" required') }, proof);
-    expect(await fillApplication(input({ profile: { ...profile, answers: { 'work authorization': 'Yes', consent: false } } }), env)).toMatchObject({ status: 'needs_action', submitted: false, retryable: false });
+    expect(await fillApplication(input({ approvedAnswers: { 'are you authorized to work in this country': 'Yes', 'i consent to data processing': 'false' } }), env)).toMatchObject({ status: 'needs_action', submitted: false, retryable: false });
     expect(proof.submissionCount).toBe(0);
   });
 
-  it('requires manual review when the answer callback fails without leaking the error', async () => {
+  it('never uses an LLM callback to invent an unreviewed answer', async () => {
     const proof: BrowserProof = { requests: [] };
     await useLocalBrowser({ '/sample': sample }, proof);
-    const result = await fillApplication(input({ answer: async () => { throw new Error('secret-provider-error'); } }), env);
+    const result = await fillApplication(input({ approvedAnswers: {}, answer: async () => { throw new Error('secret-provider-error'); } }), env);
     expect(result).toMatchObject({ status: 'needs_action', submitted: false, retryable: false });
     expect(result.reason).not.toContain('secret-provider-error');
     expect(proof.submissionCount).toBe(0);

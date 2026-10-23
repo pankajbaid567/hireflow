@@ -10,7 +10,7 @@ import pytest
 from src.agents.prep_guide_agent import PrepGuideAgent
 from src.models import PrepGuide
 from src.utils.web_search import WebSearch
-from tests.helpers import seed_application
+from tests.helpers import seed_application, authenticate_client
 
 
 def test_rounds_explicit_jd_count_types_and_focus():
@@ -350,6 +350,7 @@ def test_prep_guide_api_returns_every_section_and_company_context(
     api_client, db_session
 ):
     application = seed_application(db_session)
+    authenticate_client(api_client, db_session, application.user_id)
     agent = PrepGuideAgent(search_client=Mock())
     intel = {"stage": "startup", "interview_summary": "No interview reviews found"}
     guide = agent.generate(
@@ -375,6 +376,7 @@ def test_prep_guide_api_returns_every_section_and_company_context(
 
 def test_prep_guide_api_not_ready_or_missing_application(api_client, db_session):
     application = seed_application(db_session)
+    authenticate_client(api_client, db_session, application.user_id)
     assert (
         api_client.get(f"/applications/{application.id}/prep-guide").status_code == 404
     )

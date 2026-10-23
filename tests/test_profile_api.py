@@ -38,7 +38,9 @@ def client(tmp_path, monkeypatch):
             db.close()
 
     app.dependency_overrides[get_db] = override_get_db
-    monkeypatch.setattr("src.api.routes.profile.get_llm_client", lambda: StubLLMClient())
+    monkeypatch.setattr(
+        "src.api.routes.profile.get_llm_client", lambda: StubLLMClient()
+    )
     monkeypatch.setattr(
         "src.api.routes.profile._extract_pdf_text",
         lambda _: "Test Student\nPython and FastAPI developer",
@@ -99,8 +101,8 @@ def test_get_profile_by_id(client):
 def test_get_profile_not_found(client):
     response = client.get("/profile/999")
 
-    assert response.status_code == 404
-    assert response.json()["detail"] == "Profile not found."
+    assert response.status_code == 401
+    assert "session is unavailable" in response.json()["detail"]
 
 
 def test_invalid_mode_is_rejected(client):
@@ -132,18 +134,29 @@ def test_create_profile_from_pdf(client):
 
 def test_extended_profile_preferences_survive_multipart_resume_save(client):
     import json
+
     fields = {
-        "name": "Test Student", "email": "details@example.com", "mode": "job",
-        "summary": "Built a project.", "min_salary": "1200000", "min_stipend": "",
+        "name": "Test Student",
+        "email": "details@example.com",
+        "mode": "job",
+        "summary": "Built a project.",
+        "min_salary": "1200000",
+        "min_stipend": "",
         "confirmation_mode": "individual",
         "links": json.dumps([{"label": "GitHub", "url": "https://github.com/example"}]),
         "certifications": json.dumps(["Example certification"]),
         "achievements": json.dumps(["Hackathon finalist"]),
         "languages": json.dumps(["English"]),
         "blacklist_companies": json.dumps(["Excluded Company"]),
-        "projects": json.dumps([{"name": "Actual project", "description": "Actual work"}]),
+        "projects": json.dumps(
+            [{"name": "Actual project", "description": "Actual work"}]
+        ),
     }
-    response = client.post("/profile", data=fields, files={"resume": ("resume.pdf", b"%PDF-1.4", "application/pdf")})
+    response = client.post(
+        "/profile",
+        data=fields,
+        files={"resume": ("resume.pdf", b"%PDF-1.4", "application/pdf")},
+    )
     assert response.status_code == 201
     profile = response.json()["master_profile"]
     assert profile["links"][0]["url"] == "https://github.com/example"

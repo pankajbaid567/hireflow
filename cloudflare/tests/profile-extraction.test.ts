@@ -7,6 +7,7 @@ import { Miniflare, convertV4MiniflareOptions } from 'miniflare';
 const root = fileURLToPath(new URL('../', import.meta.url));
 const code = 'profile-extraction-test-private-code-24';
 let bundle: string, mf: Miniflare, providerFails: boolean;
+let providerStatus:number,providerCalls:number;
 let db: Awaited<ReturnType<Miniflare['getD1Database']>>;
 const extracted = { name: 'Resume Candidate', email: 'resume@example.com', phone: '9999999999', skills: ['Python', 'LangGraph'],
   mode: 'internship', weekly_quota: 10, experience_years: 1, summary: 'Built internal tools.',
@@ -19,10 +20,11 @@ beforeAll(() => {
 });
 beforeEach(async () => {
   providerFails = false;
+  providerStatus=400;providerCalls=0;
   mf = new Miniflare(convertV4MiniflareOptions({ modules: true, script: bundle, compatibilityDate: '2026-10-21', compatibilityFlags: ['nodejs_compat'],
     d1Databases: ['DB'], r2Buckets: ['FILES'], queueProducers: { APPLICATION_QUEUE: 'profile-test' },
     bindings: { ACCESS_CODE: code, GEMINI_API_KEY: 'mock-key', BROWSER_ENABLED: 'false' },
-    outboundService: () => providerFails ? new Response('{}', { status: 400 }) : Response.json({ candidates: [{ content: { parts: [{ text: JSON.stringify(extracted) }] } }] }),
+    outboundService: () => {providerCalls++;return providerFails ? new Response('{}', { status: providerStatus,headers:{'Retry-After':'45'} }) : Response.json({ candidates: [{ content: { parts: [{ text: JSON.stringify(extracted) }] } }] });},
   }));
   db = await mf.getD1Database('DB');
   await applyTestMigrations(db);
@@ -87,5 +89,13 @@ describe('resume profile saves retain complete facts', () => {
     const created = await request('/profile', { name: 'Legacy', email: 'legacy@example.com', mode: 'job', resume_extraction_warning: 'Old extraction failed' });
     const response = await request('/weekly-plan/1/confirm', { confirmed_job_ids: [1] }, created.headers.get('set-cookie')!.split(';')[0]);
     expect(response.status).toBe(409); expect(await response.text()).toContain('upload it again');
+  });
+  it('returns a typed rate limit and Retry-After without automatically retrying or replacing saved facts',async()=>{
+    const created=await request('/profile',{name:'Saved Candidate',email:'saved@example.com',mode:'job',skills:['Python'],projects:extracted.projects});
+    const cookie=created.headers.get('set-cookie')!.split(';')[0],before=await created.json() as any;
+    providerFails=true;providerStatus=429;
+    const response=await request('/profile/1',upload(),cookie);
+    expect(response.status).toBe(429);expect(response.headers.get('Retry-After')).toBe('45');expect(await response.json()).toMatchObject({provider_failure:{kind:'rate_limited',retryable:true,retry_after_seconds:45}});expect(providerCalls).toBe(1);
+    const row=await db.prepare('SELECT master_profile,profile_version FROM users WHERE id=1').first<any>();expect(JSON.parse(row!.master_profile)).toEqual(before.master_profile);expect(row!.profile_version).toBe(1);
   });
 });

@@ -1,0 +1,7 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Controlled application step 2</title></head><body>
+<h1>Controlled four-step application — background</h1>
+<form id="application_form" data-application-step="2">
+<label>Education<input name="education" required></label><label>Years of experience<input name="experience_years" type="number" min="0" required></label><label>Skills<textarea name="skills" required></textarea></label>
+<button type="submit">Save and continue</button></form>
+<script>document.querySelector('form').onsubmit=event=>{event.preventDefault();sessionStorage.setItem('application_flow_token','background');localStorage.setItem('background',JSON.stringify(Object.fromEntries(new FormData(event.target))));location.assign('/multi/documents');};</script>
+</body></html>

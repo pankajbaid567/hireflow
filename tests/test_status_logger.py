@@ -4,7 +4,7 @@ import pytest
 
 from src.models import Application, ApplicationStatus, ApplicationStatusEvent, Job, User
 from src.utils.status_logger import StatusLogger
-from tests.helpers import seed_application
+from tests.helpers import seed_application, authenticate_client
 
 
 def test_status_trail_has_all_lifecycle_states_reasons_and_timestamps(db_session):
@@ -102,6 +102,7 @@ def test_status_unknown_application_and_invalid_status_rejected(db_session):
 
 def test_tracker_api_paginated_status_reasons_and_resume_links(api_client, db_session):
     application = seed_application(db_session, ApplicationStatus.planned)
+    authenticate_client(api_client, db_session, application.user_id)
     application.resume_path = "data/resumes/1/1_resume_v1.pdf"
     application.resume_version = 1
     StatusLogger(db_session).log(
@@ -167,6 +168,7 @@ def test_tracker_api_paginated_status_reasons_and_resume_links(api_client, db_se
 )
 def test_tracker_api_rejects_invalid_filters(api_client, db_session, params):
     application = seed_application(db_session)
+    authenticate_client(api_client, db_session, application.user_id)
     assert (
         api_client.get(
             f"/applications/{application.user_id}", params=params
@@ -177,6 +179,7 @@ def test_tracker_api_rejects_invalid_filters(api_client, db_session, params):
 
 def test_tracker_api_unknown_user_and_empty_page(api_client, db_session):
     application = seed_application(db_session)
+    authenticate_client(api_client, db_session, application.user_id)
     assert api_client.get("/applications/9999").status_code == 404
     response = api_client.get(
         f"/applications/{application.user_id}", params={"page": 9}

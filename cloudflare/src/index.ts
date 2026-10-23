@@ -9,6 +9,10 @@ import { processTask, scheduledRecovery } from './tasks';
 import { validatePublicUrl } from './automation';
 import { files } from './files';
 import { createTransfer, consumeTransfer } from './session_transfer';
+import { accountSecurity, cleanupAccountSecurity } from './account_security';
+import { cancelQueuedApplication, createSubmissionReview, editResume, regenerateResume, rejectResume, resumeDraft, reviewQuestions } from './reviews';
+import { getOperationsStatus, newOperationContext, pruneOperations, recordOperation } from './telemetry';
+import { runModelDiagnostics, safeProviderHealth } from './provider_health';
 
 function number(value: string | null, fallback?: number, max = Number.MAX_SAFE_INTEGER) {
   const n = value === null && fallback !== undefined ? fallback : Number(value);
@@ -33,6 +37,13 @@ async function route(request: Request, env: Env): Promise<Response> {
   }
   if (method==='GET' && path==='/docs') return json({title:'HireFlow Cloudflare API',authentication:'Create a profile through the dashboard. Private requests require its HttpOnly session cookie. Administrative recovery uses a separate operator credential.',
     endpoints:['POST /profile','GET/PATCH /profile/{id}','POST /session/login','POST /session/logout','GET /session','POST /jobs/{id}','POST /jobs/{id}/discover','GET /weekly-plan/{id}','POST /weekly-plan/{id}/swap','POST /weekly-plan/{id}/confirm','GET /applications/{id}','GET /applications/{application_id}/prep-guide','GET /resumes/{id}','GET /resumes/{id}/{application_id}/download','POST /report/{id}/generate','GET /report/{id}/latest','GET /report/{id}/latest/html','POST /report/{id}/latest/email','POST /hiring/shortlist']});
+  const accountResponse=await accountSecurity(request,env);
+  if(accountResponse)return accountResponse;
+  if((match=path.match(/^\/operations\/(\d+)(\/diagnostics)?$/))) {
+    const id=number(match[1]);await requireUser(request,env,id);
+    if(method==='GET'&&!match[2])return json({...await getOperationsStatus(env,id),providers:await safeProviderHealth(env)});
+    if(method==='POST'&&match[2])return json(await runModelDiagnostics(env,id));
+  }
   if (method==='GET' && path==='/session') {
     const userId=await sessionUser(request,env); return json({authenticated:!!userId,...(userId?{user_id:userId}:{})});
   }
@@ -84,8 +95,18 @@ async function route(request: Request, env: Env): Promise<Response> {
     if(method==='POST') {
       const body=await readJson(request);
       if(match[2]==='swap') return json(await swapPlan(env,id,number(String(body.remove_job_id)),number(String(body.add_job_id))));
-      if(match[2]==='confirm') return json(await confirmPlan(env,id,body.confirmed_job_ids));
+      if(match[2]==='confirm') return json(await confirmPlan(env,id,body.confirmed_job_ids,body.review_ids));
     }
+  }
+  if((match=path.match(/^\/applications\/(\d+)\/(resume-draft|resume-reject|resume-regenerate|review|cancel)$/))) {
+    const owner=await requireUser(request,env),id=number(match[1]),action=match[2];
+    if(method==='GET'&&action==='resume-draft')return json(await resumeDraft(env,owner,id));
+    if(method==='GET'&&action==='review')return json(await reviewQuestions(env,owner,id));
+    if(method==='PUT'&&action==='resume-draft')return json(await editResume(env,owner,id,await readJson(request)));
+    if(method==='POST'&&action==='resume-reject')return json(await rejectResume(env,owner,id,await readJson(request)));
+    if(method==='POST'&&action==='resume-regenerate')return json(await regenerateResume(env,owner,id,await readJson(request)));
+    if(method==='POST'&&action==='review')return json(await createSubmissionReview(env,owner,id,await readJson(request)),201);
+    if(method==='POST'&&action==='cancel')return json(await cancelQueuedApplication(env,owner,id));
   }
   if((match=path.match(/^\/applications\/(\d+)\/prep-guide$/)) && method==='GET') {
     const id=number(match[1]); const app=await first(env,`${applicationQuery} WHERE a.id=?`,id);
@@ -169,6 +190,7 @@ export function parseCsv(csv: string): Row[] {
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
+    const started=Date.now();env={...env,OPERATION_CONTEXT:newOperationContext()};
     const origin=request.headers.get('origin'); const origins=(env.ALLOWED_ORIGINS||'').split(',').map((s:string)=>s.trim()).filter(Boolean);
     const allowed=!origin||origins.includes(origin)||origin===new URL(request.url).origin;
     let response:Response;
@@ -182,8 +204,10 @@ export default {
     }
     const headers=new Headers(response.headers);
     if(origin&&allowed){headers.set('Access-Control-Allow-Origin',origin);headers.set('Access-Control-Allow-Credentials','true');headers.set('Vary','Origin');}
-    headers.set('Access-Control-Allow-Methods','GET, POST, PATCH, OPTIONS'); headers.set('Access-Control-Allow-Headers','Content-Type, X-HireFlow-Access-Code');
+    headers.set('Access-Control-Allow-Methods','GET, POST, PUT, PATCH, DELETE, OPTIONS'); headers.set('Access-Control-Allow-Headers','Content-Type, X-HireFlow-Access-Code');
+    headers.set('X-Request-ID',env.OPERATION_CONTEXT!.correlation_id);headers.set('Access-Control-Expose-Headers','X-Request-ID');
     headers.set('X-Content-Type-Options','nosniff');
+    if(request.method!=='OPTIONS')await recordOperation(env,{operation:'request',outcome:response.status<400?'success':response.status===429?'limited':'failed',http_status:response.status,latency_ms:Date.now()-started});
     return new Response(response.body,{status:response.status,headers});
   },
   async queue(batch: MessageBatch<Task>, env: Env) {
@@ -192,5 +216,5 @@ export default {
       catch { console.error(JSON.stringify({event:'queue_processing_failed',application_id:message.body?.application_id})); message.retry({delaySeconds:120}); }
     }
   },
-  async scheduled(_event: ScheduledController, env: Env) { await scheduledRecovery(env); },
+  async scheduled(_event: ScheduledController, env: Env) { await scheduledRecovery(env); await cleanupAccountSecurity(env);await pruneOperations(env); },
 } satisfies ExportedHandler<Env,Task>;

@@ -63,6 +63,16 @@ describe('portable matching', () => {
 });
 
 describe('bounded REST providers', () => {
+  it('shares a 15-second generation deadline across response headers and body consumption',async()=>{
+    vi.useFakeTimers();
+    mockFetch((_url,init)=>new Promise(resolve=>setTimeout(()=>{
+      const response=reply({});
+      Object.defineProperty(response,'json',{value:()=>new Promise((_done,reject)=>init.signal!.addEventListener('abort',()=>reject(new Error('private body timeout')),{once:true}))});
+      resolve(response);
+    },14000)));
+    const assertion=expect(generateText(env({GROQ_API_KEY:'test-key'}),'synthetic timeout fixture')).rejects.toMatchObject({provider_failure:{kind:'timeout'}});
+    await vi.advanceTimersByTimeAsync(15000);await assertion;expect(vi.getTimerCount()).toBe(0);
+  });
   it('calls Groq with the verified model, header-only credentials and bounded output', async () => {
     const fetch = mockFetch((url, init) => {
       expect(url).toBe('https://api.groq.com/openai/v1/chat/completions');

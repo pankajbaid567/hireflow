@@ -6,6 +6,7 @@ from src.models.prep_guide import PrepGuide
 from src.models.report import WeeklyReport
 from src.models.status_event import ApplicationStatusEvent
 from src.models.shortlist import Shortlist
+from src.models.account_security import AuthSession, AccountRecoveryKey, AccountAttempt
 
 # Expose models and Base for easier importing elsewhere
 __all__ = [
@@ -21,4 +22,7 @@ __all__ = [
     "WeeklyReport",
     "ApplicationStatusEvent",
     "Shortlist",
+    "AuthSession",
+    "AccountRecoveryKey",
+    "AccountAttempt",
 ]

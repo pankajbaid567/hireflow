@@ -1,4 +1,4 @@
-export interface Env extends Omit<CloudflareBindings, 'APPLICATION_QUEUE'> {
+export interface Env extends Omit<CloudflareBindings, 'APPLICATION_QUEUE' | 'SUBMISSION_DELAY_SECONDS' | 'OPERATIONS_RETENTION_DAYS'> {
   FILES?: R2Bucket;
   APPLICATION_QUEUE: Queue<Task>;
   ACCESS_CODE: string;
@@ -9,8 +9,12 @@ export interface Env extends Omit<CloudflareBindings, 'APPLICATION_QUEUE'> {
   SERPAPI_API_KEY?: string;
   RESEND_API_KEY?: string;
   SENDGRID_API_KEY?: string;
+  WEBAUTHN_RP_ID?: string;
+  SUBMISSION_DELAY_SECONDS?: string;
+  OPERATIONS_RETENTION_DAYS?: string;
+  OPERATION_CONTEXT?: {correlation_id: string; user_id?: number; cycle_id?: string};
 }
-export interface Task { application_id: number; kind: 'apply' | 'prep'; }
+export interface Task { application_id: number; kind: 'apply' | 'prep'; review_id?: string; }
 export type Row = Record<string, any>;
 export class ApiError extends Error {
   constructor(public status: number, message: string) { super(message); }

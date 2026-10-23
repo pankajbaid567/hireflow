@@ -16,20 +16,14 @@ async function restoreCloudSession() {
   if (pendingTransfer) await pendingTransfer;
   return api.getSession();
 }
-function storedId() {
-  if (isCloudflare()) return '';
-  try { return localStorage.getItem(STORAGE_KEY) || ''; } catch { return ''; }
-}
 export function ProfileProvider({ children }) {
-  const [userId, setUserId] = useState(storedId);
+  const [userId, setUserId] = useState('');
   const [profile, setProfile] = useState(null);
-  const [loading, setLoading] = useState(isCloudflare());
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const activateProfile = useCallback(profile => {
     const id = String(profile.id);
-    if (!isCloudflare()) {
-      try { localStorage.setItem(STORAGE_KEY, id); } catch { /* Storage may be disabled. */ }
-    }
+    try { localStorage.removeItem(STORAGE_KEY); } catch { /* Storage may be disabled. */ }
     setUserId(id); setProfile(profile); setError('');
   }, []);
   const clearProfile = useCallback(() => {
@@ -43,21 +37,21 @@ export function ProfileProvider({ children }) {
     finally { setLoading(false); }
   }, [activateProfile]);
   const logoutProfile = useCallback(async () => {
-    if (isCloudflare()) await api.logoutSession();
+    await api.logoutSession();
     clearProfile();
   }, [clearProfile]);
   useEffect(() => {
     let active = true;
-    if (isCloudflare()) {
+    {
       // A cached numeric ID is never used as proof of ownership.
       try { localStorage.removeItem(STORAGE_KEY); } catch { /* Storage may be disabled. */ }
-      restoreCloudSession().then(async session => {
+      (isCloudflare()?restoreCloudSession():api.getSession()).then(async session => {
         if (!session.authenticated || !session.user_id) return;
         const data = await api.getProfile(session.user_id);
         if (active) activateProfile(data);
       }).catch(error => { if (active) setError(errorMessage(error)); })
         .finally(() => { if (active) setLoading(false); });
-    } else if (userId) selectProfile(userId).catch(() => {});
+    }
     return () => { active = false; };
   }, []);
   return <ProfileContext.Provider value={{ userId, profile, loading, error, activateProfile, selectProfile, clearProfile, logoutProfile }}>{children}</ProfileContext.Provider>;

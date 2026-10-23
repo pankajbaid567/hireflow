@@ -5,7 +5,7 @@ from src.agents.report_generator import ReportGenerator
 from src.config.settings import get_settings
 from src.models import Application, ApplicationStatus, Job, WeeklyReport
 from src.utils.dates import week_start
-from tests.helpers import seed_application
+from tests.helpers import seed_application, authenticate_client
 
 
 def test_report_current_week_insights_study_plan_and_actions(db_session, tmp_path):
@@ -125,6 +125,7 @@ def test_report_html_escapes_profile_company_and_unsafe_links(db_session, tmp_pa
 
 def test_report_latest_and_html_api(api_client, db_session, tmp_path, monkeypatch):
     application = seed_application(db_session)
+    authenticate_client(api_client, db_session, application.user_id)
     monkeypatch.setattr(get_settings(), "local_storage_path", str(tmp_path))
     assert api_client.get(f"/report/{application.user_id}/latest").status_code == 404
     response = api_client.post(f"/report/{application.user_id}/generate")

@@ -248,7 +248,7 @@ c.save()
   assert.equal((await jsonGet('/api/health')).runtime, 'cloudflare-workers');
   await page.goto(`${site}/profile`, { waitUntil: 'networkidle' });
   await page.getByLabel('Resume PDF', { exact: true }).waitFor();
-  assert.equal(await page.locator('input[type="password"]').count(), 0, 'Normal profile creation must not require an owner access code');
+  assert.equal(await page.locator('input[type="password"]:visible').count(), 0, 'Normal profile creation must not require an owner access code');
   assert.equal(await page.getByLabel('Profile ID', { exact: true }).count(), 0, 'Cloud profiles must not use ID-only authentication');
   proof.noOwnerAccessField = true;
   await shot('01-profile-before-upload');
@@ -386,6 +386,16 @@ c.save()
   await page.getByRole('button', { name: 'Close resume preview', exact: true }).click();
 
   phase('confirm_only_controlled_fixture_via_ui');
+  assert.equal(await page.getByRole('button',{name:'Confirm this opportunity',exact:true}).isDisabled(),true);
+  await page.locator('.job-card').filter({hasText:finalCompany}).getByRole('button',{name:`Review ${role}`,exact:true}).click();
+  const reviewDialog=page.getByRole('dialog');
+  await reviewDialog.getByRole('link',{name:`Open PDF v${application.resume_version}`,exact:true}).waitFor();
+  const reviewResponse=page.waitForResponse(response=>response.url()===`${site}/api/applications/${proof.applicationId}/review`&&response.request().method()==='POST');
+  await reviewDialog.getByRole('checkbox',{name:/I reviewed PDF/}).check();
+  await reviewDialog.getByRole('button',{name:'Approve PDF and answers',exact:true}).click();
+  const approvedResponse=await reviewResponse;assert.equal(approvedResponse.status(),201);
+  const approved=await approvedResponse.json();proof.review={approved:true,resumeVersion:approved.resume_version,profileVersion:approved.profile_version};
+  await reviewDialog.waitFor({state:'hidden'});
   const confirmResponse = page.waitForResponse(r => r.url() === `${site}/api/weekly-plan/${proof.userId}/confirm` && r.request().method() === 'POST');
   await page.getByRole('button', { name: 'Confirm this opportunity', exact: true }).click();
   assert.equal((await confirmResponse).status(), 200);

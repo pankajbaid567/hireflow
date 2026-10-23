@@ -2,7 +2,7 @@ import axios from 'axios';
 
 export const API_BASE = (import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '');
 export const isCloudflare = () => import.meta.env.VITE_DEPLOYMENT_TARGET === 'cloudflare';
-const client = axios.create({ baseURL: API_BASE, timeout: 120000, withCredentials: isCloudflare() });
+const client = axios.create({ baseURL: API_BASE, timeout: 120000, withCredentials: true });
 
 export function errorMessage(error) {
   const detail = error?.response?.data?.detail;
@@ -36,11 +36,30 @@ export const api = {
   getSession: () => client.get('/session').then(r => r.data),
   logoutSession: () => client.post('/session/logout').then(r => r.data),
   consumeTransfer: token => client.post('/session/transfer/consume', { token }).then(r => r.data),
+  getAccountSecurity: () => client.get('/account/security').then(r => r.data),
+  createPasskeyOptions: () => client.post('/account/passkeys/options', {}).then(r => r.data),
+  registerPasskey: data => client.post('/account/passkeys/register', data).then(r => r.data),
+  deletePasskey: id => client.delete(`/account/passkeys/${encodeURIComponent(id)}`).then(r => r.data),
+  rotateRecoveryKeys: () => client.post('/account/recovery-keys/rotate', {}).then(r => r.data),
+  revokeSession: id => client.delete(`/account/sessions/${encodeURIComponent(id)}`).then(r => r.data),
+  revokeAllSessions: () => client.post('/account/sessions/revoke-all', {}).then(r => r.data),
+  passkeyLoginOptions: () => client.post('/account/passkeys/login-options', {}).then(r => r.data),
+  passkeyLoginVerify: data => client.post('/account/passkeys/login-verify', data).then(r => r.data),
+  recoverWorkspace: data => client.post('/account/recover', data).then(r => r.data),
+  getOperations: id => client.get(`/operations/${id}`).then(r => r.data),
+  runModelDiagnostics: id => client.post(`/operations/${id}/diagnostics`, {}).then(r => r.data),
   discoverJobs: id => client.post(`/jobs/${id}/discover`).then(r => r.data),
   addJob: (id, data) => client.post(`/jobs/${id}`, data).then(r => r.data),
   getPlan: id => client.get(`/weekly-plan/${id}`).then(r => r.data),
   swapJob: (id, remove_job_id, add_job_id) => client.post(`/weekly-plan/${id}/swap`, { remove_job_id, add_job_id }).then(r => r.data),
-  confirmPlan: (id, confirmed_job_ids) => client.post(`/weekly-plan/${id}/confirm`, { confirmed_job_ids }).then(r => r.data),
+  confirmPlan: (id, confirmed_job_ids, review_ids) => client.post(`/weekly-plan/${id}/confirm`, { confirmed_job_ids, ...(review_ids ? { review_ids } : {}) }).then(r => r.data),
+  getResumeDraft: applicationId => client.get(`/applications/${applicationId}/resume-draft`).then(r => r.data),
+  editResume: (applicationId, data) => client.put(`/applications/${applicationId}/resume-draft`, data).then(r => r.data),
+  rejectResume: (applicationId, resume_version) => client.post(`/applications/${applicationId}/resume-reject`, { resume_version }).then(r => r.data),
+  regenerateResume: (applicationId, resume_version) => client.post(`/applications/${applicationId}/resume-regenerate`, { resume_version }).then(r => r.data),
+  getApplicationReview: applicationId => client.get(`/applications/${applicationId}/review`).then(r => r.data),
+  approveApplicationReview: (applicationId, data) => client.post(`/applications/${applicationId}/review`, data).then(r => r.data),
+  cancelApplication: applicationId => client.post(`/applications/${applicationId}/cancel`, {}).then(r => r.data),
   getApplications: (id, params) => client.get(`/applications/${id}`, { params }).then(r => r.data),
   getPrepGuide: id => client.get(`/applications/${id}/prep-guide`).then(r => r.data),
   getResumes: id => client.get(`/resumes/${id}`).then(r => r.data),

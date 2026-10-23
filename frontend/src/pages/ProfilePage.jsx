@@ -4,6 +4,9 @@ import { api, errorMessage, isCloudflare } from '../api/client';
 import { useProfile } from '../context/ProfileContext';
 import ModeSelector from '../components/ModeSelector';
 import ProfileDetailsEditor from '../components/ProfileDetailsEditor';
+import AccountSecurity from '../components/AccountSecurity';
+import RecoverWorkspace from '../components/RecoverWorkspace';
+import OperationsStatus from '../components/OperationsStatus';
 import { ErrorNotice, Loading, PageHeading } from '../components/UI';
 
 const blank = { name: '', email: '', phone: '', skills: '', mode: 'internship', weekly_quota: 10, target_roles: '', preferred_locations: '', education: '', experience_years: '', min_stipend: '', min_salary: '', blacklist_companies: '', confirmation_mode: 'batch', summary: '', experience: [], projects: [], links: [], certifications: [], achievements: [], languages: [] };
@@ -27,11 +30,10 @@ function educationText(value) {
   return String(value);
 }
 export default function ProfilePage() {
-  const { profile, userId, loading, error: profileError, activateProfile, selectProfile, clearProfile, logoutProfile } = useProfile();
+  const { profile, userId, loading, error: profileError, activateProfile, clearProfile, logoutProfile } = useProfile();
   const cloud = isCloudflare();
   const [form, setForm] = useState(blank);
   const [resume, setResume] = useState(null);
-  const [existingId, setExistingId] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -74,10 +76,6 @@ export default function ProfilePage() {
     catch (error) { setError(errorMessage(error)); }
     finally { setBusy(false); }
   }
-  async function openProfile(event) {
-    event.preventDefault(); setError(''); setSuccess('');
-    try { await selectProfile(existingId); setSuccess('Profile opened.'); } catch (error) { setError(errorMessage(error)); }
-  }
   async function signOut() {
     setBusy(true); setError('');
     try { await logoutProfile(); setResume(null); setSuccess('You have signed out. This browser no longer has access to that profile.'); }
@@ -86,6 +84,7 @@ export default function ProfilePage() {
   }
   const resumeUpload = <><label className="upload-area"><FileUp size={27} aria-hidden="true" /><strong>{resume ? resume.name : 'Add your resume'}</strong><span>Choose a PDF · up to {cloud ? 3 : 10} MB</span><input key={uploadKey} aria-label="Resume PDF" type="file" accept=".pdf,application/pdf" onChange={event => { setResume(event.target.files?.[0] || null); setError(''); }} /></label>{profile?.master_profile?.master_resume_path && <p className="field-help">A resume is already saved. Upload a new PDF to replace it.</p>}</>;
   return <><PageHeading eyebrow="YOUR FOUNDATION" title="A profile that feels like you.">Tell us where you want to go. We’ll help you find the way.</PageHeading>
+    {!profile&&typeof api.recoverWorkspace==='function'&&<details className="panel workspace-recovery"><summary>Already have a workspace? Sign in</summary><RecoverWorkspace api={api} passkeysEnabled={cloud} onRecovered={async session=>{activateProfile(await api.getProfile(session.user_id));setSuccess('Your workspace is open in this browser.');}}/></details>}
     {loading && <Loading label="Opening your profile…" />}{(error || profileError) && <ErrorNotice>{error || profileError}</ErrorNotice>}{success && <div className="notice notice-success" role="status"><CheckCircle2 size={19} />{success}</div>}
     {profile?.master_profile?.resume_extraction_warning && <div className="notice notice-info" role="status">{String(profile.master_profile.resume_extraction_warning)}</div>}
     <div className="profile-layout"><form className="panel profile-form" onSubmit={submit}><div className="section-heading"><span className="section-icon"><UserRound size={20} /></span><div><h2>{profile ? 'Your profile' : 'Let’s get acquainted'}</h2><p>A few details make every match more personal.</p></div>{profile && !cloud && <span className="pill">ID {userId}</span>}</div>
@@ -98,7 +97,9 @@ export default function ProfilePage() {
       {(!cloud || profile) && <><div className="form-divider" /><h3>Your starting resume</h3>{resumeUpload}</>}
       <footer className="form-footer"><p>You’ll review your plan before applications are submitted.</p><button className="button" disabled={busy || loading} type="submit"><Save size={17} />{busy ? 'Saving…' : 'Save profile'}</button></footer>
     </form><aside className="profile-aside"><div className="gentle-card"><span className="eyebrow">A LITTLE INTENTION GOES FAR</span><h2>Better matches.<br />More meaningful moves.</h2><p>Your skills and preferences shape every opportunity, every resume, and every prep guide.</p><ol><li><span>01</span>Build your profile</li><li><span>02</span>Review your weekly plan</li><li><span>03</span>Apply with confidence</li></ol></div>
-      {cloud ? <section className="panel small-panel"><h3>Your private workspace</h3><p>Your profile is saved securely in this browser.</p>{profile ? <><p>You are signed in as {profile.email}.</p><button type="button" className="button button-secondary" disabled={busy || loading} onClick={signOut}>Sign out</button><p className="field-help">Signing out ends access to this profile in this browser.</p></> : <><p>Upload your resume and save your profile to get started. Return in this browser to continue.</p>{previousWorkspace() && <a className="button button-secondary" href={previousWorkspace()}>Continue an existing workspace <ArrowRight size={16} /></a>}</>}</section> : <form className="panel small-panel" onSubmit={openProfile}><h3>Already have a profile?</h3><p>Open it with the profile ID from your last visit.</p><label>Profile ID<input type="number" min="1" value={existingId} onChange={event => setExistingId(event.target.value)} required placeholder="e.g. 1" /></label><button type="submit" className="button button-secondary" disabled={loading}>Open profile <ArrowRight size={16} /></button>{profile && <button type="button" className="text-button" onClick={() => { clearProfile(); setSuccess(''); setResume(null); }}>Create a different profile</button>}</form>}
+      <section className="panel small-panel"><h3>Your private workspace</h3><p>Your profile is protected by a private browser session.</p>{profile ? <><p>You are signed in as {profile.email}.</p><button type="button" className="button button-secondary" disabled={busy || loading} onClick={signOut}>Sign out</button><p className="field-help">Save recovery keys in account security before signing out or moving to another device.</p></> : <><p>Upload your resume and save your profile to get started. Recover an existing workspace using a credential you previously saved.</p>{cloud&&previousWorkspace() && <a className="button button-secondary" href={previousWorkspace()}>Continue an existing workspace <ArrowRight size={16} /></a>}</>}</section>
     </aside></div>
+    {profile&&typeof api.getAccountSecurity==='function'&&<AccountSecurity api={api} onSignedOut={()=>{clearProfile();setSuccess('Your sessions have been revoked.');}}/>}
+    {cloud&&profile&&<OperationsStatus userId={userId} loadStatus={api.getOperations} runDiagnostics={api.runModelDiagnostics}/>}
   </>;
 }
