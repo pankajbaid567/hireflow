@@ -2,7 +2,7 @@ import { ApiError, type Env, type Row, parsed } from './types';
 import { all, applicationQuery, first, run, userById } from './storage';
 import { digest } from './auth';
 import { files } from './files';
-import { createResume } from './pdf';
+import { createResume, ResumeFormatError } from './pdf';
 import { validatePublicUrl } from './automation';
 import { normalizeReviewQuestion } from './review_contract';
 
@@ -14,7 +14,9 @@ function stable(value: unknown): string {
   if (value && typeof value === 'object') return `{${Object.keys(value).sort().map(key => `${JSON.stringify(key)}:${stable((value as Row)[key])}`).join(',')}}`;
   return JSON.stringify(value) ?? 'null';
 }
-export const jobFingerprint = (app: Row) => digest(stable({ url: app.url, title: app.title, company: app.company, description: app.description }));
+export const jobFingerprint = (app: Row) => digest(stable({ url: app.url, title: app.title, company: app.company, description: app.description,
+  posted_date:app.posted_date??null,application_url:app.application_url??app.url,location:app.location??null,listing_type:app.listing_type??null,expires_at:app.expires_at??null,
+  required_experience:parsed(app.required_experience,null),compensation:parsed(app.compensation,null),selection_process:parsed(app.selection_process,[]) }));
 export const buildReviewBinding = (value: Row) => digest(stable({ application_id: value.application_id, user_id: value.user_id, profile_version: value.profile_version,
   resume_version: value.resume_version, resume_path: value.resume_path, resume_hash: value.resume_hash, jd_hash: value.jd_hash, answers: parsed(value.answers, {}) }));
 export async function ownedApplication(env: Env, userId: number, appId: number) {
@@ -68,16 +70,16 @@ export async function editResume(env: Env, userId: number, appId: number, data: 
   const key = `resumes/${userId}/${app.job_id}_resume_v${version}_${crypto.randomUUID()}.pdf`;
   let bytes: Uint8Array;
   try { bytes = createResume(draft, app, parsed(app.matched_skills, [])); }
-  catch { throw new ApiError(422, 'This resume could not be formatted. Shorten overly long fields and try again.'); }
+  catch (error) { throw new ApiError(422, error instanceof ResumeFormatError?error.message:'This resume could not be formatted. Shorten overly long fields and try again.'); }
   await files(env).put(key, bytes, { httpMetadata: { contentType: 'application/pdf' } });
   const now = new Date().toISOString();
   try {
     const result = await env.DB.batch([
       env.DB.prepare(`INSERT INTO resumes(application_id,version,object_key,profile_snapshot,tailoring_metadata)
-        SELECT ?,?,?,?,? WHERE EXISTS(SELECT 1 FROM applications WHERE id=? AND user_id=? AND status='planned' AND resume_version=? AND resume_path=? AND (SELECT profile_version FROM users WHERE id=?)=?)
-        ON CONFLICT(application_id,version) DO NOTHING RETURNING id`).bind(app.id, version, key, JSON.stringify(draft), JSON.stringify({ method: 'user_edited', summary: draft.summary || '', profile_version: user.profile_version, previous_version: app.resume_version, warnings: [] }), app.id, userId, app.resume_version, app.resume_path, userId, user.profile_version),
+        SELECT ?,?,?,?,? WHERE EXISTS(SELECT 1 FROM applications WHERE id=? AND user_id=? AND status='planned' AND resume_version=? AND resume_path=? AND (SELECT profile_version FROM users WHERE id=?)=? AND EXISTS(SELECT 1 FROM jobs WHERE id=applications.job_id AND facts_version=?))
+        ON CONFLICT(application_id,version) DO NOTHING RETURNING id`).bind(app.id, version, key, JSON.stringify(draft), JSON.stringify({ method: 'user_edited', summary: draft.summary || '', profile_version: user.profile_version, previous_version: app.resume_version, warnings: [] }), app.id, userId, app.resume_version, app.resume_path, userId, user.profile_version,app.facts_version),
       env.DB.prepare(`UPDATE applications SET resume_version=?,resume_path=?,resume_rejected_version=0,confirmed_review_id=NULL,updated_at=? WHERE id=? AND user_id=? AND status='planned' AND resume_version=?
-        AND EXISTS(SELECT 1 FROM resumes WHERE application_id=? AND version=? AND object_key=?) RETURNING id`).bind(version, key, now, app.id, userId, app.resume_version, app.id, version, key),
+        AND EXISTS(SELECT 1 FROM jobs WHERE id=applications.job_id AND facts_version=?) AND EXISTS(SELECT 1 FROM resumes WHERE application_id=? AND version=? AND object_key=?) RETURNING id`).bind(version, key, now, app.id, userId, app.resume_version, app.facts_version, app.id, version, key),
       env.DB.prepare('UPDATE submission_reviews SET revoked_at=? WHERE application_id=? AND revoked_at IS NULL AND EXISTS(SELECT 1 FROM applications WHERE id=? AND resume_version=?)').bind(now, app.id, app.id, version),
     ]);
     if (!result[1].results.length) { await files(env).delete(key); throw new ApiError(409, 'The plan changed. Reload before editing this resume.'); }

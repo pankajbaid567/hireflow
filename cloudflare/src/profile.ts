@@ -43,6 +43,9 @@ function validate(data: Row): Row {
     data[field] ??= [];
     if (!Array.isArray(data[field]) || data[field].length > 100 || data[field].some((v: any) => typeof v !== 'string' || v.length > 300)) throw new ApiError(422, `${field} must be a list of strings`);
   }
+  if(data.company_aliases!=null){
+    if(typeof data.company_aliases!=='object'||Array.isArray(data.company_aliases)||Object.keys(data.company_aliases).length>50||Object.entries(data.company_aliases).some(([name,values])=>name.length>300||!Array.isArray(values)||values.length>10||values.some(value=>typeof value!=='string'||value.length>300)))throw new ApiError(422,'Company aliases must contain up to 50 employer names, each with up to 10 short name variants.');
+  }
   data.experience ??= []; data.projects ??= [];
   if (!Array.isArray(data.experience) || !Array.isArray(data.projects)) throw new ApiError(422, 'Experience and projects must be lists');
   for(const field of ['min_stipend','min_salary']) {

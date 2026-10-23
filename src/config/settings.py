@@ -25,7 +25,8 @@ class Settings(BaseSettings):
 
     allowed_origins: str = Field(default="http://localhost:3000")
     spam_filter_threshold: float = 0.7
-    embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2"
+    embedding_model: str = "BAAI/bge-small-en-v1.5"
+    semantic_matching_enabled: bool = False
     faiss_index_path: str = "data/faiss_index"
     tavily_api_key: str | None = None
     serpapi_api_key: str | None = None

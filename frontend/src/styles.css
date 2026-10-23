@@ -55,3 +55,10 @@
 .job-review-state{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:12px 24px;border-top:1px solid var(--border,#dce2dd);font-size:13px}
 @media(max-width:640px){.review-body{padding:16px}.resume-comparison{grid-template-columns:1fr}.application-review{max-height:95vh}.job-review-state{padding:12px 16px}.review-tabs .button{flex:1}}
 @media(max-width:640px){.workspace-recovery form{grid-template-columns:1fr}.account-security{padding:18px}.account-security .button{white-space:normal}}
+
+.listing-facts { padding: 0 24px 16px; color: var(--muted, #52645d); font-size: 13px; }
+.listing-facts summary { cursor: pointer; font-weight: 600; }
+.listing-facts dl { display: grid; grid-template-columns: repeat(auto-fit, minmax(145px, 1fr)); gap: 12px; margin: 14px 0; }
+.listing-facts dt { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
+.listing-facts dd { margin: 3px 0 0; overflow-wrap: anywhere; color: var(--ink, #173d34); }
+.listing-facts li { overflow-wrap: anywhere; }

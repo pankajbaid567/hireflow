@@ -1,0 +1,14 @@
+{
+  "version": "controlled-sources-v1",
+  "scope": "No network requests: explicit synthetic search and HEAD responses for each existing preparation case. Not live company/resource quality.",
+  "facts_url": "https://company.example.com/about",
+  "facts_content": "Synthetic Employer is bootstrapped. It has 42 employees and uses Python and SQL.",
+  "facts_expected": {"stage": "bootstrapped", "team_size": "42", "tech_stack": ["Python", "SQL"]},
+  "news_url": "https://company.example.com/news/synthetic-release",
+  "news_content": "Synthetic Employer released its fictional QA training product.",
+  "news_relative_days": {"0": -10000, "1": 1, "2": -7, "3": -7},
+  "review_url": "https://www.glassdoor.com/Interview/synthetic-evaluation-fixture.htm",
+  "review_content": "Synthetic fixture: a candidate described two rounds, technical and HR. This is not an actual review.",
+  "conditions": {"facts_absent_modulo4": 0, "reviews_absent_modulo3": 0},
+  "resources": {"origin": "https://docs.example.com", "broken_status": 404, "working_count_per_topic": 2}
+}

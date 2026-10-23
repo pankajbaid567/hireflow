@@ -99,7 +99,8 @@ describe('active individual job discovery', () => {
       return response({ text: 'AI Engineering Intern', descriptionPlain: description, createdAt: Date.parse(now), categories: { location: 'Paris', commitment: 'Internship' } });
     });
     const jobs = await discoverJobs(env, { mode: 'internship' });
-    expect(jobs).toEqual([{ title: 'AI Engineering Intern', company, description, url: 'https://jobs.eu.lever.co/euroco/abc-123', listing_type: 'internship', location: 'Paris', posted_date: now }]);
+    expect(jobs).toHaveLength(1);expect(jobs[0]).toMatchObject({source:'Lever',required_skills:['Python','React'],compensation:{disclosed:false},provenance:{kind:'ats_api'}});
+    expect(jobs).toMatchObject([{ title: 'AI Engineering Intern', company, description, url: 'https://jobs.eu.lever.co/euroco/abc-123', listing_type: 'internship', location: 'Paris', posted_date: now }]);
   });
 
   it('verifies Greenhouse public job JSON and omits unpublished jobs rather than falling back to a cached search result', async () => {

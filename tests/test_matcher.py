@@ -131,7 +131,7 @@ class TestExperienceFitScore:
         assert score <= 0.2
 
     def test_experienced_profile_matches_senior_role(self):
-        profile = {"mode": "job", "experience": ["job1", "job2", "job3", "job4"]}
+        profile = {"mode": "job", "experience_years": 8, "experience": ["job1", "job2", "job3", "job4"]}
         score = _experience_fit_score(
             profile, "8 years experience preferred", "Senior Backend Engineer"
         )
@@ -174,14 +174,14 @@ class TestCompensationFitScore:
     def test_internship_above_min_stipend(self):
         profile = {"min_stipend": 10000}
         score = _compensation_fit_score(
-            profile, "Stipend: 15000 per month", ListingType.internship
+            profile, "Stipend: INR 15000 per month", ListingType.internship
         )
         assert score == 1.0
 
     def test_internship_below_min_stipend(self):
         profile = {"min_stipend": 50000}
         score = _compensation_fit_score(
-            profile, "Stipend: 5000 per month", ListingType.internship
+            profile, "Stipend: INR 5000 per month", ListingType.internship
         )
         assert score <= 0.2
 
@@ -190,7 +190,9 @@ class TestCompensationFitScore:
         score = _compensation_fit_score(
             profile, "Competitive salary offered, CTC 20 LPA", ListingType.job
         )
-        assert score >= 0.7
+        # Without a candidate minimum, a pay mention is neutral rather than a
+        # quality/fit bonus. Explicit compensation parsing is tested separately.
+        assert score == 0.5
 
 
 # ---------------------------------------------------------------------------

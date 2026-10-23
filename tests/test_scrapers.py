@@ -651,7 +651,7 @@ class TestSaveJobsToDb:
             title=title,
             company=company,
             location="Remote",
-            description="A test job description.",
+            description="Build Python backend services with documented APIs, SQL data models, reliable tests and deployment workflows. Work with the engineering team on one scoped delivery.",
             url=url,
             listing_type=ListingType.job,
         )
@@ -798,7 +798,6 @@ class TestGenericScraperMockLLM:
         scraper = GenericScraper("https://example.com/careers")
         jobs = scraper.scrape_from_html("<html><body>Static Jobs</body></html>")
         
-        assert len(jobs) == 1
-        assert jobs[0].title == "Backend Dev"
-        assert jobs[0].company == "example"
-        assert jobs[0].location == "NYC"
+        # A title/link selected by a model without a source-backed detail JD
+        # must not become a supposedly verified listing.
+        assert jobs == []

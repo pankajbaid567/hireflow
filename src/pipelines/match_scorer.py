@@ -17,6 +17,7 @@ import argparse
 import json
 import logging
 import re
+import math
 from typing import Any
 
 from src.config.database import SessionLocal
@@ -24,6 +25,7 @@ from src.models.application import Application, ApplicationStatus
 from src.models.job import Job, ListingType
 from src.models.user import User
 from src.utils.skills import extract_skills, normalize_skill
+from src.config.settings import get_settings
 
 logger = logging.getLogger(__name__)
 
@@ -73,7 +75,7 @@ STIPEND_PATTERN = re.compile(
 
 
 def _skill_match_score(
-    profile: dict, jd_text: str
+    profile: dict, jd_text: str, required_skills: list[str] | None = None
 ) -> tuple[float, list[str], list[str]]:
     """
     Returns (score 0-1, matched_skills, skill_gaps).
@@ -83,7 +85,8 @@ def _skill_match_score(
     required = list(
         dict.fromkeys(
             normalize_skill(s)
-            for s in extract_skills(jd_text, profile.get("skills") or [])
+            for s in [*extract_skills(jd_text, profile.get("skills") or []),
+                      *(value for value in (required_skills or []) if isinstance(value, str) and value.strip())]
         )
     )
     matched = [s for s in required if s in user_skills]
@@ -99,14 +102,8 @@ def _role_fit_score(profile: dict, job_title: str) -> float:
     if not target_roles:
         return 0.5  # neutral if no preference set
 
-    for role in target_roles:
-        # Exact substring match
-        role_words = set(role.split())
-        title_words = set(title_lower.split())
-        overlap = role_words & title_words
-        if overlap:
-            return min(len(overlap) / len(role_words), 1.0)
-    return 0.0
+    title_words = set(re.findall(r"[\w+#]+", title_lower))
+    return max((len(set(re.findall(r"[\w+#]+", role)) & title_words) / max(1, len(set(re.findall(r"[\w+#]+", role)))) for role in target_roles), default=0.)
 
 
 def _experience_fit_score(profile: dict, jd_text: str, job_title: str) -> float:
@@ -114,31 +111,15 @@ def _experience_fit_score(profile: dict, jd_text: str, job_title: str) -> float:
     Estimates experience fit.
     Freshers/interns score highly for junior/intern roles; poorly for senior roles.
     """
-    mode = profile.get("mode", "job")
-    experience = profile.get("experience") or []
-    years_exp = profile.get("experience_years") or len(experience)
-
-    title_lower = job_title.lower()
-    jd_lower = jd_text.lower()
-
-    is_senior_role = any(k in title_lower or k in jd_lower for k in SENIOR_KEYWORDS)
-    is_junior_role = any(k in title_lower or k in jd_lower for k in JUNIOR_KEYWORDS)
-
-    if mode == "internship" or years_exp == 0:
-        if is_junior_role:
-            return 1.0
-        if is_senior_role:
-            return 0.1
-        return 0.6  # neutral roles are acceptable for freshers
-
-    # job mode with some experience
-    if is_senior_role and years_exp >= 3:
-        return 0.9
-    if is_senior_role and years_exp < 2:
-        return 0.3
-    if is_junior_role and years_exp > 3:
-        return 0.4  # overqualified
-    return 0.7
+    from src.utils.listings import parse_experience, experience_fit
+    years = max(0, float(profile.get("experience_years") or 0))
+    required = parse_experience(jd_text)
+    if required:
+        return experience_fit(required, years)
+    words = set(re.findall(r"\w+", job_title.lower()))
+    if words & JUNIOR_KEYWORDS and years <= 2:
+        return 1.
+    return .2 if words & SENIOR_KEYWORDS and years < 2 else .5
 
 
 def _location_match_score(profile: dict, job_location: str | None) -> float:
@@ -162,48 +143,19 @@ def _location_match_score(profile: dict, job_location: str | None) -> float:
 def _compensation_fit_score(
     profile: dict, jd_text: str, listing_type: ListingType
 ) -> float:
-    """Score compensation fit based on min_stipend (internship) or salary mention."""
-    if listing_type == ListingType.internship:
-        min_stipend = profile.get("min_stipend")
-        if min_stipend is None:
-            return 0.7  # no minimum set
-
-        # Try to find stipend number in JD
-        matches = STIPEND_PATTERN.findall(jd_text)
-        amounts = [int(m[0].replace(",", "")) for m in matches if m[0]]
-        if not amounts:
-            return 0.5  # can't determine
-        max_mentioned = max(amounts)
-        if max_mentioned >= min_stipend:
-            return 1.0
-        elif max_mentioned >= min_stipend * 0.7:
-            return 0.5
-        return 0.1
-    else:
-        # For full jobs, a mention of salary/compensation is a positive signal
-        comp_keywords = [
-            "salary",
-            "compensation",
-            "ctc",
-            "lpa",
-            "per annum",
-            "usd",
-            "inr",
-        ]
-        if any(k in jd_text.lower() for k in comp_keywords):
-            return 0.8
-        return 0.5
+    """Compare only disclosed, compatible currency/period compensation."""
+    from src.utils.listings import parse_compensation, compensation_fit
+    kind = listing_type.value if hasattr(listing_type, "value") else listing_type
+    return compensation_fit(parse_compensation(jd_text), profile, kind)
 
 
 def _company_signal_score(profile: dict, company_name: str) -> float:
     """
-    Simple heuristic: well-known companies get a small boost.
-    In production this would be a lookup against a company tier list.
-    For now: non-empty company name = 0.7, empty = 0.0.
+    Neutral employer-name completeness only, never prestige or legitimacy.
     """
     if not company_name or not company_name.strip():
         return 0.0
-    return 0.7
+    return 0.5
 
 
 # ---------------------------------------------------------------------------
@@ -211,7 +163,7 @@ def _company_signal_score(profile: dict, company_name: str) -> float:
 # ---------------------------------------------------------------------------
 
 
-def compute_match_score(profile: dict, job: "Job") -> dict[str, Any]:
+def compute_match_score(profile: dict, job: "Job", *, semantic_score: float | None = None) -> dict[str, Any]:
     """
     Compute the weighted multi-factor match score between a profile and a job.
 
@@ -224,13 +176,30 @@ def compute_match_score(profile: dict, job: "Job") -> dict[str, Any]:
     jd_text = job.description or ""
     job_title = job.title or ""
 
-    skill_score, skill_matches, skill_gaps = _skill_match_score(profile, jd_text)
+    required_skills = getattr(job, "required_skills", None)
+    skill_score, skill_matches, skill_gaps = _skill_match_score(profile, f"{job_title} {jd_text}",
+        required_skills if isinstance(required_skills, list) else None)
     role_score = _role_fit_score(profile, job_title)
     exp_score = _experience_fit_score(profile, jd_text, job_title)
     loc_score = _location_match_score(profile, job.location)
     comp_score = _compensation_fit_score(profile, jd_text, job.listing_type)
+    required_experience = getattr(job, "required_experience", None)
+    compensation = getattr(job, "compensation", None)
+    if isinstance(required_experience, dict):
+        from src.utils.listings import experience_fit
+        exp_score = experience_fit(required_experience, max(0, float(profile.get("experience_years") or 0)))
+    if isinstance(compensation, dict):
+        from src.utils.listings import compensation_fit
+        comp_score = compensation_fit(compensation, profile, getattr(job.listing_type, "value", job.listing_type))
     company_score = _company_signal_score(profile, job.company)
 
+    lexical_technical = skill_score
+    if semantic_score is not None and not math.isfinite(semantic_score):
+        semantic_score = None
+    if semantic_score is not None:
+        # Six factor weights stay unchanged. Semantic context contributes only
+        # 20% of the existing 40% technical factor, never new claimed skills.
+        skill_score = 0.8 * skill_score + 0.2 * max(0.0, min(1.0, semantic_score))
     factor_scores = {
         "skill_match": round(skill_score, 4),
         "role_fit": round(role_score, 4),
@@ -241,9 +210,13 @@ def compute_match_score(profile: dict, job: "Job") -> dict[str, Any]:
     }
 
     total = sum(WEIGHTS[k] * v for k, v in factor_scores.items())
+    lexical_factors = {**factor_scores, "skill_match": round(lexical_technical, 4)}
 
     return {
         "total_score": round(total, 4),
+        "lexical_score": round(sum(WEIGHTS[key] * value for key, value in lexical_factors.items()), 4),
+        "semantic_score": round(semantic_score, 4) if semantic_score is not None else None,
+        "matching_method": "hybrid" if semantic_score is not None else "lexical",
         "factor_scores": factor_scores,
         "skill_matches": skill_matches,
         "skill_gaps": skill_gaps,
@@ -255,7 +228,7 @@ def compute_match_score(profile: dict, job: "Job") -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 
-def score_jobs_for_user(user_id: int, dry_run: bool = False, db=None) -> list[dict]:
+def score_jobs_for_user(user_id: int, dry_run: bool = False, db=None, semantic_pipeline=None) -> list[dict]:
     """
     Score all non-spam jobs for the given user and (optionally) persist results.
 
@@ -281,20 +254,37 @@ def score_jobs_for_user(user_id: int, dry_run: bool = False, db=None) -> list[di
         )
         logger.info(f"Scoring {len(jobs)} non-spam jobs for user {user_id}")
 
+        settings = get_settings()
+        semantic, matching_state = {}, "disabled"
+        if settings.semantic_matching_enabled and jobs:
+            try:
+                from src.pipelines.embedding_pipeline import EmbeddingPipeline, _fingerprint
+                pipeline = semantic_pipeline or EmbeddingPipeline()
+                # Bounded lexical candidate retrieval, then genuine FAISS
+                # similarity. Empty/outage results do not pretend to be AI.
+                pool = sorted(jobs, key=lambda job: (-compute_match_score(profile, job)["total_score"], job.id))[:200]
+                semantic = pipeline.semantic_scores(profile, pool, user_id=user_id,
+                    profile_version=_fingerprint(profile))
+                matching_state = "ready" if semantic else "unavailable"
+            except Exception:
+                logger.warning("Semantic matching unavailable; retaining lexical scores")
+                matching_state = "unavailable"
         results = []
         for job in jobs:
-            score_data = compute_match_score(profile, job)
+            score_data = compute_match_score(profile, job, semantic_score=semantic.get(job.id))
             results.append(
                 {
                     "job_id": job.id,
                     "job_title": job.title,
                     "company": job.company,
+                    "matching_state": matching_state,
+                    "embedding_model": settings.embedding_model if job.id in semantic else None,
                     **score_data,
                 }
             )
 
         # Sort by total_score descending and assign rank
-        results.sort(key=lambda r: r["total_score"], reverse=True)
+        results.sort(key=lambda r: (-r["total_score"], r["job_id"]))
         for rank, result in enumerate(results, start=1):
             result["rank"] = rank
 
@@ -317,12 +307,21 @@ def score_jobs_for_user(user_id: int, dry_run: bool = False, db=None) -> list[di
                     )
                     db.add(app)
 
+                if app.status not in (ApplicationStatus.pending, ApplicationStatus.planned):
+                    # Do not rewrite historical/submitted matching evidence.
+                    continue
+
                 app.match_score = result["total_score"]
                 app.skill_gaps = {
                     "skill_matches": result["skill_matches"],
                     "skill_gaps": result["skill_gaps"],
                     "factor_scores": result["factor_scores"],
                     "rank": result["rank"],
+                    "matching_method": result["matching_method"],
+                    "matching_state": result["matching_state"],
+                    "lexical_score": result["lexical_score"],
+                    "semantic_score": result["semantic_score"],
+                    "embedding_model": result["embedding_model"],
                 }
             db.commit()
             logger.info(f"Saved {len(results)} application records for user {user_id}")

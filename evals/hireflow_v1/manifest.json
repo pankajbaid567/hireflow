@@ -1,0 +1,35 @@
+{
+  "dataset_version": "hireflow-synthetic-v1",
+  "sha256": "c5a169eedc5b8bfe25fdbfb557ac4d87e4ac0b54a04d5ae01ccf2b6bfd484cc3",
+  "case_count": 120,
+  "source": "Entirely invented profiles, companies, projects and labels; no production data, resumes or employer applications.",
+  "label_author": "Repository-authored synthetic relevance rubric; not independently human-annotated or hiring-outcome labels.",
+  "split_policy": "Domain-group split; no ranking domain appears in both dev and heldout. Different task families may reuse a synthetic domain, so do not use another task to tune heldout ranking.",
+  "model": "BAAI/bge-small-en-v1.5",
+  "cloudflare_model": "@cf/baai/bge-small-en-v1.5",
+  "pooling": "cls",
+  "hybrid_alpha": 0.2,
+  "technical_factor_weight": 0.4,
+  "thresholds": {
+    "ranking": {
+      "heldout_ndcg_at_3_improvement": 0.03,
+      "heldout_recall_at_1_improvement": 0.05,
+      "max_heldout_recall_at_3_regression": 0.02
+    },
+    "selection": {
+      "unsupported_claim_rate_max": 0,
+      "experience_education_preservation_min": 1,
+      "relevant_project_recall_min": 0.9
+    },
+    "preparation": {
+      "jd_skill_question_coverage_min": 0.9,
+      "category_coverage_min": 1,
+      "unsupported_company_claims_max": 0
+    },
+    "extraction_live": {
+      "field_accuracy_min": 0.95,
+      "forbidden_employment_claims_max": 0
+    }
+  },
+  "freeze_rule": "Thresholds and alpha are declared before the first BGE evaluation. If heldout adoption fails, retain lexical default; do not retune on these heldout labels."
+}

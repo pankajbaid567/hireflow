@@ -30,6 +30,21 @@ def process_confirmed_applications(application_ids, session_factory):
                     continue
                 users.add(application.user_id)
                 try:
+                    snapshot = application.job_snapshot or {}
+                    changed = snapshot and (snapshot.get("target_url", application.job.url) != application.job.url or any(
+                        snapshot.get(key) != value
+                        for key, value in {
+                            "company": application.job.company,
+                            "role": application.job.title,
+                            "description": application.job.description,
+                            "application_url": application.job.application_url or application.job.url,
+                        }.items()
+                    ))
+                    from src.pipelines.quota_selector import QuotaSelector
+                    reason = QuotaSelector(db)._ineligible_reason(application, application.user)
+                    if changed or reason:
+                        StatusLogger(db).log(application, "needs_action", "Listing or eligibility changed after confirmation. Review before applying again." if changed else str(reason))
+                        continue
                     ResumeService().prepare(application, db)
                     try:
                         intel = CompanyIntelAgent(search).research(

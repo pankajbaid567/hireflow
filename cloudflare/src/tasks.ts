@@ -1,6 +1,7 @@
 import { fillApplication } from './automation';
 import { buildPrepGuide } from './intelligence';
-import { all, first, run, applicationQuery, transition, userById, dispatchOutbox } from './storage';
+import { all, first, run, applicationQuery, transition, userById, dispatchOutbox, historicalListing } from './storage';
+import { submittedCompanies, companyWasSubmitted } from './company_policy';
 import { type Env, type Task, parsed } from './types';
 import { files } from './files';
 import { checkpointStore, resumableCheckpoint } from './automation_checkpoints';
@@ -19,7 +20,7 @@ export async function processTask(env: Env, message: Message<Task>) {
     if (await first(env, 'SELECT id FROM prep_guides WHERE application_id=?', application.id)) { message.ack(); return; }
     try {
       const user = await userById(env, application.user_id);
-      const guide = await buildPrepGuide(env, user.master_profile, application);
+      const guide = await buildPrepGuide(env, user.master_profile, historicalListing(application));
       await run(env, 'INSERT INTO prep_guides(application_id,structured_data,company_intel) VALUES(?,?,?) ON CONFLICT(application_id) DO NOTHING', application.id, JSON.stringify(guide), JSON.stringify(guide.company_intel || {}));
       await log('success'); message.ack();
     } catch { await log('retry_scheduled',{error_kind:'unavailable',queue_delay_seconds:60}); message.retry({ delaySeconds: 60 }); }
@@ -52,6 +53,10 @@ export async function processTask(env: Env, message: Message<Task>) {
     await schedulePrep(env, application.id); message.ack(); return;
   }
   // A new immutable KV key may take time to reach a different edge location.
+  if(application.expires_at&&Date.parse(application.expires_at)<Date.now()){
+    await transition(env,application.id,'confirmed','needs_action','This listing has expired. Check the employer for a current vacancy.',application.url);
+    await log('skipped');await schedulePrep(env,application.id);message.ack();return;
+  }
   // Wait before acquiring a browser or consuming its daily budget.
   const object=application.resume_path?await files(env).get(application.resume_path):null;
   if(!object){
@@ -62,6 +67,10 @@ export async function processTask(env: Env, message: Message<Task>) {
   }
   const resumeBytes = new Uint8Array(await object.arrayBuffer());
   const user = await userById(env,application.user_id);
+  if(companyWasSubmitted(application,await submittedCompanies(env,application.user_id,user.master_profile))){
+    await transition(env,application.id,'confirmed','needs_action','A submission or uncertain external write already exists for this company. Check the employer before applying again.',application.url);
+    await log('skipped'); await schedulePrep(env,application.id); message.ack(); return;
+  }
   const review = await getValidSubmissionReview(env,application,user,resumeBytes);
   if (!review) {
     await transition(env,application.id,'confirmed','needs_action','The reviewed profile, resume, listing or application answers changed or expired. Review again before applying.',application.url);

@@ -51,6 +51,7 @@ export const api = {
   discoverJobs: id => client.post(`/jobs/${id}/discover`).then(r => r.data),
   addJob: (id, data) => client.post(`/jobs/${id}`, data).then(r => r.data),
   getPlan: id => client.get(`/weekly-plan/${id}`).then(r => r.data),
+  refreshMatching: id => client.post(`/weekly-plan/${id}/refresh-matches`, {}).then(r => r.data),
   swapJob: (id, remove_job_id, add_job_id) => client.post(`/weekly-plan/${id}/swap`, { remove_job_id, add_job_id }).then(r => r.data),
   confirmPlan: (id, confirmed_job_ids, review_ids) => client.post(`/weekly-plan/${id}/confirm`, { confirmed_job_ids, ...(review_ids ? { review_ids } : {}) }).then(r => r.data),
   getResumeDraft: applicationId => client.get(`/applications/${applicationId}/resume-draft`).then(r => r.data),

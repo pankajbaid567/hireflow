@@ -1,4 +1,3 @@
-from io import BytesIO
 import json
 from pathlib import Path
 from uuid import uuid4
@@ -14,7 +13,7 @@ from fastapi import (
     status,
 )
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
-from pypdf import PdfReader
+from src.utils.pdf_text import extract_resume_text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from starlette.datastructures import UploadFile as StarletteUploadFile
@@ -50,6 +49,7 @@ class ProfileCreate(BaseModel):
     achievements: list[str] = Field(default_factory=list)
     languages: list[str] = Field(default_factory=list)
     blacklist_companies: list[str] = Field(default_factory=list)
+    company_aliases: dict[str, list[str]] = Field(default_factory=dict)
     confirmation_mode: Literal["batch", "individual"] = "batch"
 
     model_config = ConfigDict(extra="allow")
@@ -80,6 +80,13 @@ class ProfileCreate(BaseModel):
     @classmethod
     def normalize_optional_compensation(cls, value):
         return None if value in (None, "", "null") else value
+
+    @field_validator("company_aliases")
+    @classmethod
+    def validate_company_aliases(cls, value):
+        if len(value) > 50 or any(len(name) > 300 or len(aliases) > 10 or any(len(alias) > 300 for alias in aliases) for name, aliases in value.items()):
+            raise ValueError("Use up to 50 employer alias groups with 10 short variants each")
+        return value
 
     @field_validator("email")
     @classmethod
@@ -318,15 +325,16 @@ async def _profile_from_pdf(
 
 def _extract_pdf_text(file_bytes: bytes) -> str:
     try:
-        reader = PdfReader(BytesIO(file_bytes))
-        page_text = [page.extract_text() or "" for page in reader.pages]
+        text = extract_resume_text(file_bytes)
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Uploaded file is not a readable PDF.",
         ) from exc
 
-    return "\n".join(page_text).strip()
+    if not text.strip():
+        raise HTTPException(400, "No readable text was found in this PDF. Scanned/image-only resume OCR is not supported; upload a PDF with selectable text.")
+    return text
 
 
 def _build_user(profile: ProfileCreate) -> User:

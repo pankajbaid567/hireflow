@@ -1,0 +1,3150 @@
+{
+  "dataset_version": "hireflow-synthetic-v1",
+  "corpus_sha256": "c5a169eedc5b8bfe25fdbfb557ac4d87e4ac0b54a04d5ae01ccf2b6bfd484cc3",
+  "created_at": "2026-10-23T09:22:55.168Z",
+  "case_count": 120,
+  "counts": {
+    "ranking": 48,
+    "extraction": 24,
+    "selection": 24,
+    "preparation": 16,
+    "adversarial": 8
+  },
+  "label_provenance": "Repository-authored synthetic relevance rubric; not independently human-annotated or hiring-outcome labels.",
+  "thresholds_frozen_before_inference": true,
+  "ranking": {
+    "dev": {
+      "queries": 28,
+      "lexical": {
+        "recall_at_1": 0.2857142857142857,
+        "recall_at_3": 0.7857142857142857,
+        "ndcg_at_3": 0.6776190445973008
+      },
+      "semantic": {
+        "recall_at_1": 0.5,
+        "recall_at_3": 0.9821428571428571,
+        "ndcg_at_3": 0.9405230907472388
+      },
+      "hybrid": {
+        "recall_at_1": 0.5,
+        "recall_at_3": 1,
+        "ndcg_at_3": 0.9674098137375499
+      }
+    },
+    "heldout": {
+      "queries": 20,
+      "lexical": {
+        "recall_at_1": 0.3,
+        "recall_at_3": 0.8,
+        "ndcg_at_3": 0.6991111082908141
+      },
+      "semantic": {
+        "recall_at_1": 0.5,
+        "recall_at_3": 1,
+        "ndcg_at_3": 0.9458181829719399
+      },
+      "hybrid": {
+        "recall_at_1": 0.5,
+        "recall_at_3": 1,
+        "ndcg_at_3": 0.9511414153592698
+      }
+    },
+    "semantic_adoption_gate": true,
+    "model": {
+      "name": "BAAI/bge-small-en-v1.5",
+      "revision": "5c38ec7c405ec4b44b94cc5a9bb96e735b38267a",
+      "pooling": "cls",
+      "inference": "local CPU sentence-transformers; not a Cloudflare request",
+      "unique_texts": 218,
+      "model_load_ms": 5618,
+      "encode_total_ms": 854
+    },
+    "per_query": [
+      {
+        "id": "rank-library-internship",
+        "split": "dev",
+        "lexical": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 1,
+          "order": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ]
+        },
+        "semantic": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 1,
+          "order": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ]
+        },
+        "hybrid": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 1,
+          "order": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ]
+        }
+      },
+      {
+        "id": "rank-library-job",
+        "split": "dev",
+        "lexical": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 0.5,
+          "ndcg_at_3": 0.38656565720663316,
+          "order": [
+            1,
+            2,
+            3,
+            5,
+            4
+          ]
+        },
+        "semantic": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 1,
+          "order": [
+            5,
+            1,
+            2,
+            3,
+            4
+          ]
+        },
+        "hybrid": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 1,
+          "order": [
+            5,
+            1,
+            2,
+            3,
+            4
+          ]
+        }
+      },
+      {
+        "id": "rank-inventory-internship",
+        "split": "dev",
+        "lexical": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 0.5,
+          "ndcg_at_3": 0.38656565720663316,
+          "order": [
+            1,
+            2,
+            3,
+            5,
+            4
+          ]
+        },
+        "semantic": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.9467676761267002,
+          "order": [
+            5,
+            1,
+            3,
+            2,
+            4
+          ]
+        },
+        "hybrid": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 1,
+          "order": [
+            5,
+            1,
+            2,
+            3,
+            4
+          ]
+        }
+      },
+      {
+        "id": "rank-inventory-job",
+        "split": "dev",
+        "lexical": {
+          "recall_at_1": 0,
+          "recall_at_3": 0.5,
+          "ndcg_at_3": 0.47909091485969846,
+          "order": [
+            1,
+            2,
+            4,
+            5,
+            3
+          ]
+        },
+        "semantic": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.9467676761267002,
+          "order": [
+            4,
+            5,
+            2,
+            3,
+            1
+          ]
+        },
+        "hybrid": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.9467676761267002,
+          "order": [
+            4,
+            5,
+            2,
+            1,
+            3
+          ]
+        }
+      },
+      {
+        "id": "rank-appointments-internship",
+        "split": "dev",
+        "lexical": {
+          "recall_at_1": 0,
+          "recall_at_3": 0.5,
+          "ndcg_at_3": 0.47909091485969846,
+          "order": [
+            1,
+            2,
+            4,
+            5,
+            3
+          ]
+        },
+        "semantic": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.9467676761267002,
+          "order": [
+            4,
+            5,
+            2,
+            1,
+            3
+          ]
+        },
+        "hybrid": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.9467676761267002,
+          "order": [
+            4,
+            5,
+            2,
+            1,
+            3
+          ]
+        }
+      },
+      {
+        "id": "rank-appointments-job",
+        "split": "dev",
+        "lexical": {
+          "recall_at_1": 0,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.6298989693877386,
+          "order": [
+            1,
+            3,
+            4,
+            5,
+            2
+          ]
+        },
+        "semantic": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.9049495058460971,
+          "order": [
+            3,
+            2,
+            4,
+            1,
+            5
+          ]
+        },
+        "hybrid": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.9467676761267002,
+          "order": [
+            3,
+            4,
+            1,
+            5,
+            2
+          ]
+        }
+      },
+      {
+        "id": "rank-sports-internship",
+        "split": "dev",
+        "lexical": {
+          "recall_at_1": 0,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.6298989693877386,
+          "order": [
+            1,
+            3,
+            4,
+            5,
+            2
+          ]
+        },
+        "semantic": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.9049495058460971,
+          "order": [
+            3,
+            2,
+            4,
+            5,
+            1
+          ]
+        },
+        "hybrid": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 1,
+          "order": [
+            3,
+            4,
+            5,
+            1,
+            2
+          ]
+        }
+      },
+      {
+        "id": "rank-sports-job",
+        "split": "dev",
+        "lexical": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 1,
+          "order": [
+            2,
+            3,
+            4,
+            5,
+            1
+          ]
+        },
+        "semantic": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.9049495058460971,
+          "order": [
+            2,
+            1,
+            3,
+            4,
+            5
+          ]
+        },
+        "hybrid": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 1,
+          "order": [
+            2,
+            3,
+            4,
+            5,
+            1
+          ]
+        }
+      },
+      {
+        "id": "rank-agriculture-internship",
+        "split": "dev",
+        "lexical": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 1,
+          "order": [
+            2,
+            3,
+            4,
+            5,
+            1
+          ]
+        },
+        "semantic": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.9467676761267002,
+          "order": [
+            2,
+            3,
+            1,
+            4,
+            5
+          ]
+        },
+        "hybrid": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 1,
+          "order": [
+            2,
+            3,
+            4,
+            5,
+            1
+          ]
+        }
+      },
+      {
+        "id": "rank-agriculture-job",
+        "split": "dev",
+        "lexical": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 1,
+          "order": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ]
+        },
+        "semantic": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.9467676761267002,
+          "order": [
+            1,
+            2,
+            5,
+            4,
+            3
+          ]
+        },
+        "hybrid": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 1,
+          "order": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ]
+        }
+      },
+      {
+        "id": "rank-travel-internship",
+        "split": "dev",
+        "lexical": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 1,
+          "order": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ]
+        },
+        "semantic": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 1,
+          "order": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ]
+        },
+        "hybrid": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 1,
+          "order": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ]
+        }
+      },
+      {
+        "id": "rank-travel-job",
+        "split": "dev",
+        "lexical": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 0.5,
+          "ndcg_at_3": 0.38656565720663316,
+          "order": [
+            1,
+            2,
+            3,
+            5,
+            4
+          ]
+        },
+        "semantic": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 0.5,
+          "ndcg_at_3": 0.7452525342261976,
+          "order": [
+            5,
+            3,
+            4,
+            1,
+            2
+          ]
+        },
+        "hybrid": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.9049495058460971,
+          "order": [
+            5,
+            3,
+            1,
+            2,
+            4
+          ]
+        }
+      },
+      {
+        "id": "rank-music-internship",
+        "split": "dev",
+        "lexical": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 0.5,
+          "ndcg_at_3": 0.38656565720663316,
+          "order": [
+            1,
+            2,
+            3,
+            5,
+            4
+          ]
+        },
+        "semantic": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.9467676761267002,
+          "order": [
+            5,
+            1,
+            3,
+            2,
+            4
+          ]
+        },
+        "hybrid": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.9467676761267002,
+          "order": [
+            5,
+            1,
+            3,
+            2,
+            4
+          ]
+        }
+      },
+      {
+        "id": "rank-music-job",
+        "split": "dev",
+        "lexical": {
+          "recall_at_1": 0,
+          "recall_at_3": 0.5,
+          "ndcg_at_3": 0.47909091485969846,
+          "order": [
+            1,
+            2,
+            4,
+            5,
+            3
+          ]
+        },
+        "semantic": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.9467676761267002,
+          "order": [
+            4,
+            5,
+            2,
+            3,
+            1
+          ]
+        },
+        "hybrid": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.9467676761267002,
+          "order": [
+            4,
+            5,
+            2,
+            1,
+            3
+          ]
+        }
+      },
+      {
+        "id": "rank-delivery-internship",
+        "split": "dev",
+        "lexical": {
+          "recall_at_1": 0,
+          "recall_at_3": 0.5,
+          "ndcg_at_3": 0.47909091485969846,
+          "order": [
+            1,
+            2,
+            4,
+            5,
+            3
+          ]
+        },
+        "semantic": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.9467676761267002,
+          "order": [
+            4,
+            5,
+            3,
+            1,
+            2
+          ]
+        },
+        "hybrid": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 1,
+          "order": [
+            4,
+            5,
+            1,
+            2,
+            3
+          ]
+        }
+      },
+      {
+        "id": "rank-delivery-job",
+        "split": "dev",
+        "lexical": {
+          "recall_at_1": 0,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.6298989693877386,
+          "order": [
+            1,
+            3,
+            4,
+            5,
+            2
+          ]
+        },
+        "semantic": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.9467676761267002,
+          "order": [
+            3,
+            4,
+            2,
+            5,
+            1
+          ]
+        },
+        "hybrid": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 1,
+          "order": [
+            3,
+            4,
+            5,
+            1,
+            2
+          ]
+        }
+      },
+      {
+        "id": "rank-banking-internship",
+        "split": "dev",
+        "lexical": {
+          "recall_at_1": 0,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.6298989693877386,
+          "order": [
+            1,
+            3,
+            4,
+            5,
+            2
+          ]
+        },
+        "semantic": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.9467676761267002,
+          "order": [
+            3,
+            4,
+            2,
+            5,
+            1
+          ]
+        },
+        "hybrid": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 1,
+          "order": [
+            3,
+            4,
+            5,
+            1,
+            2
+          ]
+        }
+      },
+      {
+        "id": "rank-banking-job",
+        "split": "dev",
+        "lexical": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 1,
+          "order": [
+            2,
+            3,
+            4,
+            5,
+            1
+          ]
+        },
+        "semantic": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.9049495058460971,
+          "order": [
+            2,
+            1,
+            3,
+            5,
+            4
+          ]
+        },
+        "hybrid": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.9467676761267002,
+          "order": [
+            2,
+            3,
+            5,
+            4,
+            1
+          ]
+        }
+      },
+      {
+        "id": "rank-weather-internship",
+        "split": "dev",
+        "lexical": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 1,
+          "order": [
+            2,
+            3,
+            4,
+            5,
+            1
+          ]
+        },
+        "semantic": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.9467676761267002,
+          "order": [
+            2,
+            3,
+            5,
+            4,
+            1
+          ]
+        },
+        "hybrid": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.9467676761267002,
+          "order": [
+            2,
+            3,
+            5,
+            4,
+            1
+          ]
+        }
+      },
+      {
+        "id": "rank-weather-job",
+        "split": "dev",
+        "lexical": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 1,
+          "order": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ]
+        },
+        "semantic": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.9467676761267002,
+          "order": [
+            1,
+            2,
+            4,
+            5,
+            3
+          ]
+        },
+        "hybrid": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.9467676761267002,
+          "order": [
+            1,
+            2,
+            4,
+            3,
+            5
+          ]
+        }
+      },
+      {
+        "id": "rank-accessibility-internship",
+        "split": "dev",
+        "lexical": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 1,
+          "order": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ]
+        },
+        "semantic": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.9049495058460971,
+          "order": [
+            1,
+            4,
+            2,
+            3,
+            5
+          ]
+        },
+        "hybrid": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.9049495058460971,
+          "order": [
+            1,
+            4,
+            2,
+            3,
+            5
+          ]
+        }
+      },
+      {
+        "id": "rank-accessibility-job",
+        "split": "dev",
+        "lexical": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 0.5,
+          "ndcg_at_3": 0.38656565720663316,
+          "order": [
+            1,
+            2,
+            3,
+            5,
+            4
+          ]
+        },
+        "semantic": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.9049495058460971,
+          "order": [
+            5,
+            3,
+            1,
+            2,
+            4
+          ]
+        },
+        "hybrid": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.9049495058460971,
+          "order": [
+            5,
+            3,
+            1,
+            2,
+            4
+          ]
+        }
+      },
+      {
+        "id": "rank-education-internship",
+        "split": "dev",
+        "lexical": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 0.5,
+          "ndcg_at_3": 0.38656565720663316,
+          "order": [
+            1,
+            2,
+            3,
+            5,
+            4
+          ]
+        },
+        "semantic": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 1,
+          "order": [
+            5,
+            1,
+            2,
+            3,
+            4
+          ]
+        },
+        "hybrid": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 1,
+          "order": [
+            5,
+            1,
+            2,
+            3,
+            4
+          ]
+        }
+      },
+      {
+        "id": "rank-education-job",
+        "split": "dev",
+        "lexical": {
+          "recall_at_1": 0,
+          "recall_at_3": 0.5,
+          "ndcg_at_3": 0.47909091485969846,
+          "order": [
+            1,
+            2,
+            4,
+            5,
+            3
+          ]
+        },
+        "semantic": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.9467676761267002,
+          "order": [
+            4,
+            5,
+            3,
+            2,
+            1
+          ]
+        },
+        "hybrid": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.9467676761267002,
+          "order": [
+            4,
+            5,
+            2,
+            1,
+            3
+          ]
+        }
+      },
+      {
+        "id": "rank-security-internship",
+        "split": "dev",
+        "lexical": {
+          "recall_at_1": 0,
+          "recall_at_3": 0.5,
+          "ndcg_at_3": 0.47909091485969846,
+          "order": [
+            1,
+            2,
+            4,
+            5,
+            3
+          ]
+        },
+        "semantic": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 1,
+          "order": [
+            4,
+            5,
+            1,
+            2,
+            3
+          ]
+        },
+        "hybrid": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 1,
+          "order": [
+            4,
+            5,
+            1,
+            2,
+            3
+          ]
+        }
+      },
+      {
+        "id": "rank-security-job",
+        "split": "dev",
+        "lexical": {
+          "recall_at_1": 0,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.6298989693877386,
+          "order": [
+            1,
+            3,
+            4,
+            5,
+            2
+          ]
+        },
+        "semantic": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 1,
+          "order": [
+            3,
+            4,
+            5,
+            2,
+            1
+          ]
+        },
+        "hybrid": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 1,
+          "order": [
+            3,
+            4,
+            5,
+            1,
+            2
+          ]
+        }
+      },
+      {
+        "id": "rank-vision-internship",
+        "split": "dev",
+        "lexical": {
+          "recall_at_1": 0,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.6298989693877386,
+          "order": [
+            1,
+            3,
+            4,
+            5,
+            2
+          ]
+        },
+        "semantic": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.9467676761267002,
+          "order": [
+            3,
+            4,
+            1,
+            2,
+            5
+          ]
+        },
+        "hybrid": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.9467676761267002,
+          "order": [
+            3,
+            4,
+            1,
+            5,
+            2
+          ]
+        }
+      },
+      {
+        "id": "rank-vision-job",
+        "split": "dev",
+        "lexical": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 1,
+          "order": [
+            2,
+            3,
+            4,
+            5,
+            1
+          ]
+        },
+        "semantic": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.9049495058460971,
+          "order": [
+            2,
+            5,
+            3,
+            1,
+            4
+          ]
+        },
+        "hybrid": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.9049495058460971,
+          "order": [
+            2,
+            5,
+            3,
+            4,
+            1
+          ]
+        }
+      },
+      {
+        "id": "rank-astronomy-internship",
+        "split": "heldout",
+        "lexical": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 1,
+          "order": [
+            2,
+            3,
+            4,
+            5,
+            1
+          ]
+        },
+        "semantic": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.9467676761267002,
+          "order": [
+            2,
+            3,
+            1,
+            5,
+            4
+          ]
+        },
+        "hybrid": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.9467676761267002,
+          "order": [
+            2,
+            3,
+            5,
+            4,
+            1
+          ]
+        }
+      },
+      {
+        "id": "rank-astronomy-job",
+        "split": "heldout",
+        "lexical": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 1,
+          "order": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ]
+        },
+        "semantic": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.9467676761267002,
+          "order": [
+            1,
+            2,
+            5,
+            4,
+            3
+          ]
+        },
+        "hybrid": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.9467676761267002,
+          "order": [
+            1,
+            2,
+            4,
+            3,
+            5
+          ]
+        }
+      },
+      {
+        "id": "rank-civic-internship",
+        "split": "heldout",
+        "lexical": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 1,
+          "order": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ]
+        },
+        "semantic": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.9467676761267002,
+          "order": [
+            1,
+            2,
+            4,
+            3,
+            5
+          ]
+        },
+        "hybrid": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.9467676761267002,
+          "order": [
+            1,
+            2,
+            4,
+            3,
+            5
+          ]
+        }
+      },
+      {
+        "id": "rank-civic-job",
+        "split": "heldout",
+        "lexical": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 0.5,
+          "ndcg_at_3": 0.38656565720663316,
+          "order": [
+            1,
+            2,
+            3,
+            5,
+            4
+          ]
+        },
+        "semantic": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.9467676761267002,
+          "order": [
+            5,
+            1,
+            4,
+            3,
+            2
+          ]
+        },
+        "hybrid": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.9467676761267002,
+          "order": [
+            5,
+            1,
+            3,
+            2,
+            4
+          ]
+        }
+      },
+      {
+        "id": "rank-energy-internship",
+        "split": "heldout",
+        "lexical": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 0.5,
+          "ndcg_at_3": 0.38656565720663316,
+          "order": [
+            1,
+            2,
+            3,
+            5,
+            4
+          ]
+        },
+        "semantic": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.9467676761267002,
+          "order": [
+            5,
+            1,
+            4,
+            2,
+            3
+          ]
+        },
+        "hybrid": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 1,
+          "order": [
+            5,
+            1,
+            2,
+            3,
+            4
+          ]
+        }
+      },
+      {
+        "id": "rank-energy-job",
+        "split": "heldout",
+        "lexical": {
+          "recall_at_1": 0,
+          "recall_at_3": 0.5,
+          "ndcg_at_3": 0.47909091485969846,
+          "order": [
+            1,
+            2,
+            4,
+            5,
+            3
+          ]
+        },
+        "semantic": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.9467676761267002,
+          "order": [
+            4,
+            5,
+            3,
+            2,
+            1
+          ]
+        },
+        "hybrid": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.9467676761267002,
+          "order": [
+            4,
+            5,
+            2,
+            1,
+            3
+          ]
+        }
+      },
+      {
+        "id": "rank-documents-internship",
+        "split": "heldout",
+        "lexical": {
+          "recall_at_1": 0,
+          "recall_at_3": 0.5,
+          "ndcg_at_3": 0.47909091485969846,
+          "order": [
+            1,
+            2,
+            4,
+            5,
+            3
+          ]
+        },
+        "semantic": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.9467676761267002,
+          "order": [
+            4,
+            5,
+            2,
+            1,
+            3
+          ]
+        },
+        "hybrid": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.9467676761267002,
+          "order": [
+            4,
+            5,
+            2,
+            1,
+            3
+          ]
+        }
+      },
+      {
+        "id": "rank-documents-job",
+        "split": "heldout",
+        "lexical": {
+          "recall_at_1": 0,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.6298989693877386,
+          "order": [
+            1,
+            3,
+            4,
+            5,
+            2
+          ]
+        },
+        "semantic": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.9049495058460971,
+          "order": [
+            3,
+            1,
+            4,
+            5,
+            2
+          ]
+        },
+        "hybrid": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.9049495058460971,
+          "order": [
+            3,
+            1,
+            4,
+            5,
+            2
+          ]
+        }
+      },
+      {
+        "id": "rank-games-internship",
+        "split": "heldout",
+        "lexical": {
+          "recall_at_1": 0,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.6298989693877386,
+          "order": [
+            1,
+            3,
+            4,
+            5,
+            2
+          ]
+        },
+        "semantic": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.9467676761267002,
+          "order": [
+            3,
+            4,
+            1,
+            5,
+            2
+          ]
+        },
+        "hybrid": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.9467676761267002,
+          "order": [
+            3,
+            4,
+            1,
+            5,
+            2
+          ]
+        }
+      },
+      {
+        "id": "rank-games-job",
+        "split": "heldout",
+        "lexical": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 1,
+          "order": [
+            2,
+            3,
+            4,
+            5,
+            1
+          ]
+        },
+        "semantic": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.9467676761267002,
+          "order": [
+            2,
+            3,
+            5,
+            4,
+            1
+          ]
+        },
+        "hybrid": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.9467676761267002,
+          "order": [
+            2,
+            3,
+            5,
+            4,
+            1
+          ]
+        }
+      },
+      {
+        "id": "rank-marine-internship",
+        "split": "heldout",
+        "lexical": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 1,
+          "order": [
+            2,
+            3,
+            4,
+            5,
+            1
+          ]
+        },
+        "semantic": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.9467676761267002,
+          "order": [
+            2,
+            3,
+            1,
+            4,
+            5
+          ]
+        },
+        "hybrid": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 1,
+          "order": [
+            2,
+            3,
+            4,
+            5,
+            1
+          ]
+        }
+      },
+      {
+        "id": "rank-marine-job",
+        "split": "heldout",
+        "lexical": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 1,
+          "order": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ]
+        },
+        "semantic": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.9467676761267002,
+          "order": [
+            1,
+            2,
+            5,
+            4,
+            3
+          ]
+        },
+        "hybrid": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.9467676761267002,
+          "order": [
+            1,
+            2,
+            4,
+            3,
+            5
+          ]
+        }
+      },
+      {
+        "id": "rank-warehouse-internship",
+        "split": "heldout",
+        "lexical": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 1,
+          "order": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ]
+        },
+        "semantic": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.9049495058460971,
+          "order": [
+            1,
+            4,
+            2,
+            3,
+            5
+          ]
+        },
+        "hybrid": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.9049495058460971,
+          "order": [
+            1,
+            4,
+            2,
+            3,
+            5
+          ]
+        }
+      },
+      {
+        "id": "rank-warehouse-job",
+        "split": "heldout",
+        "lexical": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 0.5,
+          "ndcg_at_3": 0.38656565720663316,
+          "order": [
+            1,
+            2,
+            3,
+            5,
+            4
+          ]
+        },
+        "semantic": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.9049495058460971,
+          "order": [
+            5,
+            3,
+            1,
+            2,
+            4
+          ]
+        },
+        "hybrid": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.9049495058460971,
+          "order": [
+            5,
+            3,
+            1,
+            2,
+            4
+          ]
+        }
+      },
+      {
+        "id": "rank-commerce-internship",
+        "split": "heldout",
+        "lexical": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 0.5,
+          "ndcg_at_3": 0.38656565720663316,
+          "order": [
+            1,
+            2,
+            3,
+            5,
+            4
+          ]
+        },
+        "semantic": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 1,
+          "order": [
+            5,
+            1,
+            2,
+            3,
+            4
+          ]
+        },
+        "hybrid": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 1,
+          "order": [
+            5,
+            1,
+            2,
+            3,
+            4
+          ]
+        }
+      },
+      {
+        "id": "rank-commerce-job",
+        "split": "heldout",
+        "lexical": {
+          "recall_at_1": 0,
+          "recall_at_3": 0.5,
+          "ndcg_at_3": 0.47909091485969846,
+          "order": [
+            1,
+            2,
+            4,
+            5,
+            3
+          ]
+        },
+        "semantic": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 1,
+          "order": [
+            4,
+            5,
+            1,
+            3,
+            2
+          ]
+        },
+        "hybrid": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 1,
+          "order": [
+            4,
+            5,
+            1,
+            2,
+            3
+          ]
+        }
+      },
+      {
+        "id": "rank-transit-internship",
+        "split": "heldout",
+        "lexical": {
+          "recall_at_1": 0,
+          "recall_at_3": 0.5,
+          "ndcg_at_3": 0.47909091485969846,
+          "order": [
+            1,
+            2,
+            4,
+            5,
+            3
+          ]
+        },
+        "semantic": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.9467676761267002,
+          "order": [
+            4,
+            5,
+            2,
+            3,
+            1
+          ]
+        },
+        "hybrid": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.9467676761267002,
+          "order": [
+            4,
+            5,
+            2,
+            1,
+            3
+          ]
+        }
+      },
+      {
+        "id": "rank-transit-job",
+        "split": "heldout",
+        "lexical": {
+          "recall_at_1": 0,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.6298989693877386,
+          "order": [
+            1,
+            3,
+            4,
+            5,
+            2
+          ]
+        },
+        "semantic": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.9467676761267002,
+          "order": [
+            3,
+            4,
+            1,
+            2,
+            5
+          ]
+        },
+        "hybrid": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.9467676761267002,
+          "order": [
+            3,
+            4,
+            1,
+            5,
+            2
+          ]
+        }
+      },
+      {
+        "id": "rank-nonprofit-internship",
+        "split": "heldout",
+        "lexical": {
+          "recall_at_1": 0,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.6298989693877386,
+          "order": [
+            1,
+            3,
+            4,
+            5,
+            2
+          ]
+        },
+        "semantic": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.9467676761267002,
+          "order": [
+            3,
+            4,
+            1,
+            5,
+            2
+          ]
+        },
+        "hybrid": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.9467676761267002,
+          "order": [
+            3,
+            4,
+            1,
+            5,
+            2
+          ]
+        }
+      },
+      {
+        "id": "rank-nonprofit-job",
+        "split": "heldout",
+        "lexical": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 1,
+          "order": [
+            2,
+            3,
+            4,
+            5,
+            1
+          ]
+        },
+        "semantic": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.9467676761267002,
+          "order": [
+            2,
+            3,
+            5,
+            1,
+            4
+          ]
+        },
+        "hybrid": {
+          "recall_at_1": 0.5,
+          "recall_at_3": 1,
+          "ndcg_at_3": 0.9467676761267002,
+          "order": [
+            2,
+            3,
+            5,
+            4,
+            1
+          ]
+        }
+      }
+    ]
+  },
+  "selection": {
+    "cases": 24,
+    "unsupported_claims": 0,
+    "fact_preservation_rate": 1,
+    "relevant_project_recall": 1,
+    "results": [
+      {
+        "id": "select-00",
+        "split": "dev",
+        "unsupported_claims": 0,
+        "experience_education_preserved": true,
+        "relevant_project_recall": 1,
+        "method": "deterministic",
+        "failure_kind": null
+      },
+      {
+        "id": "select-01",
+        "split": "dev",
+        "unsupported_claims": 0,
+        "experience_education_preserved": true,
+        "relevant_project_recall": 1,
+        "method": "deterministic",
+        "failure_kind": null
+      },
+      {
+        "id": "select-02",
+        "split": "dev",
+        "unsupported_claims": 0,
+        "experience_education_preserved": true,
+        "relevant_project_recall": 1,
+        "method": "deterministic",
+        "failure_kind": null
+      },
+      {
+        "id": "select-03",
+        "split": "dev",
+        "unsupported_claims": 0,
+        "experience_education_preserved": true,
+        "relevant_project_recall": 1,
+        "method": "deterministic",
+        "failure_kind": null
+      },
+      {
+        "id": "select-04",
+        "split": "dev",
+        "unsupported_claims": 0,
+        "experience_education_preserved": true,
+        "relevant_project_recall": 1,
+        "method": "deterministic",
+        "failure_kind": null
+      },
+      {
+        "id": "select-05",
+        "split": "dev",
+        "unsupported_claims": 0,
+        "experience_education_preserved": true,
+        "relevant_project_recall": 1,
+        "method": "deterministic",
+        "failure_kind": null
+      },
+      {
+        "id": "select-06",
+        "split": "dev",
+        "unsupported_claims": 0,
+        "experience_education_preserved": true,
+        "relevant_project_recall": 1,
+        "method": "deterministic",
+        "failure_kind": null
+      },
+      {
+        "id": "select-07",
+        "split": "dev",
+        "unsupported_claims": 0,
+        "experience_education_preserved": true,
+        "relevant_project_recall": 1,
+        "method": "deterministic",
+        "failure_kind": null
+      },
+      {
+        "id": "select-08",
+        "split": "dev",
+        "unsupported_claims": 0,
+        "experience_education_preserved": true,
+        "relevant_project_recall": 1,
+        "method": "deterministic",
+        "failure_kind": null
+      },
+      {
+        "id": "select-09",
+        "split": "dev",
+        "unsupported_claims": 0,
+        "experience_education_preserved": true,
+        "relevant_project_recall": 1,
+        "method": "deterministic",
+        "failure_kind": null
+      },
+      {
+        "id": "select-10",
+        "split": "dev",
+        "unsupported_claims": 0,
+        "experience_education_preserved": true,
+        "relevant_project_recall": 1,
+        "method": "deterministic",
+        "failure_kind": null
+      },
+      {
+        "id": "select-11",
+        "split": "dev",
+        "unsupported_claims": 0,
+        "experience_education_preserved": true,
+        "relevant_project_recall": 1,
+        "method": "deterministic",
+        "failure_kind": null
+      },
+      {
+        "id": "select-12",
+        "split": "dev",
+        "unsupported_claims": 0,
+        "experience_education_preserved": true,
+        "relevant_project_recall": 1,
+        "method": "deterministic",
+        "failure_kind": null
+      },
+      {
+        "id": "select-13",
+        "split": "dev",
+        "unsupported_claims": 0,
+        "experience_education_preserved": true,
+        "relevant_project_recall": 1,
+        "method": "deterministic",
+        "failure_kind": null
+      },
+      {
+        "id": "select-14",
+        "split": "heldout",
+        "unsupported_claims": 0,
+        "experience_education_preserved": true,
+        "relevant_project_recall": 1,
+        "method": "deterministic",
+        "failure_kind": null
+      },
+      {
+        "id": "select-15",
+        "split": "heldout",
+        "unsupported_claims": 0,
+        "experience_education_preserved": true,
+        "relevant_project_recall": 1,
+        "method": "deterministic",
+        "failure_kind": null
+      },
+      {
+        "id": "select-16",
+        "split": "heldout",
+        "unsupported_claims": 0,
+        "experience_education_preserved": true,
+        "relevant_project_recall": 1,
+        "method": "deterministic",
+        "failure_kind": null
+      },
+      {
+        "id": "select-17",
+        "split": "heldout",
+        "unsupported_claims": 0,
+        "experience_education_preserved": true,
+        "relevant_project_recall": 1,
+        "method": "deterministic",
+        "failure_kind": null
+      },
+      {
+        "id": "select-18",
+        "split": "heldout",
+        "unsupported_claims": 0,
+        "experience_education_preserved": true,
+        "relevant_project_recall": 1,
+        "method": "deterministic",
+        "failure_kind": null
+      },
+      {
+        "id": "select-19",
+        "split": "heldout",
+        "unsupported_claims": 0,
+        "experience_education_preserved": true,
+        "relevant_project_recall": 1,
+        "method": "deterministic",
+        "failure_kind": null
+      },
+      {
+        "id": "select-20",
+        "split": "heldout",
+        "unsupported_claims": 0,
+        "experience_education_preserved": true,
+        "relevant_project_recall": 1,
+        "method": "deterministic",
+        "failure_kind": null
+      },
+      {
+        "id": "select-21",
+        "split": "heldout",
+        "unsupported_claims": 0,
+        "experience_education_preserved": true,
+        "relevant_project_recall": 1,
+        "method": "deterministic",
+        "failure_kind": null
+      },
+      {
+        "id": "select-22",
+        "split": "heldout",
+        "unsupported_claims": 0,
+        "experience_education_preserved": true,
+        "relevant_project_recall": 1,
+        "method": "deterministic",
+        "failure_kind": null
+      },
+      {
+        "id": "select-23",
+        "split": "heldout",
+        "unsupported_claims": 0,
+        "experience_education_preserved": true,
+        "relevant_project_recall": 1,
+        "method": "deterministic",
+        "failure_kind": null
+      }
+    ]
+  },
+  "preparation": {
+    "cases": 16,
+    "question_skill_coverage": 1,
+    "jd_requirement_context_coverage": 1,
+    "behavioral_requirement_context_coverage": 0,
+    "cross_case_question_duplicate_rate": 0.21875,
+    "behavioral_question_duplicate_rate": 0.875,
+    "controlled_source_support": {
+      "fixture_version": "controlled-sources-v1",
+      "fixture_sha256": "9250e471cea04dcc8e7b97180c1d478e35b44636caedfd02c9202b04d2580c1a",
+      "scenarios": 16,
+      "controlled_fetches": 206,
+      "emitted_company_claims": 66,
+      "supported_company_claims": 66,
+      "claim_support_precision": 1,
+      "unsupported_company_claims": 0,
+      "unsupported_link_count": 0,
+      "failures": 0,
+      "scope": "Controlled positive, missing/stale/future/broken source fixtures; not live website factual verification."
+    },
+    "unsupported_company_claims": 0,
+    "source_precision": null,
+    "source_note": "No search configured: the actual fallback abstains from sourced company claims. This does not measure live resource quality.",
+    "results": [
+      {
+        "id": "prep-00",
+        "split": "dev",
+        "question_skill_coverage": 1,
+        "jd_requirement_context_coverage": 1,
+        "behavioral_requirement_context_coverage": 0,
+        "question_texts": [
+          {
+            "category": "technical",
+            "text": "for synthetic employer's requirement \"python and sql required to index library collections and help students discover relevant books. interview process: two rounds, technical and hr.\", show a small python example and one test."
+          },
+          {
+            "category": "technical",
+            "text": "for synthetic employer's requirement \"python and sql required to index library collections and help students discover relevant books. interview process: two rounds, technical and hr.\", show a small sql example and one test."
+          },
+          {
+            "category": "behavioral",
+            "text": "describe a course or personal project related to python, sql. how did feedback change your approach, and how does this prepare you for synthetic employer?"
+          },
+          {
+            "category": "design",
+            "text": "sketch a small prototype and its data flow using python, sql for synthetic employer's requirement \"python and sql required to index library collections and help students discover relevant books. interview process: two rounds, technical and hr.\"."
+          }
+        ],
+        "category_coverage": 1,
+        "round_count_correct": true,
+        "unsupported_company_claims": 0,
+        "source_backed_claims": 0,
+        "source_precision": null,
+        "source_state": "abstained_without_search_provider",
+        "controlled_sources": {
+          "source": "controlled search/source responses; no network",
+          "controlled_fetches": 11,
+          "emitted_company_claims": 0,
+          "supported_company_claims": 0,
+          "unsupported_company_claims": 0,
+          "expected_company_claims": 0,
+          "supported_claim_recall": null,
+          "claim_support_precision": null,
+          "returned_link_count": 4,
+          "unique_link_count": 4,
+          "unsupported_link_count": 0,
+          "broken_resource_links_skipped": true,
+          "resource_topics": 2,
+          "minimum_links_per_topic": 2,
+          "news_freshness_correct": true,
+          "missing_reviews_abstained": true
+        }
+      },
+      {
+        "id": "prep-01",
+        "split": "dev",
+        "question_skill_coverage": 1,
+        "jd_requirement_context_coverage": 1,
+        "behavioral_requirement_context_coverage": 0,
+        "question_texts": [
+          {
+            "category": "technical",
+            "text": "how would you apply python to synthetic employer's requirement \"python and sql required to track warehouse stock levels and reconcile purchase orders. interview process: two rounds, technical and hr.\" in production and investigate reliability or performance failures?"
+          },
+          {
+            "category": "technical",
+            "text": "how would you apply sql to synthetic employer's requirement \"python and sql required to track warehouse stock levels and reconcile purchase orders. interview process: two rounds, technical and hr.\" in production and investigate reliability or performance failures?"
+          },
+          {
+            "category": "behavioral",
+            "text": "describe a production project related to python, sql. how did feedback change your approach, and how does this prepare you for synthetic employer?"
+          },
+          {
+            "category": "design",
+            "text": "design a scalable service and discuss monitoring, failure recovery, cost and security using python, sql for synthetic employer's requirement \"python and sql required to track warehouse stock levels and reconcile purchase orders. interview process: two rounds, technical and hr.\"."
+          }
+        ],
+        "category_coverage": 1,
+        "round_count_correct": true,
+        "unsupported_company_claims": 0,
+        "source_backed_claims": 0,
+        "source_precision": null,
+        "source_state": "abstained_without_search_provider",
+        "controlled_sources": {
+          "source": "controlled search/source responses; no network",
+          "controlled_fetches": 13,
+          "emitted_company_claims": 5,
+          "supported_company_claims": 5,
+          "unsupported_company_claims": 0,
+          "expected_company_claims": 5,
+          "supported_claim_recall": 1,
+          "claim_support_precision": 1,
+          "returned_link_count": 6,
+          "unique_link_count": 6,
+          "unsupported_link_count": 0,
+          "broken_resource_links_skipped": true,
+          "resource_topics": 2,
+          "minimum_links_per_topic": 2,
+          "news_freshness_correct": true,
+          "missing_reviews_abstained": true
+        }
+      },
+      {
+        "id": "prep-02",
+        "split": "dev",
+        "question_skill_coverage": 1,
+        "jd_requirement_context_coverage": 1,
+        "behavioral_requirement_context_coverage": 0,
+        "question_texts": [
+          {
+            "category": "technical",
+            "text": "for synthetic employer's requirement \"python and sql required to coordinate clinic appointments and patient booking slots. interview process: two rounds, technical and hr.\", show a small python example and one test."
+          },
+          {
+            "category": "technical",
+            "text": "for synthetic employer's requirement \"python and sql required to coordinate clinic appointments and patient booking slots. interview process: two rounds, technical and hr.\", show a small sql example and one test."
+          },
+          {
+            "category": "behavioral",
+            "text": "describe a course or personal project related to python, sql. how did feedback change your approach, and how does this prepare you for synthetic employer?"
+          },
+          {
+            "category": "design",
+            "text": "sketch a small prototype and its data flow using python, sql for synthetic employer's requirement \"python and sql required to coordinate clinic appointments and patient booking slots. interview process: two rounds, technical and hr.\"."
+          }
+        ],
+        "category_coverage": 1,
+        "round_count_correct": true,
+        "unsupported_company_claims": 0,
+        "source_backed_claims": 0,
+        "source_precision": null,
+        "source_state": "abstained_without_search_provider",
+        "controlled_sources": {
+          "source": "controlled search/source responses; no network",
+          "controlled_fetches": 14,
+          "emitted_company_claims": 6,
+          "supported_company_claims": 6,
+          "unsupported_company_claims": 0,
+          "expected_company_claims": 6,
+          "supported_claim_recall": 1,
+          "claim_support_precision": 1,
+          "returned_link_count": 7,
+          "unique_link_count": 7,
+          "unsupported_link_count": 0,
+          "broken_resource_links_skipped": true,
+          "resource_topics": 2,
+          "minimum_links_per_topic": 2,
+          "news_freshness_correct": true,
+          "missing_reviews_abstained": true
+        }
+      },
+      {
+        "id": "prep-03",
+        "split": "dev",
+        "question_skill_coverage": 1,
+        "jd_requirement_context_coverage": 1,
+        "behavioral_requirement_context_coverage": 0,
+        "question_texts": [
+          {
+            "category": "technical",
+            "text": "how would you apply python to synthetic employer's requirement \"python and sql required to analyze cricket scorecards and match performance statistics. interview process: two rounds, technical and hr.\" in production and investigate reliability or performance failures?"
+          },
+          {
+            "category": "technical",
+            "text": "how would you apply sql to synthetic employer's requirement \"python and sql required to analyze cricket scorecards and match performance statistics. interview process: two rounds, technical and hr.\" in production and investigate reliability or performance failures?"
+          },
+          {
+            "category": "behavioral",
+            "text": "describe a production project related to python, sql. how did feedback change your approach, and how does this prepare you for synthetic employer?"
+          },
+          {
+            "category": "design",
+            "text": "design a scalable service and discuss monitoring, failure recovery, cost and security using python, sql for synthetic employer's requirement \"python and sql required to analyze cricket scorecards and match performance statistics. interview process: two rounds, technical and hr.\"."
+          }
+        ],
+        "category_coverage": 1,
+        "round_count_correct": true,
+        "unsupported_company_claims": 0,
+        "source_backed_claims": 0,
+        "source_precision": null,
+        "source_state": "abstained_without_search_provider",
+        "controlled_sources": {
+          "source": "controlled search/source responses; no network",
+          "controlled_fetches": 13,
+          "emitted_company_claims": 5,
+          "supported_company_claims": 5,
+          "unsupported_company_claims": 0,
+          "expected_company_claims": 5,
+          "supported_claim_recall": 1,
+          "claim_support_precision": 1,
+          "returned_link_count": 6,
+          "unique_link_count": 6,
+          "unsupported_link_count": 0,
+          "broken_resource_links_skipped": true,
+          "resource_topics": 2,
+          "minimum_links_per_topic": 2,
+          "news_freshness_correct": true,
+          "missing_reviews_abstained": true
+        }
+      },
+      {
+        "id": "prep-04",
+        "split": "dev",
+        "question_skill_coverage": 1,
+        "jd_requirement_context_coverage": 1,
+        "behavioral_requirement_context_coverage": 0,
+        "question_texts": [
+          {
+            "category": "technical",
+            "text": "for synthetic employer's requirement \"python and sql required to schedule irrigation from soil moisture readings for farms. interview process: two rounds, technical and hr.\", show a small python example and one test."
+          },
+          {
+            "category": "technical",
+            "text": "for synthetic employer's requirement \"python and sql required to schedule irrigation from soil moisture readings for farms. interview process: two rounds, technical and hr.\", show a small sql example and one test."
+          },
+          {
+            "category": "behavioral",
+            "text": "describe a course or personal project related to python, sql. how did feedback change your approach, and how does this prepare you for synthetic employer?"
+          },
+          {
+            "category": "design",
+            "text": "sketch a small prototype and its data flow using python, sql for synthetic employer's requirement \"python and sql required to schedule irrigation from soil moisture readings for farms. interview process: two rounds, technical and hr.\"."
+          }
+        ],
+        "category_coverage": 1,
+        "round_count_correct": true,
+        "unsupported_company_claims": 0,
+        "source_backed_claims": 0,
+        "source_precision": null,
+        "source_state": "abstained_without_search_provider",
+        "controlled_sources": {
+          "source": "controlled search/source responses; no network",
+          "controlled_fetches": 12,
+          "emitted_company_claims": 1,
+          "supported_company_claims": 1,
+          "unsupported_company_claims": 0,
+          "expected_company_claims": 1,
+          "supported_claim_recall": 1,
+          "claim_support_precision": 1,
+          "returned_link_count": 5,
+          "unique_link_count": 5,
+          "unsupported_link_count": 0,
+          "broken_resource_links_skipped": true,
+          "resource_topics": 2,
+          "minimum_links_per_topic": 2,
+          "news_freshness_correct": true,
+          "missing_reviews_abstained": true
+        }
+      },
+      {
+        "id": "prep-05",
+        "split": "dev",
+        "question_skill_coverage": 1,
+        "jd_requirement_context_coverage": 1,
+        "behavioral_requirement_context_coverage": 0,
+        "question_texts": [
+          {
+            "category": "technical",
+            "text": "how would you apply python to synthetic employer's requirement \"python and sql required to manage train seat reservations and passenger itineraries. interview process: two rounds, technical and hr.\" in production and investigate reliability or performance failures?"
+          },
+          {
+            "category": "technical",
+            "text": "how would you apply sql to synthetic employer's requirement \"python and sql required to manage train seat reservations and passenger itineraries. interview process: two rounds, technical and hr.\" in production and investigate reliability or performance failures?"
+          },
+          {
+            "category": "behavioral",
+            "text": "describe a production project related to python, sql. how did feedback change your approach, and how does this prepare you for synthetic employer?"
+          },
+          {
+            "category": "design",
+            "text": "design a scalable service and discuss monitoring, failure recovery, cost and security using python, sql for synthetic employer's requirement \"python and sql required to manage train seat reservations and passenger itineraries. interview process: two rounds, technical and hr.\"."
+          }
+        ],
+        "category_coverage": 1,
+        "round_count_correct": true,
+        "unsupported_company_claims": 0,
+        "source_backed_claims": 0,
+        "source_precision": null,
+        "source_state": "abstained_without_search_provider",
+        "controlled_sources": {
+          "source": "controlled search/source responses; no network",
+          "controlled_fetches": 13,
+          "emitted_company_claims": 5,
+          "supported_company_claims": 5,
+          "unsupported_company_claims": 0,
+          "expected_company_claims": 5,
+          "supported_claim_recall": 1,
+          "claim_support_precision": 1,
+          "returned_link_count": 6,
+          "unique_link_count": 6,
+          "unsupported_link_count": 0,
+          "broken_resource_links_skipped": true,
+          "resource_topics": 2,
+          "minimum_links_per_topic": 2,
+          "news_freshness_correct": true,
+          "missing_reviews_abstained": true
+        }
+      },
+      {
+        "id": "prep-06",
+        "split": "dev",
+        "question_skill_coverage": 1,
+        "jd_requirement_context_coverage": 1,
+        "behavioral_requirement_context_coverage": 0,
+        "question_texts": [
+          {
+            "category": "technical",
+            "text": "for synthetic employer's requirement \"python and sql required to recommend songs and organize listening playlists. interview process: two rounds, technical and hr.\", show a small python example and one test."
+          },
+          {
+            "category": "technical",
+            "text": "for synthetic employer's requirement \"python and sql required to recommend songs and organize listening playlists. interview process: two rounds, technical and hr.\", show a small sql example and one test."
+          },
+          {
+            "category": "behavioral",
+            "text": "describe a course or personal project related to python, sql. how did feedback change your approach, and how does this prepare you for synthetic employer?"
+          },
+          {
+            "category": "design",
+            "text": "sketch a small prototype and its data flow using python, sql for synthetic employer's requirement \"python and sql required to recommend songs and organize listening playlists. interview process: two rounds, technical and hr.\"."
+          }
+        ],
+        "category_coverage": 1,
+        "round_count_correct": true,
+        "unsupported_company_claims": 0,
+        "source_backed_claims": 0,
+        "source_precision": null,
+        "source_state": "abstained_without_search_provider",
+        "controlled_sources": {
+          "source": "controlled search/source responses; no network",
+          "controlled_fetches": 13,
+          "emitted_company_claims": 5,
+          "supported_company_claims": 5,
+          "unsupported_company_claims": 0,
+          "expected_company_claims": 5,
+          "supported_claim_recall": 1,
+          "claim_support_precision": 1,
+          "returned_link_count": 6,
+          "unique_link_count": 6,
+          "unsupported_link_count": 0,
+          "broken_resource_links_skipped": true,
+          "resource_topics": 2,
+          "minimum_links_per_topic": 2,
+          "news_freshness_correct": true,
+          "missing_reviews_abstained": true
+        }
+      },
+      {
+        "id": "prep-07",
+        "split": "dev",
+        "question_skill_coverage": 1,
+        "jd_requirement_context_coverage": 1,
+        "behavioral_requirement_context_coverage": 0,
+        "question_texts": [
+          {
+            "category": "technical",
+            "text": "how would you apply python to synthetic employer's requirement \"python and sql required to optimize parcel delivery routes and dispatch schedules. interview process: two rounds, technical and hr.\" in production and investigate reliability or performance failures?"
+          },
+          {
+            "category": "technical",
+            "text": "how would you apply sql to synthetic employer's requirement \"python and sql required to optimize parcel delivery routes and dispatch schedules. interview process: two rounds, technical and hr.\" in production and investigate reliability or performance failures?"
+          },
+          {
+            "category": "behavioral",
+            "text": "describe a production project related to python, sql. how did feedback change your approach, and how does this prepare you for synthetic employer?"
+          },
+          {
+            "category": "design",
+            "text": "design a scalable service and discuss monitoring, failure recovery, cost and security using python, sql for synthetic employer's requirement \"python and sql required to optimize parcel delivery routes and dispatch schedules. interview process: two rounds, technical and hr.\"."
+          }
+        ],
+        "category_coverage": 1,
+        "round_count_correct": true,
+        "unsupported_company_claims": 0,
+        "source_backed_claims": 0,
+        "source_precision": null,
+        "source_state": "abstained_without_search_provider",
+        "controlled_sources": {
+          "source": "controlled search/source responses; no network",
+          "controlled_fetches": 14,
+          "emitted_company_claims": 6,
+          "supported_company_claims": 6,
+          "unsupported_company_claims": 0,
+          "expected_company_claims": 6,
+          "supported_claim_recall": 1,
+          "claim_support_precision": 1,
+          "returned_link_count": 7,
+          "unique_link_count": 7,
+          "unsupported_link_count": 0,
+          "broken_resource_links_skipped": true,
+          "resource_topics": 2,
+          "minimum_links_per_topic": 2,
+          "news_freshness_correct": true,
+          "missing_reviews_abstained": true
+        }
+      },
+      {
+        "id": "prep-08",
+        "split": "dev",
+        "question_skill_coverage": 1,
+        "jd_requirement_context_coverage": 1,
+        "behavioral_requirement_context_coverage": 0,
+        "question_texts": [
+          {
+            "category": "technical",
+            "text": "for synthetic employer's requirement \"python and sql required to detect unusual banking payment patterns and investigate fraud. interview process: two rounds, technical and hr.\", show a small python example and one test."
+          },
+          {
+            "category": "technical",
+            "text": "for synthetic employer's requirement \"python and sql required to detect unusual banking payment patterns and investigate fraud. interview process: two rounds, technical and hr.\", show a small sql example and one test."
+          },
+          {
+            "category": "behavioral",
+            "text": "describe a course or personal project related to python, sql. how did feedback change your approach, and how does this prepare you for synthetic employer?"
+          },
+          {
+            "category": "design",
+            "text": "sketch a small prototype and its data flow using python, sql for synthetic employer's requirement \"python and sql required to detect unusual banking payment patterns and investigate fraud. interview process: two rounds, technical and hr.\"."
+          }
+        ],
+        "category_coverage": 1,
+        "round_count_correct": true,
+        "unsupported_company_claims": 0,
+        "source_backed_claims": 0,
+        "source_precision": null,
+        "source_state": "abstained_without_search_provider",
+        "controlled_sources": {
+          "source": "controlled search/source responses; no network",
+          "controlled_fetches": 12,
+          "emitted_company_claims": 1,
+          "supported_company_claims": 1,
+          "unsupported_company_claims": 0,
+          "expected_company_claims": 1,
+          "supported_claim_recall": 1,
+          "claim_support_precision": 1,
+          "returned_link_count": 5,
+          "unique_link_count": 5,
+          "unsupported_link_count": 0,
+          "broken_resource_links_skipped": true,
+          "resource_topics": 2,
+          "minimum_links_per_topic": 2,
+          "news_freshness_correct": true,
+          "missing_reviews_abstained": true
+        }
+      },
+      {
+        "id": "prep-09",
+        "split": "dev",
+        "question_skill_coverage": 1,
+        "jd_requirement_context_coverage": 1,
+        "behavioral_requirement_context_coverage": 0,
+        "question_texts": [
+          {
+            "category": "technical",
+            "text": "how would you apply python to synthetic employer's requirement \"python and sql required to process rainfall forecasts and local weather observations. interview process: two rounds, technical and hr.\" in production and investigate reliability or performance failures?"
+          },
+          {
+            "category": "technical",
+            "text": "how would you apply sql to synthetic employer's requirement \"python and sql required to process rainfall forecasts and local weather observations. interview process: two rounds, technical and hr.\" in production and investigate reliability or performance failures?"
+          },
+          {
+            "category": "behavioral",
+            "text": "describe a production project related to python, sql. how did feedback change your approach, and how does this prepare you for synthetic employer?"
+          },
+          {
+            "category": "design",
+            "text": "design a scalable service and discuss monitoring, failure recovery, cost and security using python, sql for synthetic employer's requirement \"python and sql required to process rainfall forecasts and local weather observations. interview process: two rounds, technical and hr.\"."
+          }
+        ],
+        "category_coverage": 1,
+        "round_count_correct": true,
+        "unsupported_company_claims": 0,
+        "source_backed_claims": 0,
+        "source_precision": null,
+        "source_state": "abstained_without_search_provider",
+        "controlled_sources": {
+          "source": "controlled search/source responses; no network",
+          "controlled_fetches": 12,
+          "emitted_company_claims": 4,
+          "supported_company_claims": 4,
+          "unsupported_company_claims": 0,
+          "expected_company_claims": 4,
+          "supported_claim_recall": 1,
+          "claim_support_precision": 1,
+          "returned_link_count": 5,
+          "unique_link_count": 5,
+          "unsupported_link_count": 0,
+          "broken_resource_links_skipped": true,
+          "resource_topics": 2,
+          "minimum_links_per_topic": 2,
+          "news_freshness_correct": true,
+          "missing_reviews_abstained": true
+        }
+      },
+      {
+        "id": "prep-10",
+        "split": "heldout",
+        "question_skill_coverage": 1,
+        "jd_requirement_context_coverage": 1,
+        "behavioral_requirement_context_coverage": 0,
+        "question_texts": [
+          {
+            "category": "technical",
+            "text": "for synthetic employer's requirement \"python and sql required to transcribe speech for accessible meeting captions. interview process: two rounds, technical and hr.\", show a small python example and one test."
+          },
+          {
+            "category": "technical",
+            "text": "for synthetic employer's requirement \"python and sql required to transcribe speech for accessible meeting captions. interview process: two rounds, technical and hr.\", show a small sql example and one test."
+          },
+          {
+            "category": "behavioral",
+            "text": "describe a course or personal project related to python, sql. how did feedback change your approach, and how does this prepare you for synthetic employer?"
+          },
+          {
+            "category": "design",
+            "text": "sketch a small prototype and its data flow using python, sql for synthetic employer's requirement \"python and sql required to transcribe speech for accessible meeting captions. interview process: two rounds, technical and hr.\"."
+          }
+        ],
+        "category_coverage": 1,
+        "round_count_correct": true,
+        "unsupported_company_claims": 0,
+        "source_backed_claims": 0,
+        "source_precision": null,
+        "source_state": "abstained_without_search_provider",
+        "controlled_sources": {
+          "source": "controlled search/source responses; no network",
+          "controlled_fetches": 14,
+          "emitted_company_claims": 6,
+          "supported_company_claims": 6,
+          "unsupported_company_claims": 0,
+          "expected_company_claims": 6,
+          "supported_claim_recall": 1,
+          "claim_support_precision": 1,
+          "returned_link_count": 7,
+          "unique_link_count": 7,
+          "unsupported_link_count": 0,
+          "broken_resource_links_skipped": true,
+          "resource_topics": 2,
+          "minimum_links_per_topic": 2,
+          "news_freshness_correct": true,
+          "missing_reviews_abstained": true
+        }
+      },
+      {
+        "id": "prep-11",
+        "split": "heldout",
+        "question_skill_coverage": 1,
+        "jd_requirement_context_coverage": 1,
+        "behavioral_requirement_context_coverage": 0,
+        "question_texts": [
+          {
+            "category": "technical",
+            "text": "how would you apply python to synthetic employer's requirement \"python and sql required to create adaptive quizzes and track student learning progress. interview process: two rounds, technical and hr.\" in production and investigate reliability or performance failures?"
+          },
+          {
+            "category": "technical",
+            "text": "how would you apply sql to synthetic employer's requirement \"python and sql required to create adaptive quizzes and track student learning progress. interview process: two rounds, technical and hr.\" in production and investigate reliability or performance failures?"
+          },
+          {
+            "category": "behavioral",
+            "text": "describe a production project related to python, sql. how did feedback change your approach, and how does this prepare you for synthetic employer?"
+          },
+          {
+            "category": "design",
+            "text": "design a scalable service and discuss monitoring, failure recovery, cost and security using python, sql for synthetic employer's requirement \"python and sql required to create adaptive quizzes and track student learning progress. interview process: two rounds, technical and hr.\"."
+          }
+        ],
+        "category_coverage": 1,
+        "round_count_correct": true,
+        "unsupported_company_claims": 0,
+        "source_backed_claims": 0,
+        "source_precision": null,
+        "source_state": "abstained_without_search_provider",
+        "controlled_sources": {
+          "source": "controlled search/source responses; no network",
+          "controlled_fetches": 14,
+          "emitted_company_claims": 6,
+          "supported_company_claims": 6,
+          "unsupported_company_claims": 0,
+          "expected_company_claims": 6,
+          "supported_claim_recall": 1,
+          "claim_support_precision": 1,
+          "returned_link_count": 7,
+          "unique_link_count": 7,
+          "unsupported_link_count": 0,
+          "broken_resource_links_skipped": true,
+          "resource_topics": 2,
+          "minimum_links_per_topic": 2,
+          "news_freshness_correct": true,
+          "missing_reviews_abstained": true
+        }
+      },
+      {
+        "id": "prep-12",
+        "split": "heldout",
+        "question_skill_coverage": 1,
+        "jd_requirement_context_coverage": 1,
+        "behavioral_requirement_context_coverage": 0,
+        "question_texts": [
+          {
+            "category": "technical",
+            "text": "for synthetic employer's requirement \"python and sql required to investigate network security events and suspicious access logs. interview process: two rounds, technical and hr.\", show a small python example and one test."
+          },
+          {
+            "category": "technical",
+            "text": "for synthetic employer's requirement \"python and sql required to investigate network security events and suspicious access logs. interview process: two rounds, technical and hr.\", show a small sql example and one test."
+          },
+          {
+            "category": "behavioral",
+            "text": "describe a course or personal project related to python, sql. how did feedback change your approach, and how does this prepare you for synthetic employer?"
+          },
+          {
+            "category": "design",
+            "text": "sketch a small prototype and its data flow using python, sql for synthetic employer's requirement \"python and sql required to investigate network security events and suspicious access logs. interview process: two rounds, technical and hr.\"."
+          }
+        ],
+        "category_coverage": 1,
+        "round_count_correct": true,
+        "unsupported_company_claims": 0,
+        "source_backed_claims": 0,
+        "source_precision": null,
+        "source_state": "abstained_without_search_provider",
+        "controlled_sources": {
+          "source": "controlled search/source responses; no network",
+          "controlled_fetches": 11,
+          "emitted_company_claims": 0,
+          "supported_company_claims": 0,
+          "unsupported_company_claims": 0,
+          "expected_company_claims": 0,
+          "supported_claim_recall": null,
+          "claim_support_precision": null,
+          "returned_link_count": 4,
+          "unique_link_count": 4,
+          "unsupported_link_count": 0,
+          "broken_resource_links_skipped": true,
+          "resource_topics": 2,
+          "minimum_links_per_topic": 2,
+          "news_freshness_correct": true,
+          "missing_reviews_abstained": true
+        }
+      },
+      {
+        "id": "prep-13",
+        "split": "heldout",
+        "question_skill_coverage": 1,
+        "jd_requirement_context_coverage": 1,
+        "behavioral_requirement_context_coverage": 0,
+        "question_texts": [
+          {
+            "category": "technical",
+            "text": "how would you apply python to synthetic employer's requirement \"python and sql required to analyze road traffic images and detect vehicles. interview process: two rounds, technical and hr.\" in production and investigate reliability or performance failures?"
+          },
+          {
+            "category": "technical",
+            "text": "how would you apply sql to synthetic employer's requirement \"python and sql required to analyze road traffic images and detect vehicles. interview process: two rounds, technical and hr.\" in production and investigate reliability or performance failures?"
+          },
+          {
+            "category": "behavioral",
+            "text": "describe a production project related to python, sql. how did feedback change your approach, and how does this prepare you for synthetic employer?"
+          },
+          {
+            "category": "design",
+            "text": "design a scalable service and discuss monitoring, failure recovery, cost and security using python, sql for synthetic employer's requirement \"python and sql required to analyze road traffic images and detect vehicles. interview process: two rounds, technical and hr.\"."
+          }
+        ],
+        "category_coverage": 1,
+        "round_count_correct": true,
+        "unsupported_company_claims": 0,
+        "source_backed_claims": 0,
+        "source_precision": null,
+        "source_state": "abstained_without_search_provider",
+        "controlled_sources": {
+          "source": "controlled search/source responses; no network",
+          "controlled_fetches": 13,
+          "emitted_company_claims": 5,
+          "supported_company_claims": 5,
+          "unsupported_company_claims": 0,
+          "expected_company_claims": 5,
+          "supported_claim_recall": 1,
+          "claim_support_precision": 1,
+          "returned_link_count": 6,
+          "unique_link_count": 6,
+          "unsupported_link_count": 0,
+          "broken_resource_links_skipped": true,
+          "resource_topics": 2,
+          "minimum_links_per_topic": 2,
+          "news_freshness_correct": true,
+          "missing_reviews_abstained": true
+        }
+      },
+      {
+        "id": "prep-14",
+        "split": "heldout",
+        "question_skill_coverage": 1,
+        "jd_requirement_context_coverage": 1,
+        "behavioral_requirement_context_coverage": 0,
+        "question_texts": [
+          {
+            "category": "technical",
+            "text": "for synthetic employer's requirement \"python and sql required to index telescope observations and classify celestial objects. interview process: two rounds, technical and hr.\", show a small python example and one test."
+          },
+          {
+            "category": "technical",
+            "text": "for synthetic employer's requirement \"python and sql required to index telescope observations and classify celestial objects. interview process: two rounds, technical and hr.\", show a small sql example and one test."
+          },
+          {
+            "category": "behavioral",
+            "text": "describe a course or personal project related to python, sql. how did feedback change your approach, and how does this prepare you for synthetic employer?"
+          },
+          {
+            "category": "design",
+            "text": "sketch a small prototype and its data flow using python, sql for synthetic employer's requirement \"python and sql required to index telescope observations and classify celestial objects. interview process: two rounds, technical and hr.\"."
+          }
+        ],
+        "category_coverage": 1,
+        "round_count_correct": true,
+        "unsupported_company_claims": 0,
+        "source_backed_claims": 0,
+        "source_precision": null,
+        "source_state": "abstained_without_search_provider",
+        "controlled_sources": {
+          "source": "controlled search/source responses; no network",
+          "controlled_fetches": 14,
+          "emitted_company_claims": 6,
+          "supported_company_claims": 6,
+          "unsupported_company_claims": 0,
+          "expected_company_claims": 6,
+          "supported_claim_recall": 1,
+          "claim_support_precision": 1,
+          "returned_link_count": 7,
+          "unique_link_count": 7,
+          "unsupported_link_count": 0,
+          "broken_resource_links_skipped": true,
+          "resource_topics": 2,
+          "minimum_links_per_topic": 2,
+          "news_freshness_correct": true,
+          "missing_reviews_abstained": true
+        }
+      },
+      {
+        "id": "prep-15",
+        "split": "heldout",
+        "question_skill_coverage": 1,
+        "jd_requirement_context_coverage": 1,
+        "behavioral_requirement_context_coverage": 0,
+        "question_texts": [
+          {
+            "category": "technical",
+            "text": "how would you apply python to synthetic employer's requirement \"python and sql required to route municipal service complaints and track civic issue resolution. interview process: two rounds, technical and hr.\" in production and investigate reliability or performance failures?"
+          },
+          {
+            "category": "technical",
+            "text": "how would you apply sql to synthetic employer's requirement \"python and sql required to route municipal service complaints and track civic issue resolution. interview process: two rounds, technical and hr.\" in production and investigate reliability or performance failures?"
+          },
+          {
+            "category": "behavioral",
+            "text": "describe a production project related to python, sql. how did feedback change your approach, and how does this prepare you for synthetic employer?"
+          },
+          {
+            "category": "design",
+            "text": "design a scalable service and discuss monitoring, failure recovery, cost and security using python, sql for synthetic employer's requirement \"python and sql required to route municipal service complaints and track civic issue resolution. interview process: two rounds, technical and hr.\"."
+          }
+        ],
+        "category_coverage": 1,
+        "round_count_correct": true,
+        "unsupported_company_claims": 0,
+        "source_backed_claims": 0,
+        "source_precision": null,
+        "source_state": "abstained_without_search_provider",
+        "controlled_sources": {
+          "source": "controlled search/source responses; no network",
+          "controlled_fetches": 13,
+          "emitted_company_claims": 5,
+          "supported_company_claims": 5,
+          "unsupported_company_claims": 0,
+          "expected_company_claims": 5,
+          "supported_claim_recall": 1,
+          "claim_support_precision": 1,
+          "returned_link_count": 6,
+          "unique_link_count": 6,
+          "unsupported_link_count": 0,
+          "broken_resource_links_skipped": true,
+          "resource_topics": 2,
+          "minimum_links_per_topic": 2,
+          "news_freshness_correct": true,
+          "missing_reviews_abstained": true
+        }
+      }
+    ]
+  },
+  "adversarial": {
+    "cases": 8,
+    "failures": 0,
+    "results": [
+      {
+        "id": "adversarial-00",
+        "fixture": "unconfigured",
+        "split": "dev",
+        "unsupported_claims": 0,
+        "experience_education_preserved": true,
+        "relevant_project_recall": null,
+        "method": "deterministic",
+        "failure_kind": null,
+        "source": "controlled provider response; no hosted inference"
+      },
+      {
+        "id": "adversarial-01",
+        "fixture": "rate_limited",
+        "split": "dev",
+        "unsupported_claims": 0,
+        "experience_education_preserved": true,
+        "relevant_project_recall": null,
+        "method": "deterministic",
+        "failure_kind": "rate_limited",
+        "source": "controlled provider response; no hosted inference"
+      },
+      {
+        "id": "adversarial-02",
+        "fixture": "unavailable",
+        "split": "dev",
+        "unsupported_claims": 0,
+        "experience_education_preserved": true,
+        "relevant_project_recall": null,
+        "method": "deterministic",
+        "failure_kind": "unavailable",
+        "source": "controlled provider response; no hosted inference"
+      },
+      {
+        "id": "adversarial-03",
+        "fixture": "malformed",
+        "split": "dev",
+        "unsupported_claims": 0,
+        "experience_education_preserved": true,
+        "relevant_project_recall": null,
+        "method": "deterministic",
+        "failure_kind": "malformed",
+        "source": "controlled provider response; no hosted inference"
+      },
+      {
+        "id": "adversarial-04",
+        "fixture": "invented_fact_id",
+        "split": "heldout",
+        "unsupported_claims": 0,
+        "experience_education_preserved": true,
+        "relevant_project_recall": null,
+        "method": "deterministic",
+        "failure_kind": "malformed",
+        "source": "controlled provider response; no hosted inference"
+      },
+      {
+        "id": "adversarial-05",
+        "fixture": "invalid_project_index",
+        "split": "heldout",
+        "unsupported_claims": 0,
+        "experience_education_preserved": true,
+        "relevant_project_recall": null,
+        "method": "deterministic",
+        "failure_kind": "malformed",
+        "source": "controlled provider response; no hosted inference"
+      },
+      {
+        "id": "adversarial-06",
+        "fixture": "timeout",
+        "split": "heldout",
+        "unsupported_claims": 0,
+        "experience_education_preserved": true,
+        "relevant_project_recall": null,
+        "method": "deterministic",
+        "failure_kind": "timeout",
+        "source": "controlled provider response; no hosted inference"
+      },
+      {
+        "id": "adversarial-07",
+        "fixture": "injected_string",
+        "split": "heldout",
+        "unsupported_claims": 0,
+        "experience_education_preserved": true,
+        "relevant_project_recall": null,
+        "method": "deterministic",
+        "failure_kind": "malformed",
+        "source": "controlled provider response; no hosted inference"
+      }
+    ]
+  },
+  "extraction": {
+    "state": "separate_opt_in_run",
+    "cases": 24,
+    "accuracy": null,
+    "note": "Source/labels exist, but absent model predictions are never scored as perfect extraction. Run evals/run_live_extraction.py --run-live for actual provider evidence; PDF intake has separate P1-08 evidence."
+  },
+  "latency_ms": {
+    "source": "Node wall clock for offline actual Worker functions; excludes precomputed embedding inference",
+    "p50": 0.13916700000000048,
+    "p95": 0.9518329999999935,
+    "p99": 5.878958000000004
+  },
+  "cost": {
+    "offline_hosted_inference_requests": 0,
+    "measured_hosted_cost_usd": 0,
+    "local_compute_cost_usd": null,
+    "cloudflare_cost_usd": null,
+    "cloudflare_cost_note": "Frozen vectors came from local CPU inference. No Cloudflare inference/billing was measured by this evaluator."
+  },
+  "live_tailoring": {
+    "state": "not_requested",
+    "requests": 0,
+    "measured_cost_usd": null,
+    "measured_tokens": null
+  },
+  "quality_gate": {
+    "factual_selection": true,
+    "preparation": true,
+    "controlled_source_support": true,
+    "semantic_adoption": true,
+    "independent_human_review": "not_performed; rubric provided, repository-authored synthetic labels only"
+  },
+  "limitations": [
+    "Synthetic preference/domain labels are not independently human-annotated and are not hiring outcomes.",
+    "Frozen local BGE vectors are genuine model outputs; a production AI binding check is separate.",
+    "Offline fallback checks do not measure live provider extraction, resource retrieval or employer application compatibility."
+  ]
+}

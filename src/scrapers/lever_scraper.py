@@ -17,6 +17,8 @@ from bs4 import BeautifulSoup
 from playwright.sync_api import sync_playwright
 
 from src.models.job import Job, ListingType
+from src.utils.listings import enrich_job
+from src.scrapers.static_scraper import structured_postings
 
 # Keywords that indicate an internship listing
 INTERNSHIP_KEYWORDS = ("intern", "co-op", "coop", "apprentice", "trainee")
@@ -155,6 +157,7 @@ def parse_detail_page(html: str) -> dict:
 
     return {
         "jd_text": jd_text,
+        "structured_posting": next(iter(structured_postings(html)), None),
         "posted_date": posted_date,
     }
 
@@ -243,6 +246,7 @@ class LeverScraper:
                             posted_date=detail_data["posted_date"],
                             listing_type=listing_type,
                         )
+                        enrich_job(job, detail_data.get("structured_posting"))
                         self.jobs.append(job)
                     finally:
                         detail_page.close()
@@ -289,6 +293,7 @@ class LeverScraper:
                 posted_date=detail_data["posted_date"],
                 listing_type=listing_type,
             )
+            enrich_job(job, detail_data.get("structured_posting"))
             self.jobs.append(job)
 
         return self.jobs

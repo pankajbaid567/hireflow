@@ -10,6 +10,10 @@ import argparse
 import json
 import logging
 import os
+import hashlib
+import re
+from uuid import uuid4
+from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -21,17 +25,19 @@ logger = logging.getLogger(__name__)
 
 # Lazy imports to speed up module load and enable test mocking
 _model = None
+_model_name = None
 _faiss = None
 
 
 def _get_model():
     """Lazy-load the sentence-transformers model."""
-    global _model
-    if _model is None:
+    global _model, _model_name
+    settings = get_settings()
+    if _model is None or _model_name != settings.embedding_model:
         from sentence_transformers import SentenceTransformer
-        settings = get_settings()
         logger.info(f"Loading embedding model: {settings.embedding_model}")
         _model = SentenceTransformer(settings.embedding_model)
+        _model_name = settings.embedding_model
     return _model
 
 
@@ -78,6 +84,77 @@ class EmbeddingPipeline:
         model = self._model_instance()
         vec = model.encode(text.strip(), convert_to_numpy=True)
         return vec.astype(np.float32)
+
+    def semantic_scores(self, profile: dict, jobs: list, *, user_id: int,
+                        profile_version: str, cache_root=None) -> dict[int, float]:
+        """Use genuine model vectors and a request-scoped FAISS index.
+
+        The private cache namespace includes model, algorithm, profile version,
+        complete profile/JD fingerprints and job IDs. A changed source cannot
+        reuse an old vector. This method is called by the normal scorer when
+        explicitly enabled; missing optional model dependencies fail at its
+        caller into an explicit lexical fallback. No download is attempted by
+        default CI or by an ordinary disabled configuration.
+        """
+        if not isinstance(user_id, int) or user_id <= 0:
+            raise ValueError("A private owner ID is required for semantic cache")
+        if not jobs:
+            return {}
+        bounded = jobs[:200]
+        query_text = profile_embedding_text(profile)
+        if not query_text:
+            return {}
+        namespace = f"{self.settings.embedding_model}:native-pooling:profile-jd-v1"
+        sources = [{"id": int(job.id), "title": job.title or "",
+                    "description": job.description or "",
+                    "listing_type": getattr(job.listing_type, "value", job.listing_type),
+                    "location": job.location or ""} for job in bounded]
+        signature = _fingerprint({"model": namespace, "profile_version": str(profile_version),
+                                  "profile": profile, "jobs": sources})
+        directory = Path(cache_root or self.settings.faiss_index_path) / "owners" / str(user_id)
+        directory.mkdir(parents=True, exist_ok=True, mode=0o700)
+        directory.chmod(0o700)
+        manifest = directory / f"{signature}.json"
+        vectors = None
+        if manifest.is_file():
+            try:
+                data = json.loads(manifest.read_text())
+                values = np.asarray(data["vectors"], dtype=np.float32)
+                if (data.get("signature") == signature and data.get("model") == namespace
+                        and values.ndim == 2 and values.shape[0] == len(bounded) + 1
+                        and values.shape[1] > 0 and np.isfinite(values).all()
+                        and np.all(np.linalg.norm(values, axis=1) > 0)):
+                    vectors = values
+            except (ValueError, TypeError, KeyError, OSError):
+                pass
+        if vectors is None:
+            texts = [query_text, *[job_embedding_text(source) for source in sources]]
+            vectors = np.asarray(self._model_instance().encode(texts, convert_to_numpy=True,
+                                show_progress_bar=False), dtype=np.float32)
+            if (vectors.ndim != 2 or vectors.shape[0] != len(texts)
+                    or vectors.shape[1] == 0 or not np.isfinite(vectors).all()
+                    or np.any(np.linalg.norm(vectors, axis=1) == 0)):
+                raise ValueError("Embedding provider returned invalid vectors")
+            temporary = manifest.with_suffix(f".{uuid4().hex}.tmp")
+            with temporary.open("w") as stream:
+                os.chmod(temporary, 0o600)
+                json.dump({"signature": signature, "model": namespace,
+                           "profile_version": str(profile_version),
+                           "source_hashes": [_fingerprint(source) for source in sources],
+                           "vectors": vectors.tolist()}, stream, separators=(",", ":"))
+            os.replace(temporary, manifest)
+            # Cache versions are recomputable and contain private vectors.
+            # Bound disk use without touching PDFs or application history.
+            old = sorted(directory.glob("*.json"), key=lambda path: path.stat().st_mtime, reverse=True)
+            for obsolete in old[32:]:
+                obsolete.unlink(missing_ok=True)
+        faiss = _get_faiss()
+        documents = vectors[1:].copy(); query = vectors[:1].copy()
+        faiss.normalize_L2(documents); faiss.normalize_L2(query)
+        index = faiss.IndexFlatIP(documents.shape[1]); index.add(documents)
+        scores, indices = index.search(query, len(bounded))
+        return {int(bounded[int(index)].id): float(np.clip(score, 0, 1))
+                for score, index in zip(scores[0], indices[0]) if index >= 0}
 
     def embed_jobs_to_index(self) -> int:
         """
@@ -176,6 +253,8 @@ class EmbeddingPipeline:
         Returns:
             List of job metadata dicts with an added 'score' key.
         """
+        if top_k <= 0:
+            return []
         if self._index is None:
             loaded = self.load_index()
             if not loaded:
@@ -204,6 +283,34 @@ class EmbeddingPipeline:
             results.append(job)
 
         return results
+
+
+def _fingerprint(value) -> str:
+    return hashlib.sha256(json.dumps(value, sort_keys=True, ensure_ascii=False,
+                                    separators=(",", ":"), default=str).encode()).hexdigest()
+
+
+def _private_facts(value: str) -> str:
+    value = re.sub(r"https?://\S+|\b[^\s@]+@[^\s@]+\.[^\s@]+\b", " ", value, flags=re.I)
+    value = re.sub(r"(?:\+?\d[\s().-]*){9,}", " ", value)
+    return re.sub(r"\s+", " ", value).strip()[:1800]
+
+
+def profile_embedding_text(profile: dict) -> str:
+    """Only approved technical/profile facts; contact identity is not a signal."""
+    skills = ", ".join(str(value) for value in (profile.get("skills") or [])[:100])
+    roles = ", ".join(str(value) for value in (profile.get("target_roles") or [])[:100])
+    values = [f"Skills: {skills}" if skills else "", f"Target roles: {roles}" if roles else "",
+              str(profile.get("summary") or "")]
+    for project in (profile.get("projects") or [])[:8]:
+        if isinstance(project, dict):
+            values.extend([str(project.get("name") or ""), str(project.get("description") or ""),
+                           *[str(value) for value in (project.get("tech") or [])[:100]]])
+    return _private_facts(". ".join(value for value in values if value))
+
+
+def job_embedding_text(job: dict) -> str:
+    return _private_facts(". ".join(str(job.get(key) or "") for key in ("title", "description") if job.get(key)))
 
 
 def main():

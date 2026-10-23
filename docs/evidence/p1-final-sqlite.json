@@ -1,0 +1,29 @@
+{
+  "status": "passed",
+  "scope": "Disposable local SQLite only; current source migrations including005 and job_snapshot",
+  "steps": [
+    {
+      "name": "upgrade",
+      "exit_code": 0,
+      "wall_ms": 491
+    },
+    {
+      "name": "rollback",
+      "exit_code": 0,
+      "wall_ms": 284
+    },
+    {
+      "name": "reupgrade",
+      "exit_code": 0,
+      "wall_ms": 277
+    },
+    {
+      "name": "schema-check",
+      "exit_code": 0,
+      "wall_ms": 280
+    }
+  ],
+  "verified_at": "2026-10-23",
+  "migration_head": "005",
+  "includes_job_snapshot": true
+}

@@ -30,6 +30,11 @@ function Plan({ userId, profile }) {
     const timer = setTimeout(reload, 2000);
     return () => clearTimeout(timer);
   }, [data?.preparing, busy, loading, reload]);
+  async function refresh() {
+    if (!isCloudflare() || typeof api.refreshMatching !== 'function') return reload();
+    setBusy(true); setActionError('');
+    try { setData(await api.refreshMatching(userId)); } catch (error) { setActionError(errorMessage(error)); } finally { setBusy(false); }
+  }
   async function swap(remove, add) {
     setBusy(true); setActionError(''); setSuccess('');
     try { setData(await api.swapJob(userId, remove, add)); } catch (error) { setActionError(errorMessage(error)); } finally { setBusy(false); }
@@ -58,7 +63,7 @@ function Plan({ userId, profile }) {
   }
   const jobs = data?.plan || [];
   const reviewed=selected.every(id=>jobs.some(job=>job.job_id===id&&job.review_id&&!job.resume_rejected));
-  return <><PageHeading eyebrow="MAKE YOUR NEXT MOVE" title="Your weekly plan." action={<button className="button button-secondary button-small" onClick={reload} disabled={loading || busy}><RefreshCw size={15} />Refresh plan</button>}>A thoughtful shortlist, tailored to {profile?.name?.split(' ')[0] || 'you'}. Review each opportunity, then make it yours.</PageHeading>
+  return <><PageHeading eyebrow="MAKE YOUR NEXT MOVE" title="Your weekly plan." action={<button className="button button-secondary button-small" onClick={refresh} disabled={loading || busy}><RefreshCw size={15} />Refresh plan</button>}>A thoughtful shortlist, tailored to {profile?.name?.split(' ')[0] || 'you'}. Review each opportunity, then make it yours.</PageHeading>
     {isCloudflare() && <OpportunityDiscovery userId={userId} profile={profile} onUpdated={reload} />}
     {isCloudflare() && <OperationsStatus userId={userId} loadStatus={api.getOperations} runDiagnostics={api.runModelDiagnostics}/>}
     <div className="plan-banner"><span className="banner-icon"><Sparkles size={22} /></span><div><strong>A little focus. A lot of possibility.</strong><p>Review your resumes and choose the opportunities you’re ready to pursue.</p></div><span className="pill">{data?.quota || profile?.weekly_quota || '—'} per week</span></div>

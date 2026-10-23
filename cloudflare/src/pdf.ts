@@ -1,5 +1,7 @@
-// Dependency-free PDF layout with core fonts; no images, font embedding, or compression.
+// Core-font ASCII fast path plus pre-subset embedded Unicode fonts; no runtime subsetting.
 import type { Row } from './types';
+import { UnicodePdfFonts, assertComplexScriptBudget } from './resume_unicode';
+export { ResumeFormatError } from './resume_unicode';
 
 const PAGE_WIDTH = 595, PAGE_HEIGHT = 842, MARGIN = 48, WIDTH = PAGE_WIDTH - MARGIN * 2;
 const BODY = 10.2, LEADING = 14.2, BOTTOM = 54;
@@ -9,9 +11,10 @@ type Font = 'F1' | 'F2';
 type Link = { x: number; y: number; width: number; size: number; url: string };
 
 function clean(value: unknown): string {
-  return String(value ?? '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '')
+  return String(value ?? '').normalize('NFC')
     .replace(/[–—]/g, '-').replace(/[‘’]/g, "'").replace(/[“”]/g, '"').replace(/[•▪●]/g, '-')
-    .replace(/[^\x20-\x7e\n]/g, ' ');
+    .replace(/\r\n?/g, '\n').replace(/\t|\u00a0/g, ' ')
+    .replace(/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f\u202a-\u202e\u2066-\u2069]/g, '');
 }
 function content(value: unknown, depth = 0): string {
   if (depth > 6 || value == null || typeof value === 'boolean') return '';
@@ -20,24 +23,28 @@ function content(value: unknown, depth = 0): string {
   const text = clean(value).trim();
   return /^(?:n\/?a|none|null|undefined|not provided|not applicable)$/i.test(text) ? '' : text;
 }
-function width(text: string, size: number, font: Font = 'F1'): number {
+function width(text: string, size: number, font: Font = 'F1', unicode?: UnicodePdfFonts): number {
+  if (/[^\x20-\x7e]/.test(text)) {
+    const fonts = unicode || new UnicodePdfFonts();
+    return fonts.split(text).reduce((sum, part) => sum + (fonts.isAscii(part) ? width(part, size, font) : fonts.measure(part, size)), 0);
+  }
   const metrics = font === 'F2' ? BOLD_WIDTHS : REGULAR_WIDTHS;
   let total = 0;
   for (let i = 0; i < text.length; i++) total += metrics[text.charCodeAt(i) - 32] || 0;
   return total * size / 1000;
 }
-function wrap(value: unknown, size = BODY, available = WIDTH, font: Font = 'F1'): string[] {
+function wrap(value: unknown, size = BODY, available = WIDTH, font: Font = 'F1', unicode?: UnicodePdfFonts): string[] {
   const result: string[] = [];
   for (const paragraph of clean(value).split('\n')) {
     let line = '', lineWidth = 0;
     for (const word of paragraph.split(/\s+/).filter(Boolean)) {
-      const wordWidth = width(word, size, font), space = line ? width(' ', size, font) : 0;
+      const wordWidth = width(word, size, font, unicode), space = line ? width(' ', size, font, unicode) : 0;
       if (line && lineWidth + space + wordWidth > available) { result.push(line); line = ''; lineWidth = 0; }
       // Split long URLs/identifiers without quadratic scans or clipping.
       if (wordWidth > available) {
         let part = '', partWidth = 0;
-        for (const character of word) {
-          const characterWidth = width(character, size, font);
+        for (const character of /[^\x20-\x7e]/.test(word) ? Array.from(new Intl.Segmenter('und', {granularity:'grapheme'}).segment(word),item=>item.segment) : word) {
+          const characterWidth = width(character, size, font, unicode);
           if (partWidth + characterWidth > available && part) { result.push(part); part = ''; partWidth = 0; }
           part += character; partWidth += characterWidth;
         }
@@ -52,11 +59,19 @@ function wrap(value: unknown, size = BODY, available = WIDTH, font: Font = 'F1')
 }
 const literal = (value: string) => clean(value).replace(/([\\()])/g, '\\$1');
 const number = (value: number) => Number(value.toFixed(2));
-function draw(text: string, x: number, y: number, size = BODY, font: Font = 'F1', muted = false): string {
+function draw(text: string, x: number, y: number, size = BODY, font: Font = 'F1', muted = false, unicode?: UnicodePdfFonts): string {
+  if (/[^\x20-\x7e]/.test(text)) {
+    const fonts=unicode || new UnicodePdfFonts();let cursor=x;
+    return fonts.split(text).map(part=>{const command=fonts.isAscii(part)?draw(part,cursor,y,size,font,muted):fonts.draw(part,cursor,y,size,font==='F2',muted);cursor+=width(part,size,font,fonts);return command;}).join('\n');
+  }
   return `BT /${font} ${size} Tf ${muted ? '0.32 0.36 0.40' : '0.10 0.13 0.17'} rg 1 0 0 1 ${number(x)} ${number(y)} Tm (${literal(text)}) Tj ET`;
 }
 
 class ResumeLayout {
+  private readonly unicode = new UnicodePdfFonts();
+  private width(text:string,size:number,font:Font='F1'){return width(text,size,font,this.unicode);}
+  private wrap(value:unknown,size=BODY,available=WIDTH,font:Font='F1'){return wrap(value,size,available,font,this.unicode);}
+  private draw(text:string,x:number,y:number,size=BODY,font:Font='F1',muted=false){return draw(text,x,y,size,font,muted,this.unicode);}
   pages: string[][] = [[]];
   private links: Link[][] = [[]];
   y = 790;
@@ -66,8 +81,8 @@ class ResumeLayout {
   private get page() { return this.pages[this.pages.length - 1]; }
   private ensure(height: number) {
     if (this.y - height >= BOTTOM) return;
-    this.pages.push([draw(this.name, MARGIN, 801, 10, 'F2', true)]); this.links.push([]); this.y = 773;
-    if (this.continuation) for (const line of wrap(`${this.continuation} (continued)`, 10.5, WIDTH, 'F2')) { this.page.push(draw(line, MARGIN, this.y, 10.5, 'F2')); this.y -= LEADING; }
+    this.pages.push([this.draw(this.name, MARGIN, 801, 10, 'F2', true)]); this.links.push([]); this.y = 773;
+    if (this.continuation) for (const line of this.wrap(`${this.continuation} (continued)`, 10.5, WIDTH, 'F2')) { this.page.push(this.draw(line, MARGIN, this.y, 10.5, 'F2')); this.y -= LEADING; }
   }
   private consume(lines: number) {
     this.units += lines;
@@ -79,33 +94,36 @@ class ResumeLayout {
   keep(height: number) { this.ensure(Math.min(height, 110)); }
   paragraph(value: unknown, options: { size?: number; font?: Font; muted?: boolean; bullet?: boolean } = {}) {
     const size = options.size || BODY, font = options.font || 'F1', indent = options.bullet ? 12 : 0;
-    const lines = wrap(value, size, WIDTH - indent, font); this.consume(lines.length);
+    const lines = this.wrap(value, size, WIDTH - indent, font); this.consume(lines.length);
+    const targets=[...clean(value).matchAll(/https?:\/\/[^\s|]+/g)].map(match=>match[0].replace(/[.,;]+$/, ''));
     if (lines.length > 1) this.ensure(LEADING * (options.bullet && lines.length <= 5 ? lines.length : 2));
     lines.forEach((line, index) => {
       if (index > 0 && lines.length - index === 2) this.ensure(LEADING * 2);
       this.ensure(LEADING);
-      if (options.bullet && !index) this.page.push(draw('-', MARGIN + 1, this.y, size));
-      this.page.push(draw(line, MARGIN + indent, this.y, size, font, options.muted));
+      if (options.bullet && !index) this.page.push(this.draw('-', MARGIN + 1, this.y, size));
+      this.page.push(this.draw(line, MARGIN + indent, this.y, size, font, options.muted));
       for (const match of line.matchAll(/https?:\/\/[^\s|]+/g)) {
-        const url = match[0].replace(/[.,;]+$/, '');
-        this.links[this.links.length - 1].push({ url, x: MARGIN + indent + width(line.slice(0, match.index), size, font), y: this.y, width: width(url, size, font), size });
+        const fragment = match[0].replace(/[.,;]+$/, '');
+        const sourceUrl = targets.find(target=>target.startsWith(fragment)) || fragment;
+        let url:string;try { const parsed=new URL(sourceUrl); if(!['http:','https:'].includes(parsed.protocol)||parsed.username||parsed.password)continue; url=/[^\x20-\x7e]/.test(sourceUrl)?parsed.href:sourceUrl; } catch { continue; }
+        this.links[this.links.length - 1].push({ url, x: MARGIN + indent + this.width(line.slice(0, match.index), size, font), y: this.y, width: this.width(fragment, size, font), size });
       }
       this.y -= size > 18 ? 29 : LEADING;
     });
   }
   section(title: string, followingHeight = 0) {
     this.continuation = ''; this.ensure(Math.max(90, Math.min(145, followingHeight + 35))); this.gap(12);
-    this.page.push(draw(title, MARGIN, this.y, 10, 'F2'));
+    this.page.push(this.draw(title, MARGIN, this.y, 10, 'F2'));
     this.page.push(`0.72 0.77 0.79 RG 0.55 w ${MARGIN} ${number(this.y - 6)} m ${PAGE_WIDTH - MARGIN} ${number(this.y - 6)} l S`);
     this.y -= 23;
   }
   entry(title: string, detail: string, dates = '') {
     this.continuation = ''; this.ensure(46); this.continuation = title;
-    const dateWidth = width(dates, 9.3), room = dates && dateWidth < 155 ? WIDTH - dateWidth - 20 : WIDTH;
-    const headings = wrap(title, 10.5, room, 'F2'); this.consume(headings.length);
+    const dateWidth = this.width(dates, 9.3), room = dates && dateWidth < 155 ? WIDTH - dateWidth - 20 : WIDTH;
+    const headings = this.wrap(title, 10.5, room, 'F2'); this.consume(headings.length);
     headings.forEach((line, index) => {
-      this.ensure(LEADING); this.page.push(draw(line, MARGIN, this.y, 10.5, 'F2'));
-      if (!index && dates && room < WIDTH) this.page.push(draw(dates, PAGE_WIDTH - MARGIN - dateWidth, this.y, 9.3, 'F1', true));
+      this.ensure(LEADING); this.page.push(this.draw(line, MARGIN, this.y, 10.5, 'F2'));
+      if (!index && dates && room < WIDTH) this.page.push(this.draw(dates, PAGE_WIDTH - MARGIN - dateWidth, this.y, 9.3, 'F1', true));
       this.y -= LEADING;
     });
     if (dates && (room === WIDTH || !headings.length)) this.paragraph(dates, { size: 9.3, muted: true });
@@ -114,9 +132,9 @@ class ResumeLayout {
   finish() {
     if (this.pages.length > 1) this.pages.forEach((page, index) => {
       const label = `${index + 1} / ${this.pages.length}`;
-      page.push(draw(label, PAGE_WIDTH - MARGIN - width(label, 8), 30, 8, 'F1', true));
+      page.push(this.draw(label, PAGE_WIDTH - MARGIN - this.width(label, 8), 30, 8, 'F1', true));
     });
-    return pdfDocument(this.pages.map(page => page.join('\n')), this.links);
+    return pdfDocument(this.pages.map(page => page.join('\n')), this.links, this.unicode);
   }
 }
 
@@ -151,6 +169,9 @@ function projectHeight(item: Row | string) {
 }
 
 export function createResume(profile: Row, _job: Row, matched: string[]): Uint8Array {
+  const renderedKeys=['name','email','phone','location','links','linkedin','github','website','portfolio','summary','professional_summary','objective','skills','experience','projects','education','certifications','achievements','languages'];
+  if(!entries(profile.experience).length)renderedKeys.push('resume_text');
+  assertComplexScriptBudget(Object.fromEntries(renderedKeys.map(key=>[key,profile[key]])));
   const name = content(profile.name), layout = new ResumeLayout(name);
   layout.paragraph(name, { size: 24, font: 'F2' });
   const contact = [profile.email, profile.phone, profile.location].map(value => content(value)).filter(Boolean).join(' | ');
@@ -224,16 +245,17 @@ export function createResume(profile: Row, _job: Row, matched: string[]): Uint8A
   return layout.finish();
 }
 
-function pdfDocument(streams: string[], links: Link[][] = []): Uint8Array {
+function pdfDocument(streams: string[], links: Link[][] = [], unicode = new UnicodePdfFonts()): Uint8Array {
   const objects: string[] = [];
   const add = (body: string) => { objects.push(body); return objects.length; };
   const catalog = add(''), pagesId = add('');
-  const regular = add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>');
-  const bold = add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>');
+  const regular = add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>');
+  const bold = add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>');
+  const unicodeFonts=Object.entries(unicode.embed(add)).map(([name,id])=>`/${name} ${id} 0 R`).join(' ');
   const pages = streams.map((commands, index) => {
     const contentId = add(`<< /Length ${commands.length} >>\nstream\n${commands}\nendstream`);
     const annotations = (links[index] || []).map(link => add(`<< /Type /Annot /Subtype /Link /Rect [${number(link.x)} ${number(link.y - 2)} ${number(link.x + link.width)} ${number(link.y + link.size + 2)}] /Border [0 0 0] /A << /S /URI /URI (${literal(link.url)}) >> >>`));
-    return add(`<< /Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 ${PAGE_WIDTH} ${PAGE_HEIGHT}] /Resources << /Font << /F1 ${regular} 0 R /F2 ${bold} 0 R >> >> /Contents ${contentId} 0 R${annotations.length ? ` /Annots [${annotations.map(id => `${id} 0 R`).join(' ')}]` : ''} >>`);
+    return add(`<< /Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 ${PAGE_WIDTH} ${PAGE_HEIGHT}] /Resources << /Font << /F1 ${regular} 0 R /F2 ${bold} 0 R ${unicodeFonts} >> >> /Contents ${contentId} 0 R${annotations.length ? ` /Annots [${annotations.map(id => `${id} 0 R`).join(' ')}]` : ''} >>`);
   });
   objects[catalog - 1] = `<< /Type /Catalog /Pages ${pagesId} 0 R >>`;
   objects[pagesId - 1] = `<< /Type /Pages /Kids [${pages.map(page => `${page} 0 R`).join(' ')}] /Count ${pages.length} >>`;
@@ -247,7 +269,8 @@ function pdfDocument(streams: string[], links: Link[][] = []): Uint8Array {
 
 // Fixture/provider contract retained, including whitespace and input order.
 export function textPdf(text: string[]): Uint8Array {
-  const pages: string[] = [];
-  for (let start = 0; start < Math.max(1, text.length); start += 53) pages.push(text.slice(start, start + 53).map((line, index) => draw(line, 45, 797 - index * 13, 10)).join('\n'));
-  return pdfDocument(pages);
+  assertComplexScriptBudget(text);
+  const pages: string[] = [], unicode = new UnicodePdfFonts();
+  for (let start = 0; start < Math.max(1, text.length); start += 53) pages.push(text.slice(start, start + 53).map((line, index) => draw(clean(line), 45, 797 - index * 13, 10, 'F1', false, unicode)).join('\n'));
+  return pdfDocument(pages, [], unicode);
 }

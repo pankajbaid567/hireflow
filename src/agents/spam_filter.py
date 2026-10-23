@@ -8,6 +8,7 @@ Identifies fake companies, unrealistic claims, or extremely sparse descriptions.
 import argparse
 import sys
 import logging
+import math
 
 from src.utils.llm_client import get_llm_client
 from src.config.settings import get_settings
@@ -20,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 class SpamFilter:
     def __init__(self, threshold: float | None = None):
-        self.threshold = threshold or get_settings().spam_filter_threshold
+        self.threshold = get_settings().spam_filter_threshold if threshold is None else threshold
         self.llm = get_llm_client()
 
     def score(self, job_data: dict) -> dict:
@@ -72,6 +73,8 @@ class SpamFilter:
                 raise ValueError("LLM did not return a JSON object")
                 
             confidence = float(result.get("spam_confidence", 0.0))
+            if not math.isfinite(confidence) or not 0 <= confidence <= 1:
+                raise ValueError("Invalid classifier confidence")
             is_spam = confidence >= self.threshold
             reason = result.get("reasoning", "")
             
@@ -81,12 +84,13 @@ class SpamFilter:
                 "reason": reason
             }
         except Exception as e:
-            logger.error(f"SpamFilter LLM error: {e}")
+            logger.warning("Spam classifier unavailable (%s)", type(e).__name__)
             # Failsafe: if LLM fails, assume not spam to prevent blocking good jobs
             return {
-                "spam_confidence": 0.0,
+                "spam_confidence": None,
                 "is_spam": False,
-                "reason": f"Error during classification: {e}"
+                "classification_available": False,
+                "reason": "Classification unavailable; this is not evidence of employer legitimacy."
             }
 
 
@@ -112,6 +116,9 @@ def run_filter_on_database():
             print(f"[{i+1}/{len(jobs)}] Scoring '{job.title}' at {job.company}...")
             result = filter.score(job_data)
             
+            if result.get("classification_available") is False or result.get("spam_confidence") is None:
+                print("  -> Classification unavailable; previous assessment retained.")
+                continue
             job.spam_confidence = result["spam_confidence"]
             job.is_spam = result["is_spam"]
             

@@ -1,6 +1,6 @@
 # Cloudflare Pages and Workers deployment
 
-**Current deployment, 23 October 2026:** [Pages dashboard](https://hireflow-dashboard.pages.dev/profile), deployment `ede2bc0b` ([deployment URL](https://ede2bc0b.hireflow-dashboard.pages.dev)); [API Worker](https://hireflow-api.baidpankaj567.workers.dev/health), version `cdaf5730-d2ea-4544-86b2-746b3694feb6`. D1 migrations through `0007` are applied. P0 local checks and the new production account-recovery/Pages application cycle passed; [verification](p0-verification.md) records the separate transfer rerun and evidence boundaries. Pages assets are `index-mGKqgBbi.js` and `index-BMktSa3T.css`. Publish with `npm run build:cloudflare` to select the Cloudflare API capabilities.
+**Current deployment, 23 October 2026:** [Pages dashboard](https://hireflow-dashboard.pages.dev/profile), deployment `cdc2de6a` ([deployment URL](https://cdc2de6a.hireflow-dashboard.pages.dev)); [API Worker](https://hireflow-api.baidpankaj567.workers.dev/health), version `d9634e84-a645-4833-8da3-b091492f0e73`. D1 migrations through `0010` are applied. P1 adds genuine hybrid matching, structured source facts, immutable listing history, company exclusion and Unicode PDF coverage. The coordinated production two-mode acceptance is running; results will be recorded in P1 verification after completion. P0 production evidence remains [historical](p0-verification.md). Pages assets are `index-ClUMs1P_.js` and `index-B8vXzKsS.css`. Publish with `npm run build:cloudflare` to select the Cloudflare API capabilities.
 
 **Historical baseline evidence:** public/deep-link, API health, anonymous-session and private-profile checks passed. Production UI made five source searches in 10.834 seconds and verified eight listings: Internshala three, Wellfound three, Greenhouse two; four new and four known. Nine cards displayed original links, with LinkedIn restrictions shown. No application was confirmed during discovery. The baseline controlled UI cycle passed PDF-only signup, edits, plan/swap/PDF, one controlled submission, prep, report/library, mobile and logout. Separate old-host migration passed same-owner transfer, fragment removal, replay rejection and both-origin logout. These earlier runs do not establish the new P0 production contract. No employer application or real email was sent.
 
@@ -16,6 +16,7 @@ This runtime is separate from the original Python/PostgreSQL application. It run
 | Private uploads, resume versions, reports | KV `hireflow-files`, ID `b2c25a76089c4c11aacf1d0fef9b1b51` | `FILES_KV` |
 | Application dispatch | Queue `hireflow-applications` | `APPLICATION_QUEUE`; batch/concurrency one |
 | Application browser | Cloudflare Browser Run | `BROWSER` |
+| Bounded semantic matching | Workers AI BGE small, CLS pooling, 384 dimensions | `AI`; private versioned vectors in D1 |
 | Recovery of queued outbox work | Five-minute cron | `*/5 * * * *` |
 | Pages → API transport | Service binding to `hireflow-api` | `API` in Pages |
 | Transitional old-cookie bridge | `https://hireflow-blue-seven.vercel.app/api/workspace-migrate` | Legacy Vercel project; retained only for migration |
@@ -40,6 +41,8 @@ The API's configured variables are:
 | `GEMINI_FALLBACK_MODEL` | `gemini-3.5-flash-lite`; blank disables alternate models |
 | `BROWSER_ENABLED` | `true` for authorized automatic attempts |
 | `BROWSER_DAILY_BUDGET_SECONDS` | `540` or lower |
+| `SEMANTIC_MATCHING_ENABLED` | `true`; lexical fallback on unavailable provider, invalid vectors or exhausted allowance |
+| `SEMANTIC_DAILY_TEXT_BUDGET` | `100` text reservations per UTC day; hard cap 100, no uncertain refunds |
 | `EMAIL_PROVIDER` | Configured integration selection; `resend` currently |
 | `FROM_EMAIL` | Currently a placeholder, **not a verified sender** |
 
@@ -78,7 +81,7 @@ every pending migration: `0002` adds transfers; `0003` adds draft leases and
 tailoring metadata; `0004` adds account/passkey/recovery tables, session metadata
 and source-bound atomic transfers; `0005` adds private automation checkpoints;
 `0006` adds immutable answer/PDF review authorization; `0007` adds operational
-telemetry/diagnostics. Apply all pending migrations before code publication.
+telemetry/diagnostics; `0008` adds source-backed listing facts, historical snapshots and review invalidation; `0009` adds private semantic cache/usage and matching metadata; `0010` adds the bounded operations-request index. Apply all pending migrations before code publication.
 Back up D1 first; deployment does not copy local database contents. Existing
 sessions survive `0004`, but old unbound transfer links require reminting.
 

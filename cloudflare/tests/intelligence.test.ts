@@ -23,7 +23,7 @@ describe('portable matching', () => {
     const job={title:'Python Engineer',description:'Python. Salary INR 8-15 LPA.',listing_type:'job'};
     const high=scoreMatch(user,job).score;
     expect(scoreMatch(user,{...job,description:'Python. Salary INR 4 LPA.'}).score).toBeLessThan(high);
-    expect(scoreMatch(user,{...job,description:'Python. Salary INR 100,000 per month.'}).score).toBe(high);
+    expect(scoreMatch(user,{...job,description:'Python. Salary INR 100,000 per month.'}).score).toBeGreaterThan(high); // Guaranteed preference vs overlapping range.
     expect(scoreMatch(user,{...job,description:'Python. Salary USD 30,000 per year.'}).score).toBeLessThan(high);
   });
   it('extracts aliases and language boundaries without Java/JavaScript or C++/C# collisions', () => {
@@ -35,7 +35,7 @@ describe('portable matching', () => {
     const job = { title: 'AI Engineer Intern', description: 'Python LangChain Docker RAG', company: 'Acme', listing_type: 'internship', location: 'Remote' };
     const best = scoreMatch({ skills: ['Python', 'LangChain', 'Docker', 'RAG'], mode: 'internship', target_roles: ['AI Engineer'], preferred_locations: ['Remote'] }, job);
     const partial = scoreMatch({ skills: ['Python', 'LangChain'] }, job);
-    expect(best.score).toBeCloseTo(0.955, 4);
+    expect(best.score).toBeCloseTo(0.925, 4); // Undisclosed pay and employer signal stay neutral.
     expect(best.score).toBeGreaterThan(partial.score);
     expect(partial.gaps).toEqual(['RAG', 'Docker']);
     expect(partial.matched).toEqual(['Python', 'LangChain']);

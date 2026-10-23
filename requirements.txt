@@ -47,7 +47,8 @@ alembic>=1.13.0
 psycopg2-binary>=2.9.9
 
 # --- Resume Generation ---
-reportlab>=4.2.0
+reportlab>=4.4.0,<5
+uharfbuzz>=0.52.0,<1  # OpenType shaping for Devanagari resume text
 # LaTeX (XeLaTeX) must be installed separately on your OS
 
 # --- Email ---

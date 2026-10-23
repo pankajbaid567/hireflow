@@ -36,6 +36,13 @@ describe('discovery API import truthfulness', () => {
     const db = await mf.getD1Database('DB'); const applications = await db.prepare('SELECT count(*) AS n FROM applications').first<any>(); expect(applications!.n).toBe(1);
     const job = await db.prepare('SELECT company,description FROM jobs').first<any>(); expect(job!.company).toBe('Actual Co'); expect(job!.description).toBe(description);
   });
+  it('refreshes actual verified facts on an existing URL while manual clients cannot assert verification',async()=>{
+    const url='https://wellfound.com/jobs/123-active-intern';
+    let response=await mf.dispatchFetch(`https://worker.example/jobs/${userId}`,{method:'POST',headers:{Cookie:cookie,'Content-Type':'application/json'},body:JSON.stringify({title:'Old manual title',company:'Old Manual Company',url,description:'A manually entered Python description with a different employer and old role requirements.',listing_type:'internship',provenance:{kind:'json_ld',url}})});expect(response.status).toBe(201);
+    const db=await mf.getD1Database('DB');expect(JSON.parse((await db.prepare('SELECT provenance FROM jobs').first<any>())!.provenance).kind).toBe('manual');
+    const result=await (await request(`/jobs/${userId}/discover`)).json() as any;expect(result).toMatchObject({imported:0,already_known:1,discovered:1});
+    const updated=await db.prepare('SELECT title,company,description,provenance FROM jobs').first<any>();expect(updated).toMatchObject({title:'AI Engineer Intern',company:'Actual Co',description});expect(JSON.parse(updated!.provenance).kind).toBe('json_ld');
+  });
   it('returns an actionable sanitized provider failure without adding listings or exposing credentials', async () => {
     providerStatus = 401; const response = await request(`/jobs/${userId}/discover`); expect(response.status).toBe(503); const body = await response.text();
     expect(body).toContain('paste a current job-detail URL'); expect(body).not.toContain('mock-provider-key'); expect(body).not.toContain('private error detail');

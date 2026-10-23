@@ -1,0 +1,43 @@
+{
+  "status": "passed",
+  "scope": "fresh synthetic SQLite/API only; real cached BGE weights and real FAISS",
+  "provider_requests": 0,
+  "employer_requests": 0,
+  "queue_confirmations": 0,
+  "emails": 0,
+  "model": "BAAI/bge-small-en-v1.5",
+  "pooling": "cls",
+  "profile_contact_used_for_embedding": false,
+  "owner_id": 1,
+  "lexical_order": [
+    1,
+    2
+  ],
+  "lexical_scores": [
+    0.725,
+    0.725
+  ],
+  "actual_plan_job_id": 2,
+  "actual_matching_method": "hybrid",
+  "faiss_calls": 1,
+  "semantic_scores": {
+    "1": 0.757,
+    "2": 0.8567
+  },
+  "match_scores": {
+    "1": 0.7056,
+    "2": 0.7135
+  },
+  "pdf_prepared": true,
+  "model_revision": "5c38ec7c405ec4b44b94cc5a9bb96e735b38267a",
+  "actual_pooling": {
+    "embedding_dimension": 384,
+    "pooling_mode": "cls",
+    "include_prompt": true
+  },
+  "device": "mps:0",
+  "elapsed_ms": 8406,
+  "vector_cache_files": 1,
+  "inference": "Actual cached model on local Apple MPS; real FAISS on CPU. No hosted provider.",
+  "schema": "private isolated SQLite from current models; separate migration proof in docs/evidence/fresh-setup.json"
+}

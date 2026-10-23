@@ -32,6 +32,9 @@
   "browser": {
     "binding": "BROWSER"
   },
+  "ai": {
+    "binding": "AI"
+  },
   "queues": {
     "producers": [
       {
@@ -66,6 +69,8 @@
     "BROWSER_DAILY_BUDGET_SECONDS": "540",
     "SUBMISSION_DELAY_SECONDS": "21",
     "OPERATIONS_RETENTION_DAYS": "7",
+    "SEMANTIC_MATCHING_ENABLED": "true",
+    "SEMANTIC_DAILY_TEXT_BUDGET": "100",
     "BROWSER_ENABLED": "true",
     "EMAIL_PROVIDER": "resend",
     "FROM_EMAIL": "hireflow@example.com"

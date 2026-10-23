@@ -109,6 +109,7 @@ def test_llm_failure_fallback(mock_get_llm_client):
     })
     
     # Failsafe should default to NOT spam
-    assert result["spam_confidence"] == 0.0
+    assert result["spam_confidence"] is None
     assert result["is_spam"] is False
-    assert "Error during classification" in result["reason"]
+    assert result["classification_available"] is False
+    assert "not evidence" in result["reason"]

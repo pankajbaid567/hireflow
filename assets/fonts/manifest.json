@@ -1,0 +1,26 @@
+{
+  "source_commit": "ffebf8c1ee449e544955a7e813c54f9b73848eac",
+  "tool": "fonttools 4.67.0",
+  "fonts": [
+    {
+      "key": "latin",
+      "filename": "HireFlowSans-Regular.ttf",
+      "source_url": "https://raw.githubusercontent.com/notofonts/noto-fonts/ffebf8c1ee449e544955a7e813c54f9b73848eac/hinted/ttf/NotoSans/NotoSans-Regular.ttf",
+      "source_sha256": "b85c38ecea8a7cfb39c24e395a4007474fa5a4fc864f6ee33309eb4948d232d5",
+      "subset_sha256": "198c8d6048fb264f751a921c9468c0a9b42d9f18255cf4cc69911b5d47339c24",
+      "bytes": 238528,
+      "unicode_ranges": "0000-024F,0370-052F,1E00-1EFF,2000-206F,20A0-20CF",
+      "glyph_count": 1763
+    },
+    {
+      "key": "devanagari",
+      "filename": "HireFlowDevanagari-Regular.ttf",
+      "source_url": "https://raw.githubusercontent.com/notofonts/noto-fonts/ffebf8c1ee449e544955a7e813c54f9b73848eac/hinted/ttf/NotoSansDevanagari/NotoSansDevanagari-Regular.ttf",
+      "source_sha256": "385e78e6359a9d88a0f243d53b1209d7548361ba2194e2b9ec779bcaa7e8949d",
+      "subset_sha256": "b755b12508edccf57b53b82dabf80e465962e33b5bf54fa12fbdb037911769c8",
+      "bytes": 196216,
+      "unicode_ranges": "0000-007F,0900-097F,1CD0-1CFF,200C-200D,20B9,A8E0-A8FF",
+      "glyph_count": 921
+    }
+  ]
+}

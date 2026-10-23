@@ -41,6 +41,7 @@ htmlcov/
 # Generated resumes and reports (large binary files)
 data/resumes/
 data/reports/
+data/faiss_index/
 *.pdf
 
 # LaTeX build artifacts

@@ -27,7 +27,12 @@ def save_jobs_to_db(jobs: list[Job]) -> int:
     saved_count = 0
     db = SessionLocal()
     try:
+        from src.utils.listings import enrich_job, canonical_url
         for job in jobs:
+            if len((job.description or "").strip()) < 100 or (job.description or "").strip() == "Extracted via Generic Scraper":
+                continue  # Incomplete evidence is not a verified full-JD record.
+            job.url = canonical_url(job.url)
+            enrich_job(job)
             # Check if a job with this URL already exists
             existing = db.query(Job).filter(Job.url == job.url).first()
             if existing:

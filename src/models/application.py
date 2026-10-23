@@ -42,6 +42,7 @@ class Application(Base):
     )
 
     match_score = Column(Float, nullable=True)
+    job_snapshot = Column(JSONB().with_variant(JSON(), "sqlite"), nullable=True)
     skill_gaps = Column(JSONB().with_variant(JSON(), "sqlite"), nullable=True)
     resume_path = Column(String, nullable=True)
     resume_version = Column(Integer, nullable=True)

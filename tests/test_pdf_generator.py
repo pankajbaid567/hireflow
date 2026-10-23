@@ -36,7 +36,7 @@ SAMPLE_RESUME = {
         {
             "title":   "ML Intern",
             "company": "TechCorp",
-            "dates":   "Jun 2025 – Aug 2025",
+            "dates":   "Jun 2025 - Aug 2025",
             "bullets": ["Built an NLP pipeline.", "Reduced inference latency by 30%."],
         }
     ],

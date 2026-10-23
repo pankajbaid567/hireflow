@@ -1,0 +1,119 @@
+{
+  "status": "passed",
+  "verified_at_utc": "2026-10-23T08:29:34Z",
+  "scope": "fresh-source-copy/new-venv/new-node_modules on existing macOS host; no provider keys",
+  "versions": {
+    "python": "3.11.15",
+    "os": "Darwin",
+    "architecture": "arm64",
+    "node": "v22.23.4"
+  },
+  "source_files": 306,
+  "source_manifest_sha256": "36953bb1c8c0a3357534ab2cb3525e6b8e5f789c7c5cd77c9eda45b03fff142f",
+  "source_snapshot_note": "Isolated copy of the in-progress P1 working tree, including migrations0008-0010 and005; dependency/setup proof, not a claim that later edits were present or a new physical host/account was created.",
+  "steps": [
+    {
+      "name": "create-venv",
+      "exit_code": 0,
+      "elapsed_seconds": 1.78
+    },
+    {
+      "name": "worker-npm-ci",
+      "exit_code": 0,
+      "elapsed_seconds": 4.13
+    },
+    {
+      "name": "frontend-npm-ci",
+      "exit_code": 0,
+      "elapsed_seconds": 4.28
+    },
+    {
+      "name": "python-install",
+      "exit_code": 0,
+      "elapsed_seconds": 20.36
+    },
+    {
+      "name": "playwright-chromium",
+      "exit_code": 0,
+      "elapsed_seconds": 28.4
+    },
+    {
+      "name": "migration-upgrade",
+      "exit_code": 0,
+      "elapsed_seconds": 4.1
+    },
+    {
+      "name": "migration-rollback",
+      "exit_code": 0,
+      "elapsed_seconds": 0.33
+    },
+    {
+      "name": "migration-reupgrade",
+      "exit_code": 0,
+      "elapsed_seconds": 0.32
+    },
+    {
+      "name": "migration-schema-check",
+      "exit_code": 0,
+      "elapsed_seconds": 0.32
+    },
+    {
+      "name": "python-tests",
+      "exit_code": 0,
+      "elapsed_seconds": 23.73
+    },
+    {
+      "name": "frontend-tests",
+      "exit_code": 0,
+      "elapsed_seconds": 8.46
+    },
+    {
+      "name": "frontend-cloudflare-build",
+      "exit_code": 0,
+      "elapsed_seconds": 2.01
+    },
+    {
+      "name": "worker-typecheck",
+      "exit_code": 0,
+      "elapsed_seconds": 2.45
+    },
+    {
+      "name": "ai-evaluation",
+      "exit_code": 0,
+      "elapsed_seconds": 0.19
+    },
+    {
+      "name": "worker-package",
+      "exit_code": 0,
+      "elapsed_seconds": 0.95
+    }
+  ],
+  "results": {
+    "python": "369 passed, 3 opt-in skipped",
+    "frontend": "115 passed",
+    "ai_evaluation": "120 cases, frozen genuine vectors, predeclared hybrid gate passed",
+    "worker": "typecheck and deploy dry-run passed; no remote publication"
+  },
+  "http_smoke": {
+    "status": "passed",
+    "api_started": true,
+    "database_ready": true,
+    "manual_signup_cookie_issued": true,
+    "private_owner_read": 200,
+    "anonymous_owner_read": 401,
+    "logout_revoked_read": 401,
+    "provider_requests": 0
+  },
+  "external_actions": {
+    "cloudflare_deployments": 0,
+    "provider_calls": 0,
+    "employer_submissions": 0,
+    "emails": 0
+  },
+  "private_logs": "/tmp/hireflow-fresh-setup-20261023-082934/",
+  "limitations": [
+    "Existing macOS/Node/Python/Poppler host prerequisites; new venv and both node_modules were created.",
+    "SQLite migrations were exercised here; final PostgreSQL evidence comes from CI.",
+    "No brand-new Cloudflare account, empty account bootstrap or Docker image was created in this check."
+  ]
+}

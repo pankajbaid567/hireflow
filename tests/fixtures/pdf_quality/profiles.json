@@ -1,0 +1,375 @@
+{
+  "schema_version": 1,
+  "consent": "All profiles are synthetic; example.com contacts and explicitly fictional accomplishments. No real resume data.",
+  "cases": [
+    {
+      "id": "sparse_student",
+      "profile": {
+        "name": "Riya Example",
+        "email": "riya@example.com",
+        "skills": [
+          "Python"
+        ],
+        "experience_years": 0
+      },
+      "expected_facts": [
+        "Riya Example",
+        "riya@example.com",
+        "Python"
+      ],
+      "forbidden_facts": [
+        "10 years of professional experience",
+        "Harvard University",
+        "AWS Certified Solutions Architect"
+      ],
+      "min_pages": 1,
+      "max_pages": 1
+    },
+    {
+      "id": "latin_names",
+      "profile": {
+        "name": "Zoë D'Souza",
+        "email": "zoe@example.com",
+        "summary": "José created a café résumé with reproducible evaluations.",
+        "skills": [
+          "Python",
+          "C++"
+        ],
+        "projects": [
+          {
+            "name": "Café Archive",
+            "description": "Indexed 24 café recipes.",
+            "url": "https://example.com/résumé"
+          }
+        ]
+      },
+      "expected_facts": [
+        "Zoë D'Souza",
+        "José",
+        "café résumé",
+        "Café Archive",
+        "Indexed 24 café recipes."
+      ],
+      "forbidden_facts": [
+        "10 years of professional experience",
+        "Harvard University",
+        "AWS Certified Solutions Architect"
+      ],
+      "min_pages": 1,
+      "max_pages": 6,
+      "expected_urls": [
+        "https://example.com/r%C3%A9sum%C3%A9"
+      ]
+    },
+    {
+      "id": "devanagari",
+      "profile": {
+        "name": "किरण शर्मा",
+        "email": "kiran@example.com",
+        "summary": "दिल्ली के विद्यार्थी ने कृत्रिम बुद्धिमत्ता परियोजना बनाई।",
+        "skills": [
+          "Python",
+          "SQL"
+        ],
+        "education": "प्रौद्योगिकी संस्थान, दिल्ली, 2027",
+        "languages": [
+          "हिन्दी",
+          "English"
+        ]
+      },
+      "expected_facts": [
+        "किरण शर्मा",
+        "kiran@example.com",
+        "कृत्रिम बुद्धिमत्ता",
+        "प्रौद्योगिकी संस्थान",
+        "दिल्ली",
+        "2027",
+        "हिन्दी"
+      ],
+      "forbidden_facts": [
+        "10 years of professional experience",
+        "Harvard University",
+        "AWS Certified Solutions Architect"
+      ],
+      "min_pages": 1,
+      "max_pages": 6
+    },
+    {
+      "id": "long_history",
+      "profile": {
+        "name": "Long History QA",
+        "email": "history@example.com",
+        "summary": "Software engineer with source-provided project history.",
+        "skills": [
+          "Python",
+          "SQL",
+          "Docker"
+        ],
+        "experience": [
+          {
+            "title": "Software Engineer 0",
+            "company": "Example Team 0",
+            "dates": "2021 - 2026",
+            "bullets": [
+              "Delivered checkpoint 0.0 with Python and automated integration testing, documented design choices and reviewed measured outcomes with the team.",
+              "Delivered checkpoint 0.1 with Python and automated integration testing, documented design choices and reviewed measured outcomes with the team.",
+              "Delivered checkpoint 0.2 with Python and automated integration testing, documented design choices and reviewed measured outcomes with the team.",
+              "Delivered checkpoint 0.3 with Python and automated integration testing, documented design choices and reviewed measured outcomes with the team.",
+              "Delivered checkpoint 0.4 with Python and automated integration testing, documented design choices and reviewed measured outcomes with the team.",
+              "Delivered checkpoint 0.5 with Python and automated integration testing, documented design choices and reviewed measured outcomes with the team.",
+              "Delivered checkpoint 0.6 with Python and automated integration testing, documented design choices and reviewed measured outcomes with the team."
+            ]
+          },
+          {
+            "title": "Software Engineer 1",
+            "company": "Example Team 1",
+            "dates": "2021 - 2026",
+            "bullets": [
+              "Delivered checkpoint 1.0 with Python and automated integration testing, documented design choices and reviewed measured outcomes with the team.",
+              "Delivered checkpoint 1.1 with Python and automated integration testing, documented design choices and reviewed measured outcomes with the team.",
+              "Delivered checkpoint 1.2 with Python and automated integration testing, documented design choices and reviewed measured outcomes with the team.",
+              "Delivered checkpoint 1.3 with Python and automated integration testing, documented design choices and reviewed measured outcomes with the team.",
+              "Delivered checkpoint 1.4 with Python and automated integration testing, documented design choices and reviewed measured outcomes with the team.",
+              "Delivered checkpoint 1.5 with Python and automated integration testing, documented design choices and reviewed measured outcomes with the team.",
+              "Delivered checkpoint 1.6 with Python and automated integration testing, documented design choices and reviewed measured outcomes with the team."
+            ]
+          },
+          {
+            "title": "Software Engineer 2",
+            "company": "Example Team 2",
+            "dates": "2021 - 2026",
+            "bullets": [
+              "Delivered checkpoint 2.0 with Python and automated integration testing, documented design choices and reviewed measured outcomes with the team.",
+              "Delivered checkpoint 2.1 with Python and automated integration testing, documented design choices and reviewed measured outcomes with the team.",
+              "Delivered checkpoint 2.2 with Python and automated integration testing, documented design choices and reviewed measured outcomes with the team.",
+              "Delivered checkpoint 2.3 with Python and automated integration testing, documented design choices and reviewed measured outcomes with the team.",
+              "Delivered checkpoint 2.4 with Python and automated integration testing, documented design choices and reviewed measured outcomes with the team.",
+              "Delivered checkpoint 2.5 with Python and automated integration testing, documented design choices and reviewed measured outcomes with the team.",
+              "Delivered checkpoint 2.6 with Python and automated integration testing, documented design choices and reviewed measured outcomes with the team."
+            ]
+          },
+          {
+            "title": "Software Engineer 3",
+            "company": "Example Team 3",
+            "dates": "2021 - 2026",
+            "bullets": [
+              "Delivered checkpoint 3.0 with Python and automated integration testing, documented design choices and reviewed measured outcomes with the team.",
+              "Delivered checkpoint 3.1 with Python and automated integration testing, documented design choices and reviewed measured outcomes with the team.",
+              "Delivered checkpoint 3.2 with Python and automated integration testing, documented design choices and reviewed measured outcomes with the team.",
+              "Delivered checkpoint 3.3 with Python and automated integration testing, documented design choices and reviewed measured outcomes with the team.",
+              "Delivered checkpoint 3.4 with Python and automated integration testing, documented design choices and reviewed measured outcomes with the team.",
+              "Delivered checkpoint 3.5 with Python and automated integration testing, documented design choices and reviewed measured outcomes with the team.",
+              "Delivered checkpoint 3.6 with Python and automated integration testing, documented design choices and reviewed measured outcomes with the team."
+            ]
+          },
+          {
+            "title": "Software Engineer 4",
+            "company": "Example Team 4",
+            "dates": "2021 - 2026",
+            "bullets": [
+              "Delivered checkpoint 4.0 with Python and automated integration testing, documented design choices and reviewed measured outcomes with the team.",
+              "Delivered checkpoint 4.1 with Python and automated integration testing, documented design choices and reviewed measured outcomes with the team.",
+              "Delivered checkpoint 4.2 with Python and automated integration testing, documented design choices and reviewed measured outcomes with the team.",
+              "Delivered checkpoint 4.3 with Python and automated integration testing, documented design choices and reviewed measured outcomes with the team.",
+              "Delivered checkpoint 4.4 with Python and automated integration testing, documented design choices and reviewed measured outcomes with the team.",
+              "Delivered checkpoint 4.5 with Python and automated integration testing, documented design choices and reviewed measured outcomes with the team.",
+              "Delivered checkpoint 4.6 with Python and automated integration testing, documented design choices and reviewed measured outcomes with the team."
+            ]
+          }
+        ],
+        "education": [
+          {
+            "degree": "B.Tech Computer Science",
+            "institution": "Example University",
+            "year": "2021"
+          }
+        ]
+      },
+      "expected_facts": [
+        "Software Engineer 0",
+        "checkpoint 0.0",
+        "checkpoint 4.6",
+        "Example University",
+        "2021"
+      ],
+      "forbidden_facts": [
+        "10 years of professional experience",
+        "Harvard University",
+        "AWS Certified Solutions Architect"
+      ],
+      "min_pages": 2,
+      "max_pages": 5
+    },
+    {
+      "id": "unbroken_links",
+      "profile": {
+        "name": "Links QA",
+        "email": "links@example.com",
+        "links": [
+          {
+            "label": "Portfolio",
+            "url": "https://example.com/long-project-reference-long-project-reference-long-project-reference-long-project-reference-long-project-reference-long-project-reference-long-project-reference-long-project-reference-long-project-reference-long-project-reference-long-project-reference-long-project-reference-long-project-reference-long-project-reference-long-project-reference-long-project-reference-long-project-reference-long-project-reference-long-project-reference-long-project-reference-long-project-reference-long-project-reference-long-project-reference-long-project-reference-long-project-reference-final"
+          }
+        ],
+        "projects": [
+          {
+            "name": "Reference Project",
+            "description": "A supplied project with a preserved ending.",
+            "github": "https://github.com/example/reference"
+          }
+        ]
+      },
+      "expected_facts": [
+        "https://example.com/long-project-reference-long-project-reference-long-project-reference-long-project-reference-long-project-reference-long-project-reference-long-project-reference-long-project-reference-long-project-reference-long-project-reference-long-project-reference-long-project-reference-long-project-reference-long-project-reference-long-project-reference-long-project-reference-long-project-reference-long-project-reference-long-project-reference-long-project-reference-long-project-reference-long-project-reference-long-project-reference-long-project-reference-long-project-reference-final",
+        "preserved ending.",
+        "https://github.com/example/reference"
+      ],
+      "forbidden_facts": [
+        "10 years of professional experience",
+        "Harvard University",
+        "AWS Certified Solutions Architect"
+      ],
+      "min_pages": 1,
+      "max_pages": 6,
+      "expected_urls": [
+        "https://example.com/long-project-reference-long-project-reference-long-project-reference-long-project-reference-long-project-reference-long-project-reference-long-project-reference-long-project-reference-long-project-reference-long-project-reference-long-project-reference-long-project-reference-long-project-reference-long-project-reference-long-project-reference-long-project-reference-long-project-reference-long-project-reference-long-project-reference-long-project-reference-long-project-reference-long-project-reference-long-project-reference-long-project-reference-long-project-reference-final",
+        "https://github.com/example/reference"
+      ]
+    },
+    {
+      "id": "schema_variants",
+      "profile": {
+        "name": "Schemas QA",
+        "skills": [
+          "Python"
+        ],
+        "experience": [
+          {
+            "role": "Research Intern",
+            "employer": "Example Lab",
+            "start_date": "May 2025",
+            "end_date": "Aug 2025",
+            "location": "Pune",
+            "details": [
+              "Tested 42 retrieval cases",
+              "Recorded evaluation results"
+            ],
+            "certificate": "Verified internship letter"
+          }
+        ],
+        "projects": [
+          {
+            "title": "Accessible Archive",
+            "technologies": [
+              "Python",
+              "SQL"
+            ],
+            "description": "A searchable course archive.",
+            "bullets": [
+              "Indexed 300 course documents"
+            ],
+            "outcome": "Used by the college club"
+          }
+        ],
+        "education": {
+          "qualification": "BTech Computer Science",
+          "university": "Example University",
+          "graduation_year": "2027",
+          "cgpa": "8.6/10"
+        }
+      },
+      "expected_facts": [
+        "Research Intern",
+        "Example Lab",
+        "May 2025 - Aug 2025",
+        "Tested 42 retrieval cases",
+        "Verified internship letter",
+        "Accessible Archive",
+        "Indexed 300 course documents",
+        "Example University",
+        "8.6/10"
+      ],
+      "forbidden_facts": [
+        "10 years of professional experience",
+        "Harvard University",
+        "AWS Certified Solutions Architect"
+      ],
+      "min_pages": 1,
+      "max_pages": 6
+    },
+    {
+      "id": "symbols_and_numbers",
+      "profile": {
+        "name": "Symbols (QA) \\ Developer",
+        "email": "symbols@example.com",
+        "summary": "Built C++ and C# tools for R&D; checked 100% of 42 cases. Saved ₹25,000 as stated in the source.",
+        "skills": [
+          "C++",
+          "C#",
+          "SQL"
+        ],
+        "achievements": [
+          "GPA 8.7/10; result 42/50"
+        ],
+        "certifications": [
+          "Example course, 2025"
+        ],
+        "languages": [
+          "English",
+          "हिन्दी"
+        ]
+      },
+      "expected_facts": [
+        "Symbols (QA) \\ Developer",
+        "C++",
+        "C#",
+        "R&D",
+        "100%",
+        "42 cases",
+        "₹25,000",
+        "8.7/10",
+        "42/50",
+        "Example course, 2025"
+      ],
+      "forbidden_facts": [
+        "10 years of professional experience",
+        "Harvard University",
+        "AWS Certified Solutions Architect"
+      ],
+      "min_pages": 1,
+      "max_pages": 6
+    },
+    {
+      "id": "combining_and_spacing",
+      "profile": {
+        "name": "José Example",
+        "email": "combining@example.com",
+        "summary": "Line one retains its facts.\nLine two retains the final fact.",
+        "skills": [
+          "Python",
+          "SQL"
+        ],
+        "projects": [
+          {
+            "name": "Spacing Project",
+            "description": "Measured 7 cases.\nRecorded all 7 outcomes."
+          }
+        ]
+      },
+      "expected_facts": [
+        "José Example",
+        "Line one retains its facts.",
+        "Line two retains the final fact.",
+        "Measured 7 cases.",
+        "Recorded all 7 outcomes."
+      ],
+      "forbidden_facts": [
+        "10 years of professional experience",
+        "Harvard University",
+        "AWS Certified Solutions Architect"
+      ],
+      "min_pages": 1,
+      "max_pages": 6
+    }
+  ]
+}

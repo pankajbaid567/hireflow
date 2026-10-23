@@ -4,11 +4,15 @@ from datetime import datetime, timedelta, timezone
 import logging
 
 from sqlalchemy.orm import Session
+from sqlalchemy import or_
+from src.models.job import Job
 
 from src.models.application import Application, ApplicationStatus
 from src.models.user import User
 from src.utils.status_logger import StatusLogger
 from src.utils.dates import week_start
+from src.utils.listings import company_key, company_aliases
+from src.api.serializers import job_data
 
 logger = logging.getLogger(__name__)
 
@@ -16,6 +20,7 @@ logger = logging.getLogger(__name__)
 class QuotaSelector:
     def __init__(self, db: Session):
         self.db = db
+        self._submitted_keys = {}
 
     def _user(self, user_id):
         # Serialize quota changes and confirmations for the same user on
@@ -39,8 +44,7 @@ class QuotaSelector:
         )
         return max(0, user.weekly_quota - consumed)
 
-    @staticmethod
-    def _ineligible_reason(application, user):
+    def _ineligible_reason(self, application, user):
         job = application.job
         if job.is_spam:
             return "listing is marked as spam"
@@ -48,10 +52,20 @@ class QuotaSelector:
         if isinstance(blocked, str):
             blocked = [blocked]
         blacklist = {
-            name.strip().casefold() for name in blocked if isinstance(name, str)
+            company_key(name) for name in blocked if isinstance(name, str)
         }
-        if (job.company or "").strip().casefold() in blacklist:
+        if company_key(job.company or "") in blacklist:
             return "company is blacklisted"
+        if user.id not in self._submitted_keys:
+            prior_rows = self.db.query(Application).filter(Application.user_id == user.id, or_(Application.applied_at.is_not(None), Application.status.in_([ApplicationStatus.applied, ApplicationStatus.interview, ApplicationStatus.offer]))).all()
+            self._submitted_keys[user.id] = {key for prior in prior_rows for key in company_aliases((prior.job_snapshot or {}).get("company") or prior.job.company, user.master_profile)}
+        if company_key(job.company) in self._submitted_keys[user.id]:
+            return "company already has a submitted application; automatic reapplication is disabled"
+        expiry = job.expires_at
+        if expiry and expiry.tzinfo is None:
+            expiry = expiry.replace(tzinfo=timezone.utc)
+        if expiry and expiry < datetime.now(timezone.utc):
+            return "listing has expired"
         posted = job.posted_date
         if posted and posted.tzinfo is None:
             posted = posted.replace(tzinfo=timezone.utc)
@@ -62,6 +76,7 @@ class QuotaSelector:
         return None
 
     def generate_weekly_plan(self, user_id: int) -> dict:
+        self._submitted_keys.clear()
         user = self._user(user_id)
         start = week_start()
         available = self._remaining(user, start)
@@ -120,6 +135,7 @@ class QuotaSelector:
             {
                 "application_id": app.id,
                 "job_id": app.job_id,
+                **job_data(app.job),
                 "role_title": app.job.title,
                 "company_name": app.job.company,
                 "match_score": app.match_score,
@@ -141,6 +157,7 @@ class QuotaSelector:
         }
 
     def swap_job(self, user_id: int, remove_job_id: int, add_job_id: int) -> dict:
+        self._submitted_keys.clear()
         user = self._user(user_id)
         start = week_start()
         app_to_remove = (
@@ -191,6 +208,7 @@ class QuotaSelector:
         return self.generate_weekly_plan(user_id)
 
     def confirm_plan(self, user_id: int, confirmed_job_ids: list[int]) -> dict:
+        self._submitted_keys.clear()
         if not confirmed_job_ids or len(set(confirmed_job_ids)) != len(
             confirmed_job_ids
         ):
@@ -221,6 +239,7 @@ class QuotaSelector:
                     f"Job {application.job_id} cannot be confirmed: {reason}"
                 )
         for application in applications:
+            application.job_snapshot = {**job_data(application.job), "company":application.job.company,"role":application.job.title,"description":application.job.description,"company_key":company_key(application.job.company),"target_url":application.job.url}
             StatusLogger(self.db).log(
                 application, ApplicationStatus.confirmed, commit=False
             )

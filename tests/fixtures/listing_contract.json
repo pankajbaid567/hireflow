@@ -1,0 +1,202 @@
+[
+  {
+    "id": "lpa_range",
+    "text": "Salary INR 5-7 LPA. Python developer.",
+    "expected": {
+      "currency": "INR",
+      "period": "year",
+      "minimum": 500000,
+      "maximum": 700000
+    }
+  },
+  {
+    "id": "monthly_job",
+    "text": "Salary ₹50k per month for Python work.",
+    "expected": {
+      "currency": "INR",
+      "period": "month",
+      "minimum": 50000,
+      "maximum": 50000
+    }
+  },
+  {
+    "id": "monthly_stipend",
+    "text": "Stipend: ₹10,000–₹15,000/month. Freshers welcome.",
+    "expected": {
+      "currency": "INR",
+      "period": "month",
+      "minimum": 10000,
+      "maximum": 15000
+    }
+  },
+  {
+    "id": "usd",
+    "text": "Salary $80,000-100,000/year. Remote.",
+    "expected": {
+      "currency": "USD",
+      "period": "year",
+      "minimum": 80000,
+      "maximum": 100000
+    }
+  },
+  {
+    "id": "stray_numbers",
+    "text": "3 years experience. Build systems used by 250000 people in 2026.",
+    "expected": {
+      "currency": null,
+      "period": null,
+      "minimum": null,
+      "maximum": null
+    }
+  },
+  {
+    "id": "undisclosed",
+    "text": "Salary is negotiable. Work with Python.",
+    "expected": {
+      "currency": null,
+      "period": null,
+      "minimum": null,
+      "maximum": null
+    }
+  },
+  {
+    "id": "decimal_lakhs",
+    "text": "Salary INR 3.5 lakhs per annum.",
+    "expected": {
+      "currency": "INR",
+      "period": "year",
+      "minimum": 350000,
+      "maximum": 350000
+    }
+  },
+  {
+    "id": "currency_unknown",
+    "text": "Stipend 15k/month. Python internship.",
+    "expected": {
+      "currency": null,
+      "period": null,
+      "minimum": null,
+      "maximum": null
+    }
+  },
+  {
+    "id": "ctc_lpa",
+    "text": "CTC 12–18 LPA. Requires 2 years experience.",
+    "expected": {
+      "currency": "INR",
+      "period": "year",
+      "minimum": 1200000,
+      "maximum": 1800000
+    }
+  },
+  {
+    "id": "project_budget",
+    "text": "Project budget INR 5000000. Salary INR 6 LPA.",
+    "expected": {
+      "currency": "INR",
+      "period": "year",
+      "minimum": 600000,
+      "maximum": 600000
+    }
+  },
+  {
+    "id": "rs",
+    "text": "Stipend Rs. 20,000/month.",
+    "expected": {
+      "currency": "INR",
+      "period": "month",
+      "minimum": 20000,
+      "maximum": 20000
+    }
+  },
+  {
+    "id": "hourly",
+    "text": "Pay ₹500/hour.",
+    "expected": {
+      "currency": "INR",
+      "period": "hour",
+      "minimum": 500,
+      "maximum": 500
+    }
+  },
+  {
+    "id": "period_unknown",
+    "text": "Salary INR 100000. Python role.",
+    "expected": {
+      "currency": "INR",
+      "period": null,
+      "minimum": 100000,
+      "maximum": 100000
+    }
+  },
+  {
+    "id": "unpaid",
+    "text": "Unpaid internship in Python.",
+    "expected": {
+      "currency": null,
+      "period": null,
+      "minimum": 0,
+      "maximum": 0
+    }
+  },
+  {
+    "id": "not_unpaid",
+    "text": "This is not unpaid internship. Salary not disclosed.",
+    "expected": {
+      "currency": null,
+      "period": null,
+      "minimum": null,
+      "maximum": null
+    }
+  },
+  {
+    "id": "euro",
+    "text": "Salary EUR 3000/month.",
+    "expected": {
+      "currency": "EUR",
+      "period": "month",
+      "minimum": 3000,
+      "maximum": 3000
+    }
+  },
+  {
+    "id": "gbp",
+    "text": "Pay GBP 40000/year.",
+    "expected": {
+      "currency": "GBP",
+      "period": "year",
+      "minimum": 40000,
+      "maximum": 40000
+    }
+  },
+  {
+    "id": "range_shared_unit",
+    "text": "Salary INR 6-10 lakhs per annum.",
+    "expected": {
+      "currency": "INR",
+      "period": "year",
+      "minimum": 600000,
+      "maximum": 1000000
+    }
+  },
+  {
+    "id": "revenue",
+    "text": "We have USD 10000000 revenue. Compensation is not disclosed.",
+    "expected": {
+      "currency": null,
+      "period": null,
+      "minimum": null,
+      "maximum": null
+    }
+  },
+  {
+    "id": "zero",
+    "text": "Stipend: 0. Academic credit only.",
+    "expected": {
+      "currency": null,
+      "period": null,
+      "minimum": 0,
+      "maximum": 0
+    }
+  }
+]

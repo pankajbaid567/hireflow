@@ -142,9 +142,15 @@ export async function accountSecurity(request:Request,env:Env):Promise<Response|
   const userId=await requireUser(request,env);
   if(method==='GET'&&path==='/account/security'){
     const current=await sessionHash(request),now=new Date().toISOString();
-    const sessions=await all(env,'SELECT id,label,created_at,expires_at,token_hash FROM sessions WHERE user_id=? AND expires_at>? ORDER BY created_at DESC',userId,now);
-    const passkeys=await all(env,'SELECT id,name,created_at,last_used_at FROM account_passkeys WHERE user_id=? ORDER BY created_at',userId);
-    const keys=await first(env,'SELECT count(*) AS remaining,min(expires_at) AS expires_at FROM account_recovery_keys WHERE user_id=? AND used_at IS NULL AND expires_at>?',userId,now);
+    // Read the three owner-scoped lists in one D1 call/snapshot. Profiling the
+    // previous sequential reads showed repeated fetch/span/result conversion
+    // overhead; batching does not cache credentials or skip authorization.
+    const result=await env.DB.batch<Row>([
+      env.DB.prepare('SELECT id,label,created_at,expires_at,token_hash FROM sessions WHERE user_id=? AND expires_at>? ORDER BY created_at DESC').bind(userId,now),
+      env.DB.prepare('SELECT id,name,created_at,last_used_at FROM account_passkeys WHERE user_id=? ORDER BY created_at').bind(userId),
+      env.DB.prepare('SELECT count(*) AS remaining,min(expires_at) AS expires_at FROM account_recovery_keys WHERE user_id=? AND used_at IS NULL AND expires_at>?').bind(userId,now),
+    ]);
+    const sessions=result[0].results,passkeys=result[1].results,keys=result[2].results[0];
     return json({sessions:sessions.map(({token_hash,...session})=>({...session,current:token_hash===current})),passkeys,recovery_keys:keys});
   }
   requireOrigin(request,env);

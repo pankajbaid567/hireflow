@@ -2,6 +2,8 @@
 
 import json
 import logging
+import re
+import unicodedata
 from pathlib import Path
 from xml.sax.saxutils import escape
 
@@ -45,7 +47,21 @@ class ResumeService:
                     "Return JSON with summary only. Use only profile facts; do not invent skills, credentials, experience or results."
                 )
                 if isinstance(result, dict) and isinstance(result.get("summary"), str):
-                    content["summary"] = result["summary"]
+                    candidate = result["summary"].strip()
+                    normalized = lambda value: " ".join(unicodedata.normalize("NFKC", value).split()).casefold()
+                    evidence = [profile.get("summary", "")]
+                    for section in (profile.get("experience") or [], profile.get("projects") or []):
+                        for item in section:
+                            if isinstance(item, dict):
+                                for key in ("description", "bullets", "details", "achievements"):
+                                    raw = item.get(key) or []
+                                    evidence.extend([raw] if isinstance(raw, str) else [value for value in raw if isinstance(value, str)])
+                    allowed = {normalized(sentence) for value in evidence if isinstance(value, str) for sentence in re.split(r"(?<=[.!?])\s+|\n", value) if sentence.strip()}
+                    sentences = [part for part in re.split(r"(?<=[.!?])\s+|\n", candidate) if part.strip()]
+                    if 0 < len(candidate) <= 3000 and sentences and all(normalized(part) in allowed for part in sentences):
+                        content["summary"] = candidate
+                    else:
+                        logger.warning("Unverified resume summary rejected; retaining source facts")
             except Exception:
                 logger.warning(
                     "Resume summary unavailable; using profile facts", exc_info=True
@@ -69,97 +85,101 @@ class ResumeService:
 
     @staticmethod
     def _render(path, content):
+        from .resume_fonts import SANS, LogicalTextParagraph, linked_markup, plain, register_resume_fonts
+        from reportlab.lib.pagesizes import A4
+
+        register_resume_fonts()
+        if len(json.dumps(content, ensure_ascii=False)) > 100_000:
+            raise ValueError("Resume is too long to format safely. Keep the original PDF.")
         styles = getSampleStyleSheet()
-        styles.add(
-            ParagraphStyle(
-                name="ResumeName",
-                fontSize=22,
-                leading=27,
-                spaceAfter=8,
-                textColor=colors.HexColor("#132f39"),
-            )
-        )
-        styles.add(
-            ParagraphStyle(
-                name="ResumeSection",
-                fontSize=11,
-                leading=15,
-                spaceBefore=14,
-                spaceAfter=6,
-                textColor=colors.HexColor("#176b62"),
-            )
-        )
+        styles["BodyText"].fontName = SANS
+        styles["BodyText"].fontSize = 10
         styles["BodyText"].leading = 15
+        styles["BodyText"].shaping = 1
+        styles["BodyText"].splitLongWords = 1
+        styles.add(ParagraphStyle(name="ResumeName", parent=styles["BodyText"], fontSize=22, leading=30, spaceAfter=8, textColor=colors.HexColor("#132f39"), keepWithNext=True))
+        styles.add(ParagraphStyle(name="ResumeSection", parent=styles["BodyText"], fontName="Helvetica-Bold", fontSize=11, leading=15, spaceBefore=14, spaceAfter=6, textColor=colors.HexColor("#176b62"), keepWithNext=True))
+        styles.add(ParagraphStyle(name="ResumeEntry", parent=styles["BodyText"], spaceBefore=6, keepWithNext=True))
         story = []
 
+        def text(value):
+            if value is None or isinstance(value, bool): return ""
+            if isinstance(value, list): return "\n".join(filter(None, (text(item) for item in value)))
+            if isinstance(value, dict): return " | ".join(filter(None, (text(item) for item in value.values())))
+            return plain(value).strip()
+
         def paragraph(value, style="BodyText"):
-            story.append(
-                Paragraph(escape(str(value)).replace("\n", "<br/>"), styles[style])
-            )
+            value = text(value)
+            if value:
+                story.append(LogicalTextParagraph(linked_markup(value), styles[style], logical_text=value))
+
+        def first(item, keys):
+            return next((text(item[key]) for key in keys if text(item.get(key))), "")
+
+        def entries(value):
+            return value if isinstance(value, list) else [value] if value else []
+
+        def dates(item):
+            return first(item, ["dates", "period", "duration", "year", "graduation_year"]) or " - ".join(filter(None, [first(item, ["start_date", "start_year", "start"]), first(item, ["end_date", "end_year", "end"])]))
 
         paragraph(content.get("name", "Candidate"), "ResumeName")
-        paragraph(
-            " | ".join(
-                str(content[k])
-                for k in ("email", "phone", "location")
-                if content.get(k)
-            )
-        )
+        paragraph(" | ".join(str(content[k]) for k in ("email", "phone", "location") if content.get(k)))
+        links = [text(content.get(key)) for key in ("linkedin", "github", "website", "portfolio")]
+        for link in entries(content.get("links")):
+            if isinstance(link, str): links.append(link)
+            elif isinstance(link, dict):
+                url = first(link, ["url", "href", "link"])
+                if url: links.append(": ".join(filter(None, [text(link.get("label")), url])))
+        for link in dict.fromkeys(filter(None, links)): paragraph(link)
         if content.get("summary"):
+            paragraph("Summary", "ResumeSection")
             paragraph(content["summary"])
         if content.get("skills"):
             paragraph("Skills", "ResumeSection")
             paragraph(", ".join(content["skills"]))
-        for key, heading in (
-            ("experience", "Experience"),
-            ("projects", "Projects"),
-            ("education", "Education"),
-        ):
-            entries = content.get(key) or []
-            if isinstance(entries, (dict, str)):
-                entries = [entries]
-            if entries:
-                paragraph(heading, "ResumeSection")
-            for item in entries:
-                if isinstance(item, str):
-                    paragraph(item)
-                elif isinstance(item, dict):
-                    label = " - ".join(
-                        str(item[k])
-                        for k in (
-                            "title",
-                            "name",
-                            "degree",
-                            "company",
-                            "college",
-                            "institution",
-                            "dates",
-                            "year",
-                        )
-                        if item.get(k)
-                    )
-                    if label:
-                        paragraph(label)
-                    if item.get("description"):
-                        paragraph(item["description"])
-                    for bullet in item.get("bullets", []):
-                        paragraph("- " + str(bullet))
-                    if item.get("tech"):
-                        paragraph(", ".join(item["tech"]))
+        date_keys = ["dates", "period", "duration", "date", "year", "graduation_year", "start_date", "start_year", "start", "end_date", "end_year", "end"]
+        for key, heading in (("experience", "Experience"), ("projects", "Projects"), ("education", "Education")):
+            items = entries(content.get(key))
+            if items: paragraph(heading, "ResumeSection")
+            for item in items:
+                if not isinstance(item, dict): paragraph(item); continue
+                if key == "experience":
+                    title_keys, detail_keys = ["title", "role", "position"], ["company", "employer", "organization", "location"]
+                elif key == "projects":
+                    title_keys, detail_keys = ["name", "title"], []
+                else:
+                    title_keys, detail_keys = ["degree", "qualification", "course", "program"], ["institution", "college", "university", "school"]
+                paragraph(" | ".join(filter(None, [first(item, title_keys), dates(item)])), "ResumeEntry")
+                details = [text(item.get(field)) for field in detail_keys if text(item.get(field))]
+                if details: paragraph(" | ".join(details))
+                used = set(title_keys + detail_keys + date_keys)
+                for field in ["description", "bullets", "details", "achievements", "responsibilities"]:
+                    if field not in used:
+                        for value in entries(item.get(field)):
+                            paragraph(("- " if field != "description" else "") + text(value))
+                        used.add(field)
+                tech_keys = ["tech", "technologies", "stack", "skills"]
+                tech = first(item, tech_keys)
+                if tech: paragraph("Technologies: " + tech.replace("\n", ", "))
+                used.update(tech_keys)
+                for field in ["url", "link", "github", "website", "live", "demo"]:
+                    paragraph(item.get(field)); used.add(field)
+                for field, value in item.items():
+                    if field not in used and field not in ["id", "user_id"] and not field.startswith("_") and text(value):
+                        paragraph(field.replace("_", " ").title() + ": " + text(value))
                 story.append(Spacer(1, 5))
-        if content.get("resume_text") and not (
-            content.get("experience") or content.get("projects")
-        ):
+        for key, heading in (("certifications", "Certifications"), ("achievements", "Achievements"), ("languages", "Languages")):
+            items = entries(content.get(key))
+            if items:
+                paragraph(heading, "ResumeSection")
+                for item in items: paragraph(item)
+        if content.get("resume_text") and not (content.get("experience") or content.get("projects")):
             paragraph("Background from your original resume", "ResumeSection")
-            # Retain the candidate's supplied history even when external resume
-            # extraction is unavailable and only manual profile fields exist.
             paragraph(content["resume_text"])
-        SimpleDocTemplate(
-            str(path),
-            pagesize=(8.5 * inch, 11 * inch),
-            rightMargin=48,
-            leftMargin=48,
-            topMargin=42,
-            bottomMargin=42,
-            title=f"{content.get('name', 'Candidate')} - Resume",
-        ).build(story)
+
+        def footer(canvas, document):
+            canvas.saveState();canvas.setFont("Helvetica", 8)
+            canvas.setFillColor(colors.HexColor("#647078"))
+            canvas.drawRightString(A4[0] - 48, 24, str(document.page));canvas.restoreState()
+
+        SimpleDocTemplate(str(path), pagesize=A4, rightMargin=48, leftMargin=48, topMargin=42, bottomMargin=42, title=f"{content.get('name', 'Candidate')} - Resume").build(story, onFirstPage=footer, onLaterPages=footer)

@@ -62,6 +62,34 @@ describe('bounded opt-in diagnostics',()=>{
   });
 });
 describe('durable owner-scoped operations and capacity',()=>{
+  it('reports the shared semantic allowance without calling the embedding model',async()=>{
+    const embedding=vi.fn(),day=new Date().toISOString().slice(0,10);
+    await db.prepare('INSERT INTO semantic_usage(day,texts_reserved,characters_reserved) VALUES(?,7,12000)').bind(day).run();
+    const status=await getOperationsStatus({...env,SEMANTIC_MATCHING_ENABLED:'true',SEMANTIC_DAILY_TEXT_BUDGET:'10',AI:{run:embedding} as any},1);
+    expect(status.capacity).toMatchObject({semantic_matching_enabled:true,semantic_daily_text_budget:10,semantic_texts_reserved:7,semantic_texts_remaining:3,semantic_characters_reserved:12000,semantic_model:'@cf/baai/bge-small-en-v1.5:cls'});
+    expect(embedding).not.toHaveBeenCalled();
+    expect((await getOperationsStatus({...env,SEMANTIC_DAILY_TEXT_BUDGET:'99999'},1)).capacity.semantic_daily_text_budget).toBe(100);
+  });
+  it('fails an invalid semantic budget closed and explains the lexical fallback without spending browser allowance',async()=>{
+    const status=await getOperationsStatus({...env,SEMANTIC_MATCHING_ENABLED:'true',SEMANTIC_DAILY_TEXT_BUDGET:'invalid'},1);
+    expect(status.capacity).toMatchObject({semantic_daily_text_budget:0,semantic_texts_remaining:0,remaining_application_slots:9});
+    expect(status.alerts.join(' ')).toContain('cached embeddings remain available');
+    expect(status.alerts.join(' ')).toContain('embedding binding is configured');
+    expect((await db.prepare('SELECT count(*) AS count FROM semantic_usage').first<any>())!.count).toBe(0);
+  });
+  it('aggregates the latest 1000 owner samples with the original nearest-rank percentile semantics',async()=>{
+    const before=await getOperationsStatus(env,1);expect(before.telemetry).toMatchObject({request_sample_count:0,wall_time_ms:{p50:null,p95:null,p99:null}});
+    await recordOperation(env,{operation:'request',outcome:'success',latency_ms:10});
+    await recordOperation(env,{operation:'request',outcome:'success',latency_ms:20});
+    expect((await getOperationsStatus(env,1)).telemetry.wall_time_ms).toEqual({p50:10,p95:20,p99:20});
+    await db.prepare('DELETE FROM operation_events').run();
+    await db.prepare(`WITH RECURSIVE counter(n) AS (VALUES(1) UNION ALL SELECT n+1 FROM counter WHERE n<1005)
+      INSERT INTO operation_events(correlation_id,user_id,operation,outcome,latency_ms,created_at)
+      SELECT '00000000-0000-4000-8000-000000000000',1,'request','success',n,
+        strftime('%Y-%m-%dT%H:%M:%fZ',?,printf('+%d seconds',n)) FROM counter`).bind(new Date(Date.now()-7200000).toISOString()).run();
+    await recordOperation(env,{operation:'request',outcome:'success',latency_ms:999999,user_id:2});
+    const status=await getOperationsStatus(env,1);expect(status.telemetry).toMatchObject({request_sample_count:1000,wall_time_ms:{p50:505,p95:955,p99:995}});
+  });
   it('persists only whitelisted redacted fields and keeps other owners out of metrics',async()=>{
     await recordOperation(env,{operation:'request',outcome:'success',latency_ms:40,prompt:'private resume',headers:{Authorization:'secret'},model:'key=gsk_secret'} as any);
     await recordOperation(env,{operation:'request',outcome:'failed',latency_ms:900,user_id:2});

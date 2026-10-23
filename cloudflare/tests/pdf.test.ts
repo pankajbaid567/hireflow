@@ -24,8 +24,8 @@ function document(bytes: Uint8Array) {
   }
   const pages = Array.from(pdf.matchAll(/\/Type \/Page\b/g)).length;
   expect(pdf).toContain(`/Count ${pages}`);
-  const text = Array.from(pdf.matchAll(/\(((?:\\.|[^\\)])*)\) Tj/g))
-    .map(match => match[1].replace(/\\([\\()])/g, '$1')).join('\n');
+  const text = Array.from(pdf.matchAll(/\/ActualText <FEFF([0-9A-F]+)>|\(((?:\\.|[^\\)])*)\) Tj/g))
+    .map(match => match[1] ? String.fromCharCode(...(match[1].match(/.{4}/g)||[]).map(value=>parseInt(value,16))) : match[2].replace(/\\([\\()])/g, '$1')).join('\n');
   return { pdf, text, pages };
 }
 
@@ -56,11 +56,11 @@ describe('lightweight ATS resume PDFs', () => {
     expect(profile.skills).toEqual(['SQL', 'Python', 'FastAPI']);
   });
 
-  it('escapes PDF literal delimiters and normalizes common punctuation without corrupting offsets', () => {
+  it('escapes PDF literal delimiters and preserves accented letters and normalizes common punctuation without corrupting offsets', () => {
     const name = "Zoe (Student) \\ Developer";
     const output = document(createResume({ name, skills: ['Python'], summary: 'Zoë’s résumé — API project' }, { title: 'Intern', company: 'Acme (Research)' }, []));
     expect(output.text).toContain(name);
-    expect(output.text).toContain("Zoe's resume - API project");
+    expect(output.text.replace(/\s+/g, " ")).toContain("Zoë's résumé - API project");
     expect(output.pdf).toContain('Zoe \\(Student\\) \\\\ Developer');
     expect(output.pages).toBe(1);
   });

@@ -27,7 +27,7 @@ def make_app(db, user, score=0.8, status="pending", cycle=None, **job_fields):
     index = db.query(Job).count() + 1
     fields = {
         "title": f"Role {index}",
-        "company": "GoodCo",
+        "company": f"GoodCo {index}",
         "url": f"https://jobs.example.com/{index}",
         "description": "Python Docker",
         "listing_type": ListingType.internship,

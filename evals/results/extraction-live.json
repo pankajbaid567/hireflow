@@ -1,0 +1,127 @@
+{
+  "dataset_version": "hireflow-synthetic-v1",
+  "corpus_sha256": "c5a169eedc5b8bfe25fdbfb557ac4d87e4ac0b54a04d5ae01ccf2b6bfd484cc3",
+  "created_at": "2026-10-23T08:19:15.832065+00:00",
+  "provider": "groq",
+  "model": "openai/gpt-oss-20b",
+  "logical_requests": 6,
+  "transport_requests": null,
+  "request_note": "Six normal wrapper calls; SDK retries are bounded by the configured client. Raw transport/billing usage is not exposed by that wrapper.",
+  "synthetic_only": true,
+  "total_extraction_cases": 24,
+  "evaluated_subset": [
+    "extract-00",
+    "extract-01",
+    "extract-02",
+    "extract-14",
+    "extract-18",
+    "extract-20"
+  ],
+  "selection_rule": "Fixed before calls: three dev and three heldout cases including JavaScript, Go, Unicode name and an adversarial instruction.",
+  "successes": 6,
+  "field_accuracy": 1.0,
+  "unsupported_employment_claims": 0,
+  "elapsed_ms": 7721,
+  "measured_tokens": null,
+  "measured_cost_usd": null,
+  "quality_gate_passed": true,
+  "scope": "Actual Python provider text extraction; not Gemini PDF vision/intake or full 24-case provider coverage. No independent human annotation claimed.",
+  "results": [
+    {
+      "id": "extract-00",
+      "split": "dev",
+      "source": "public synthetic text",
+      "success": true,
+      "fields": {
+        "name": true,
+        "email": true,
+        "skills": true,
+        "experience_years": true,
+        "project_name": true
+      },
+      "field_accuracy": 1.0,
+      "unsupported_employment_claims": 0,
+      "latency_ms": 1607
+    },
+    {
+      "id": "extract-01",
+      "split": "dev",
+      "source": "public synthetic text",
+      "success": true,
+      "fields": {
+        "name": true,
+        "email": true,
+        "skills": true,
+        "experience_years": true,
+        "project_name": true
+      },
+      "field_accuracy": 1.0,
+      "unsupported_employment_claims": 0,
+      "latency_ms": 1528
+    },
+    {
+      "id": "extract-02",
+      "split": "dev",
+      "source": "public synthetic text",
+      "success": true,
+      "fields": {
+        "name": true,
+        "email": true,
+        "skills": true,
+        "experience_years": true,
+        "project_name": true
+      },
+      "field_accuracy": 1.0,
+      "unsupported_employment_claims": 0,
+      "latency_ms": 1083
+    },
+    {
+      "id": "extract-14",
+      "split": "heldout",
+      "source": "public synthetic text",
+      "success": true,
+      "fields": {
+        "name": true,
+        "email": true,
+        "skills": true,
+        "experience_years": true,
+        "project_name": true
+      },
+      "field_accuracy": 1.0,
+      "unsupported_employment_claims": 0,
+      "latency_ms": 1190
+    },
+    {
+      "id": "extract-18",
+      "split": "heldout",
+      "source": "public synthetic text",
+      "success": true,
+      "fields": {
+        "name": true,
+        "email": true,
+        "skills": true,
+        "experience_years": true,
+        "project_name": true
+      },
+      "field_accuracy": 1.0,
+      "unsupported_employment_claims": 0,
+      "latency_ms": 1124
+    },
+    {
+      "id": "extract-20",
+      "split": "heldout",
+      "source": "public synthetic text",
+      "success": true,
+      "fields": {
+        "name": true,
+        "email": true,
+        "skills": true,
+        "experience_years": true,
+        "project_name": true
+      },
+      "field_accuracy": 1.0,
+      "unsupported_employment_claims": 0,
+      "latency_ms": 1188
+    }
+  ]
+}

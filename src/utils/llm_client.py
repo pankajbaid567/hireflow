@@ -1,4 +1,5 @@
 import json
+import re
 from abc import ABC, abstractmethod
 from typing import Any
 
@@ -28,7 +29,27 @@ class BaseLLMClient(ABC):
         result = _parse_json_response(response)
         if not isinstance(result, dict):
             raise LLMClientError("Extracted profile must be a JSON object")
+        explicit_years = _explicit_experience_years(resume_text)
+        if explicit_years is not None:
+            # An explicit aggregate is a source fact even if the resume has no
+            # individual role rows. Never infer years from a count of jobs.
+            result["experience_years"] = explicit_years
         return result
+
+
+def _explicit_experience_years(resume_text: str) -> float | None:
+    """Preserve only unambiguous standalone experience totals, including zero.
+
+    Instructions, date ranges, project durations, lower bounds and conflicting
+    totals are deliberately not converted into a candidate experience claim.
+    """
+    patterns = [
+        r"^\s*(?:total\s+)?(?:professional\s+)?experience\s*:\s*(\d+(?:\.\d+)?)\s*years?(?:\s+of\s+(?:professional|industry|relevant)\s+experience)?[.!]?\s*$",
+        r"^\s*(\d+(?:\.\d+)?)\s*years?\s+(?:of\s+)?professional\s+experience[.!]?\s*$",
+    ]
+    values = {float(match[1]) for pattern in patterns
+              for match in re.finditer(pattern, resume_text[:100000], re.I | re.M)}
+    return next(iter(values)) if len(values) == 1 and 0 <= next(iter(values)) <= 80 else None
 
 
 class GroqLLMClient(BaseLLMClient):

@@ -1,0 +1,326 @@
+{
+  "schema_version": 1,
+  "baseline_commit": "358510a",
+  "scope": "P1-08 source verification; publication and full production cycle recorded separately",
+  "source_sha256": {
+    "cloudflare/src/pdf.ts": "59f4f1d70b5db8be350cc35625b3d9b43809dec49d93d98976e51b8ca6e1effc",
+    "cloudflare/src/resume_unicode.ts": "9e9306906687fe693eba13067eff231e08b915a545d6d8fa8f6e57ed2f784891",
+    "src/pipelines/resume_service.py": "89673b6b799dacaffe551a1af021cd9005ae76e86af8949ecd55bf376a3a1f93",
+    "src/utils/pdf_text.py": "8e5e65ff2e3dd03a5ac2b47f12b4fe85d88801fcd4bac3fe999b59aa580a6341",
+    "tests/fixtures/pdf_quality/profiles.json": "4da85899f1f3c73c2770305982ec4ce2c93119b81fe983316c3413f20b79d7cb",
+    "assets/fonts/manifest.json": "e3178ed8057aa9308fa05d70d011fbb9fcf525aced1618d96023c5afba20b70e"
+  },
+  "offline_reader_corpus": {
+    "status": "passed",
+    "scope": "offline synthetic text-based PDF fact/layout/reader checks; no model quality or OCR claim",
+    "cases": [
+      {
+        "id": "sparse_student",
+        "runtime": "python",
+        "pages": 1,
+        "bytes": 15366,
+        "missing_facts": [],
+        "missing_intake_facts": [],
+        "invented_facts": [],
+        "missing_urls": [],
+        "out_of_bounds_words": [],
+        "png_pages_rendered": 1,
+        "passed": true
+      },
+      {
+        "id": "sparse_student",
+        "runtime": "worker",
+        "pages": 1,
+        "bytes": 1033,
+        "missing_facts": [],
+        "missing_intake_facts": [],
+        "invented_facts": [],
+        "missing_urls": [],
+        "out_of_bounds_words": [],
+        "png_pages_rendered": 1,
+        "passed": true
+      },
+      {
+        "id": "latin_names",
+        "runtime": "python",
+        "pages": 1,
+        "bytes": 16251,
+        "missing_facts": [],
+        "missing_intake_facts": [],
+        "invented_facts": [],
+        "missing_urls": [],
+        "out_of_bounds_words": [],
+        "png_pages_rendered": 1,
+        "passed": true
+      },
+      {
+        "id": "latin_names",
+        "runtime": "worker",
+        "pages": 1,
+        "bytes": 503790,
+        "missing_facts": [],
+        "missing_intake_facts": [],
+        "invented_facts": [],
+        "missing_urls": [],
+        "out_of_bounds_words": [],
+        "png_pages_rendered": 1,
+        "passed": true
+      },
+      {
+        "id": "devanagari",
+        "runtime": "python",
+        "pages": 1,
+        "bytes": 28591,
+        "missing_facts": [],
+        "missing_intake_facts": [],
+        "invented_facts": [],
+        "missing_urls": [],
+        "out_of_bounds_words": [],
+        "png_pages_rendered": 1,
+        "passed": true
+      },
+      {
+        "id": "devanagari",
+        "runtime": "worker",
+        "pages": 1,
+        "bytes": 411570,
+        "missing_facts": [],
+        "missing_intake_facts": [],
+        "invented_facts": [],
+        "missing_urls": [],
+        "out_of_bounds_words": [],
+        "png_pages_rendered": 1,
+        "passed": true
+      },
+      {
+        "id": "long_history",
+        "runtime": "python",
+        "pages": 3,
+        "bytes": 19225,
+        "missing_facts": [],
+        "missing_intake_facts": [],
+        "invented_facts": [],
+        "missing_urls": [],
+        "out_of_bounds_words": [],
+        "png_pages_rendered": 3,
+        "passed": true
+      },
+      {
+        "id": "long_history",
+        "runtime": "worker",
+        "pages": 2,
+        "bytes": 14914,
+        "missing_facts": [],
+        "missing_intake_facts": [],
+        "invented_facts": [],
+        "missing_urls": [],
+        "out_of_bounds_words": [],
+        "png_pages_rendered": 2,
+        "passed": true
+      },
+      {
+        "id": "unbroken_links",
+        "runtime": "python",
+        "pages": 1,
+        "bytes": 20720,
+        "missing_facts": [],
+        "missing_intake_facts": [],
+        "invented_facts": [],
+        "missing_urls": [],
+        "out_of_bounds_words": [],
+        "png_pages_rendered": 1,
+        "passed": true
+      },
+      {
+        "id": "unbroken_links",
+        "runtime": "worker",
+        "pages": 1,
+        "bytes": 3222,
+        "missing_facts": [],
+        "missing_intake_facts": [],
+        "invented_facts": [],
+        "missing_urls": [],
+        "out_of_bounds_words": [],
+        "png_pages_rendered": 1,
+        "passed": true
+      },
+      {
+        "id": "schema_variants",
+        "runtime": "python",
+        "pages": 1,
+        "bytes": 16397,
+        "missing_facts": [],
+        "missing_intake_facts": [],
+        "invented_facts": [],
+        "missing_urls": [],
+        "out_of_bounds_words": [],
+        "png_pages_rendered": 1,
+        "passed": true
+      },
+      {
+        "id": "schema_variants",
+        "runtime": "worker",
+        "pages": 1,
+        "bytes": 2940,
+        "missing_facts": [],
+        "missing_intake_facts": [],
+        "invented_facts": [],
+        "missing_urls": [],
+        "out_of_bounds_words": [],
+        "png_pages_rendered": 1,
+        "passed": true
+      },
+      {
+        "id": "symbols_and_numbers",
+        "runtime": "python",
+        "pages": 1,
+        "bytes": 24423,
+        "missing_facts": [],
+        "missing_intake_facts": [],
+        "invented_facts": [],
+        "missing_urls": [],
+        "out_of_bounds_words": [],
+        "png_pages_rendered": 1,
+        "passed": true
+      },
+      {
+        "id": "symbols_and_numbers",
+        "runtime": "worker",
+        "pages": 1,
+        "bytes": 904390,
+        "missing_facts": [],
+        "missing_intake_facts": [],
+        "invented_facts": [],
+        "missing_urls": [],
+        "out_of_bounds_words": [],
+        "png_pages_rendered": 1,
+        "passed": true
+      },
+      {
+        "id": "combining_and_spacing",
+        "runtime": "python",
+        "pages": 1,
+        "bytes": 16009,
+        "missing_facts": [],
+        "missing_intake_facts": [],
+        "invented_facts": [],
+        "missing_urls": [],
+        "out_of_bounds_words": [],
+        "png_pages_rendered": 1,
+        "passed": true
+      },
+      {
+        "id": "combining_and_spacing",
+        "runtime": "worker",
+        "pages": 1,
+        "bytes": 498754,
+        "missing_facts": [],
+        "missing_intake_facts": [],
+        "invented_facts": [],
+        "missing_urls": [],
+        "out_of_bounds_words": [],
+        "png_pages_rendered": 1,
+        "passed": true
+      }
+    ],
+    "real_provider_calls": 0,
+    "visual_review": {
+      "reviewer": "coding-agent PNG inspection",
+      "scope": [
+        "both-runtime Latin and Hindi",
+        "multi-page first/continuation/last pages",
+        "schema variants",
+        "long URLs"
+      ],
+      "result": "no visible clipping, missing glyphs, overlapping blocks or orphaned section headings",
+      "independent_human_review": false
+    }
+  },
+  "real_provider_probes": {
+    "status": "passed",
+    "scope": "three synthetic PDF layouts in real workerd calling the configured Gemini primary/fallback; no employer/DB/email/queue writes",
+    "configured_primary": "gemini-3.8-flash",
+    "configured_fallback": "gemini-3.5-flash-lite",
+    "created_at": "2026-10-23T08:35:07.399Z",
+    "cases": [
+      {
+        "id": "multicolumn",
+        "http_status": 200,
+        "latency_ms": 30495,
+        "actual_model": "gemini-3.5-flash-lite",
+        "fallback_used": true,
+        "critical_field_checks": {
+          "name": true,
+          "email": true,
+          "skill_Python": true,
+          "skill_SQL": true
+        },
+        "critical_field_recall": 1,
+        "source_fact_checks": {
+          "source_fact_1": true,
+          "source_fact_2": true,
+          "source_fact_3": true,
+          "source_fact_4": true
+        },
+        "invented_forbidden_facts": [],
+        "failure": null,
+        "passed": true
+      },
+      {
+        "id": "long_history",
+        "http_status": 200,
+        "latency_ms": 31219,
+        "actual_model": "gemini-3.5-flash-lite",
+        "fallback_used": true,
+        "critical_field_checks": {
+          "name": true,
+          "email": true,
+          "skill_Python": true,
+          "skill_SQL": true,
+          "skill_Docker": true
+        },
+        "critical_field_recall": 1,
+        "source_fact_checks": {
+          "source_fact_1": true,
+          "source_fact_2": true,
+          "source_fact_3": true
+        },
+        "invented_forbidden_facts": [],
+        "failure": null,
+        "passed": true
+      },
+      {
+        "id": "devanagari",
+        "http_status": 200,
+        "latency_ms": 28680,
+        "actual_model": "gemini-3.5-flash-lite",
+        "fallback_used": true,
+        "critical_field_checks": {
+          "name": true,
+          "email": true,
+          "skill_Python": true,
+          "skill_SQL": true
+        },
+        "critical_field_recall": 1,
+        "source_fact_checks": {
+          "source_fact_1": true
+        },
+        "invented_forbidden_facts": [],
+        "failure": null,
+        "passed": true
+      }
+    ],
+    "independent_human_review": false,
+    "ocr_claim": false
+  },
+  "local_workerd_samples": {
+    "scope": "V8 CDP local active sampling, not Cloudflare billed CPU",
+    "requests_each": 50,
+    "ascii_active_avg_ms": 0.506,
+    "latin_active_avg_ms": 1.155,
+    "devanagari_active_avg_ms": 2.689,
+    "devanagari_wall_p95_ms": 3.713,
+    "devanagari_wall_p99_ms": 5.017
+  },
+  "independent_human_quality_review": false
+}

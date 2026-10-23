@@ -1,8 +1,8 @@
 import { ApiError, type Env, type Row, type Task, json, parsed } from './types';
-import { all, first, run, userById, applicationQuery } from './storage';
+import { all, first, run, userById, applicationQuery, historicalListing } from './storage';
 import { checkAccessCode, logout, requireUser, sessionUser, startSession } from './auth';
 import { readJson, saveProfile } from './profile';
-import { addJobs, confirmPlan, getPlan, swapPlan } from './plans';
+import { addJobs, confirmPlan, getPlan, swapPlan, refreshMatches } from './plans';
 import { discoverJobs, scoreMatch } from './intelligence';
 import { emailReport, generateReport, latestReport } from './reports';
 import { processTask, scheduledRecovery } from './tasks';
@@ -13,6 +13,7 @@ import { accountSecurity, cleanupAccountSecurity } from './account_security';
 import { cancelQueuedApplication, createSubmissionReview, editResume, regenerateResume, rejectResume, resumeDraft, reviewQuestions } from './reviews';
 import { getOperationsStatus, newOperationContext, pruneOperations, recordOperation } from './telemetry';
 import { runModelDiagnostics, safeProviderHealth } from './provider_health';
+import {pruneSemanticCache} from './semantic_matching';
 
 function number(value: string | null, fallback?: number, max = Number.MAX_SAFE_INTEGER) {
   const n = value === null && fallback !== undefined ? fallback : Number(value);
@@ -81,19 +82,20 @@ async function route(request: Request, env: Env): Promise<Response> {
       const known=await all(env,'SELECT j.url FROM applications a JOIN jobs j ON j.id=a.job_id WHERE a.user_id=?',id);
       const identity=(url:string)=>url.replace(/\/apply\/?(?=\?|$)/,'').replace(/\/$/,'');
       const existing=new Set(known.map(job=>identity(job.url))), fresh=valid.filter(job=>!existing.has(identity(job.url)));
-      const imported=await addJobs(env,id,fresh);
+      const imported=await addJobs(env,id,valid,true);
       const message=imported?`${imported} active opportunities added. Refresh your plan to review the job details and resumes.`:
         valid.length&&!fresh.length?'These active listings are already in your opportunities. Review your weekly plan or broaden your target role.':
-        'No new active listings could be verified. Try a broader target role or location, or paste a current job-detail URL and its full description below.';
-      return json({imported,discovered:valid.length,already_known:valid.length-fresh.length,sources,warnings,message});
+        valid.length?'Verified listings were already available or ineligible under your current company/mode preferences. Review your plan or broaden the search.':'No new active listings could be verified. Try a broader target role or location, or paste a current job-detail URL and its full description below.';
+      return json({imported,discovered:valid.length,already_known:valid.length-fresh.length,not_imported:Math.max(0,fresh.length-imported),sources,warnings,message});
     }
     const count=await addJobs(env,id,[await readJson(request)]); return json({imported:count,message:count?'Opportunity added. Refresh your plan.':'This listing is not eligible for the current profile.'},201);
   }
-  if((match=path.match(/^\/weekly-plan\/(\d+)(?:\/(swap|confirm))?$/))) {
+  if((match=path.match(/^\/weekly-plan\/(\d+)(?:\/(swap|confirm|refresh-matches))?$/))) {
     const id=number(match[1]); await requireUser(request,env,id);
     if(method==='GET' && !match[2]) return json(await getPlan(env,id));
     if(method==='POST') {
       const body=await readJson(request);
+      if(match[2]==='refresh-matches')return json(await refreshMatches(env,id));
       if(match[2]==='swap') return json(await swapPlan(env,id,number(String(body.remove_job_id)),number(String(body.add_job_id))));
       if(match[2]==='confirm') return json(await confirmPlan(env,id,body.confirmed_job_ids,body.review_ids));
     }
@@ -114,7 +116,7 @@ async function route(request: Request, env: Env): Promise<Response> {
     await requireUser(request,env,app.user_id);
     const guide=await first(env,'SELECT * FROM prep_guides WHERE application_id=?',id);
     if(!guide) throw new ApiError(404,'Prep guide is not ready yet. Refresh shortly.');
-    return json({...parsed(guide.structured_data,{}),company:app.company,role:app.title,company_intel:parsed(guide.company_intel,{})});
+    return json({...parsed(guide.structured_data,{}),company:historicalListing(app).company,role:historicalListing(app).title,company_intel:parsed(guide.company_intel,{})});
   }
   if((match=path.match(/^\/applications\/(\d+)$/)) && method==='GET') {
     const id=number(match[1]); await requireUser(request,env,id);
@@ -123,10 +125,12 @@ async function route(request: Request, env: Env): Promise<Response> {
     if(status&&!['pending','planned','confirmed','applying','applied','failed','needs_action','rejected','interview','offer'].includes(status)) throw new ApiError(422,'Unknown application status');
     const params:any[]=[id]; let where=' WHERE a.user_id=?'; if(status){where+=' AND a.status=?';params.push(status);}
     const count=await first(env,`SELECT count(*) AS n FROM applications a${where}`,...params);
-    const rows=await all(env,`${applicationQuery}${where} ORDER BY a.created_at DESC,a.id DESC LIMIT ? OFFSET ?`,...params,size,(page-1)*size);
+    const rows=(await all(env,`${applicationQuery}${where} ORDER BY a.created_at DESC,a.id DESC LIMIT ? OFFSET ?`,...params,size,(page-1)*size)).map(historicalListing);
     const history=await all(env,'SELECT application_id,status,reason,created_at AS timestamp FROM application_status_events WHERE application_id IN (SELECT value FROM json_each(?)) ORDER BY id',JSON.stringify(rows.map(a=>a.id)));
     const guides=await all(env,'SELECT application_id FROM prep_guides WHERE application_id IN (SELECT value FROM json_each(?))',JSON.stringify(rows.map(a=>a.id)));
     return json({items:rows.map(a=>({id:a.id,job_id:a.job_id,company:a.company,role:a.title,status:a.status,match_score:a.match_score,skill_gaps:parsed(a.skill_gaps,[]),resume_version:a.resume_version,
+      listing_type:a.listing_type,source:a.source,canonical_url:a.canonical_url||a.url,application_url:a.application_url||a.url,
+      required_skills:parsed(a.required_skills,[]),required_experience:parsed(a.required_experience,null),expires_at:a.expires_at,compensation:parsed(a.compensation,null),selection_process:parsed(a.selection_process,[]),provenance:parsed(a.provenance,{}),matching_method:a.matching_method,embedding_model:a.embedding_model,
       resume_url:a.resume_path?`/resumes/${id}/${a.id}/download`:null,prep_guide_url:guides.some(g=>g.application_id===a.id)?`/applications/${a.id}/prep-guide`:null,
       failure_reason:a.failure_reason,manual_action_url:a.manual_action_url,applied_at:a.applied_at,created_at:a.created_at,attempts:a.attempts,
       status_history:history.filter(h=>h.application_id===a.id).map(({application_id,...h})=>h)})),total:count!.n,page,page_size:size});
@@ -216,5 +220,5 @@ export default {
       catch { console.error(JSON.stringify({event:'queue_processing_failed',application_id:message.body?.application_id})); message.retry({delaySeconds:120}); }
     }
   },
-  async scheduled(_event: ScheduledController, env: Env) { await scheduledRecovery(env); await cleanupAccountSecurity(env);await pruneOperations(env); },
+  async scheduled(_event: ScheduledController, env: Env) { await scheduledRecovery(env); await cleanupAccountSecurity(env);await pruneOperations(env);await pruneSemanticCache(env); },
 } satisfies ExportedHandler<Env,Task>;

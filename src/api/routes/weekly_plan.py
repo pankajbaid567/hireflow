@@ -8,6 +8,7 @@ from src.pipelines.match_scorer import score_jobs_for_user
 from src.pipelines.resume_service import ResumeService
 from src.pipelines.application_pipeline import process_confirmed_applications
 from src.models import Application, ApplicationStatus, User, Job
+from src.api.serializers import job_data
 
 router = APIRouter(prefix="/weekly-plan", tags=["Weekly Plan"])
 
@@ -117,6 +118,9 @@ def _enrich_plan(plan, db):
         item["resume_url"] = f"/resumes/{application.user_id}/{application.id}/download"
         item["resume_version"] = application.resume_version
         item["resume_summary"] = "Review your tailored resume before confirming."
+        matching = application.skill_gaps or {}
+        for key in ("matching_method", "matching_state", "lexical_score", "semantic_score", "embedding_model"):
+            item[key] = matching.get(key)
     from datetime import datetime, timedelta, timezone
 
     user = db.get(User, plan["user_id"])
@@ -140,14 +144,13 @@ def _enrich_plan(plan, db):
         posted = application.job.posted_date
         if posted and posted.tzinfo is None:
             posted = posted.replace(tzinfo=timezone.utc)
-        if (
-            posted and posted < datetime.now(timezone.utc) - timedelta(days=30)
-        ) or application.job.company.lower() in blocked:
+        if QuotaSelector(db)._ineligible_reason(application, user):
             continue
         alternatives.append(
             {
                 "application_id": application.id,
                 "job_id": application.job_id,
+                **job_data(application.job),
                 "company_name": application.job.company,
                 "role_title": application.job.title,
                 "match_score": application.match_score,

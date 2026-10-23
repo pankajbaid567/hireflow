@@ -1,4 +1,4 @@
-export interface Env extends Omit<CloudflareBindings, 'APPLICATION_QUEUE' | 'SUBMISSION_DELAY_SECONDS' | 'OPERATIONS_RETENTION_DAYS'> {
+export interface Env extends Omit<CloudflareBindings, 'APPLICATION_QUEUE' | 'SUBMISSION_DELAY_SECONDS' | 'OPERATIONS_RETENTION_DAYS' | 'AI' | 'SEMANTIC_MATCHING_ENABLED' | 'SEMANTIC_DAILY_TEXT_BUDGET'> {
   FILES?: R2Bucket;
   APPLICATION_QUEUE: Queue<Task>;
   ACCESS_CODE: string;
@@ -10,6 +10,9 @@ export interface Env extends Omit<CloudflareBindings, 'APPLICATION_QUEUE' | 'SUB
   RESEND_API_KEY?: string;
   SENDGRID_API_KEY?: string;
   WEBAUTHN_RP_ID?: string;
+  AI?: Ai;
+  SEMANTIC_MATCHING_ENABLED?: string;
+  SEMANTIC_DAILY_TEXT_BUDGET?: string;
   SUBMISSION_DELAY_SECONDS?: string;
   OPERATIONS_RETENTION_DAYS?: string;
   OPERATION_CONTEXT?: {correlation_id: string; user_id?: number; cycle_id?: string};

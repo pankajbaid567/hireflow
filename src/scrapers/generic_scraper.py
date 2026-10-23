@@ -91,7 +91,14 @@ class GenericScraper:
                 page.wait_for_timeout(1000)
                 rendered_html = page.content()
                 
-                self.jobs = extract_jobs_with_llm(rendered_html, self.url)
+                def load_detail(url):
+                    detail = context.new_page()
+                    try:
+                        detail.goto(url, wait_until="domcontentloaded", timeout=15000)
+                        return detail.content()[:500000]
+                    finally:
+                        detail.close()
+                self.jobs = extract_jobs_with_llm(rendered_html, self.url, detail_loader=load_detail)
             finally:
                 context.close()
                 browser.close()

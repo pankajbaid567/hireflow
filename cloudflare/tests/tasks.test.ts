@@ -14,6 +14,7 @@ let files: Awaited<ReturnType<Miniflare['getR2Bucket']>>;
 // claims, D1 audit triggers, R2 reads and durable outbox execute in workerd.
 const harness = `
 import { processTask, scheduledRecovery } from '../src/tasks';
+import { applicationQuery } from '../src/storage';
 import { buildReviewBinding, jobFingerprint, cancelQueuedApplication } from '../src/reviews';
 import { checkpointStore } from '../src/automation_checkpoints';
 export default {
@@ -30,7 +31,7 @@ export default {
     }
     if (new URL(request.url).pathname === '/seed-review') {
       const id = await request.json();
-      const app = await env.DB.prepare('SELECT a.*,j.url,j.title,j.company,j.description FROM applications a JOIN jobs j ON j.id=a.job_id WHERE a.id=?').bind(id).first();
+      const app = await env.DB.prepare(applicationQuery+' WHERE a.id=?').bind(id).first();
       const review = {id:crypto.randomUUID(),application_id:id,user_id:app.user_id,profile_version:1,resume_version:app.resume_version,resume_path:app.resume_path || 'missing.pdf',answers:{'why this role':'Reviewed Python experience'},jd_hash:await jobFingerprint(app)};
       review.resume_hash = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode('%PDF-1.4\\nSynthetic reviewed resume')))).map(x=>x.toString(16).padStart(2,'0')).join('');
       review.binding = await buildReviewBinding(review);

@@ -1,8 +1,9 @@
 import type { Env } from './types';
+import { compensationFit, enrichListing, experienceFit, parseCompensation, parseExperience } from './listing_details';
 import { classifyProviderError, recordProviderOutcome, type ProviderName } from './provider_health';
 
 type Data = Record<string, any>;
-type JobInput = { title: string; description?: string; listing_type?: string; location?: string; company?: string };
+type JobInput = { title: string; description?: string; listing_type?: string; location?: string; company?: string; required_skills?: string[] | string; required_experience?: Data | string | null; compensation?: Data | string | null; spam_confidence?: number | null };
 type SearchResult = { title: string; url: string; content: string; published_date?: string; company?: string; location?: string };
 type DiscoveredJob = { title: string; company: string; url: string; description: string; location?: string; listing_type: 'job' | 'internship'; posted_date?: string };
 type DiscoveryTrace = Record<string, string | number | boolean>;
@@ -59,10 +60,12 @@ export function extractSkills(source: string): string[] {
   return VOCABULARY.filter(skill => found.has(skill));
 }
 
-export function scoreMatch(profile: Data, job: JobInput): { score: number; gaps: string[]; matched: string[]; skills: string[] } {
+export function scoreMatch(profile: Data, job: JobInput): { score: number; gaps: string[]; matched: string[]; skills: string[]; technical_score: number; factors: Record<string,number> } {
   const jd = text(job.description, 50000), title = text(job.title, 1000), all = `${title} ${jd}`;
   const supplied = [...new Map(strings(profile.skills).map(canonical).map(skill => [skill.toLowerCase(), skill])).values()];
-  const skills = [...new Set([...extractSkills(all), ...customSkillsIn(all, supplied)])];
+  const fromJson=(value:any,fallback:any)=>{try{return typeof value==='string'?JSON.parse(value):value??fallback;}catch{return fallback;}};
+  const explicit=strings(fromJson(job.required_skills,[])).map(canonical);
+  const skills = [...new Set([...(explicit.length?explicit:extractSkills(all)), ...customSkillsIn(all, supplied)])];
   const user = new Set(supplied.map(s => s.toLowerCase()));
   const matched = skills.filter(s => user.has(s.toLowerCase())), gaps = skills.filter(s => !user.has(s.toLowerCase()));
   const roles = strings(profile.target_roles);
@@ -71,37 +74,22 @@ export function scoreMatch(profile: Data, job: JobInput): { score: number; gaps:
     const words = r.toLowerCase().split(/\s+/);
     return words.filter(w => titleWords.has(w)).length / words.length;
   })) : 0.5;
-  const years = Number(profile.experience_years ?? (Array.isArray(profile.experience) ? profile.experience.length : 0)) || 0;
-  const senior = /\b(senior|lead|principal|staff|architect|director|vp|head)\b/i.test(all);
-  const junior = /\b(junior|entry|graduate|fresher|trainee|intern|internship|apprentice|associate)\b/i.test(all);
-  const experience = profile.mode === 'internship' || years === 0 ? (junior ? 1 : senior ? 0.1 : 0.6) : senior && years >= 3 ? 0.9 : senior && years < 2 ? 0.3 : junior && years > 3 ? 0.4 : 0.7;
+  const years = Math.max(0, Number(profile.experience_years) || 0);
+  const requirement=fromJson(job.required_experience,null) || parseExperience(jd);
+  // Numeric requirements take precedence. A team mentioning senior colleagues
+  // is not itself a senior vacancy; title hints are used only if years are absent.
+  const senior = /\b(senior|lead|principal|staff|architect|director|vp|head)\b/i.test(title);
+  const junior = /\b(junior|entry|graduate|fresher|trainee|intern|internship|apprentice|associate)\b/i.test(title);
+  const experience = requirement?experienceFit(requirement,years):junior&&years<=2?1:senior&&years<2?.2:.5;
   const locations = strings(profile.preferred_locations).map(v => v.toLowerCase()), location = text(job.location).toLowerCase();
   const locationScore = !locations.length || !location ? 0.5 : locations.some(v => location.includes(v) || v.includes(location)) ? 1 : location.includes('remote') ? 0.8 : 0.2;
-  let compensation = /\b(salary|compensation|ctc|lpa|per annum|usd|inr)\b/i.test(jd) ? 0.8 : 0.5;
-  if (job.listing_type === 'internship') {
-    compensation = 0.7;
-    if (Number(profile.min_stipend) > 0) {
-      // Match compensation amounts, excluding unrelated years/round counts.
-      const amounts = [...jd.matchAll(/(?:₹|rs\.?|inr|stipend\s*(?:of|:)?\s*)\s*([\d,]+)(?:\s*(k))?/gi)].map(m => Number(m[1].replaceAll(',', '')) * (m[2] ? 1000 : 1));
-      const best = amounts.length ? Math.max(...amounts) : null, minimum = Number(profile.min_stipend);
-      compensation = best === null ? 0.5 : best >= minimum ? 1 : best >= minimum * 0.7 ? 0.5 : 0.1;
-    }
-  } else if (Number(profile.min_salary) > 0) {
-    const amounts: number[] = [];
-    for(const match of jd.matchAll(/(?:₹|\bINR\b|\bRs\.?)\s*([\d,.]+)(?:\s*(?:-|–|to)\s*([\d,.]+))?\s*(lpa|lakhs?|lacs?|crores?|k)?/gi)) {
-      const value=Number((match[2] || match[1]).replaceAll(',',''));
-      const unit=(match[3] || '').toLowerCase();
-      const context=jd.slice(match.index!,match.index!+match[0].length+40);
-      const scale=unit.startsWith('crore')?10000000:/^(lpa|lakh|lac)/.test(unit)?100000:unit==='k'?1000:1;
-      if(unit==='lpa' || /\b(year|yearly|annual|annually|annum)\b/i.test(context)) amounts.push(value*scale);
-      else if(/\b(month|monthly)\b|\/\s*mo\b/i.test(context)) amounts.push(value*scale*12);
-    }
-    for(const match of jd.matchAll(/([\d.]+)(?:\s*(?:-|–|to)\s*([\d.]+))?\s*LPA\b/gi)) amounts.push(Number(match[2] || match[1])*100000);
-    const best=amounts.length?Math.max(...amounts):null, minimum=Number(profile.min_salary);
-    compensation=best===null?0.5:best>=minimum?1:best>=minimum*0.7?0.5:0.1;
-  }
-  const score = 0.4 * (skills.length ? matched.length / skills.length : 0) + 0.2 * role + 0.15 * experience + 0.1 * locationScore + 0.1 * compensation + 0.05 * (text(job.company) ? 0.7 : 0);
-  return { score: Math.round(Math.max(0, Math.min(1, score)) * 10000) / 10000, gaps, matched, skills };
+  const compensation = compensationFit(fromJson(job.compensation,null) || parseCompensation(jd),profile,job.listing_type || profile.mode || 'job');
+  // This signal describes listing evidence quality, never employer prestige.
+  const quality=typeof job.spam_confidence==='number'?Math.max(0,1-job.spam_confidence):text(job.company)?0.5:0;
+  const technical_score=skills.length?matched.length/skills.length:0;
+  const factors={skill_match:technical_score,role_fit:role,experience_fit:experience,location_match:locationScore,compensation_fit:compensation,company_signal:quality};
+  const score = .4*technical_score+.2*role+.15*experience+.1*locationScore+.1*compensation+.05*quality;
+  return { score: Math.round(Math.max(0, Math.min(1, score)) * 10000) / 10000, gaps, matched, skills, technical_score, factors };
 }
 
 class IntelligenceError extends Error {
@@ -558,8 +546,8 @@ function sourcedNames(result: SearchResult, url: string): { title: string; compa
 async function listingDetails(result: SearchResult, url: string, budget: Budget, trace?: (data: DiscoveryTrace) => void): Promise<DiscoveredJob | null> {
   const parsed = new URL(url), segments = parsed.pathname.split('/').filter(Boolean), names = sourcedNames(result, url);
   const reject = (reason: string): null => { trace?.({ stage: 'rejected', host: parsed.hostname, reason }); return null; };
-  let title = names.title, company = names.company, description = '', location = result.location || '', employment = '', posted = result.published_date || '', validThrough = '';
-  let verifiedUrl = url, structured = false;
+  let title = names.title, company = names.company, description = '', location = result.location || '', employment = '', posted = '', validThrough = '';
+  let verifiedUrl = url, structured = false; let evidence:Data={kind:'page_text',url}; let structuredPay:Data|null=null;let declaredSkills:string[]=[];let applicationUrl=url;
   // Public read-only ATS endpoints avoid JS-only application pages and expose
   // complete descriptions without authentication or speculative LLM extraction.
   let api = '';
@@ -574,19 +562,23 @@ async function listingDetails(result: SearchResult, url: string, budget: Budget,
       if (Array.isArray(data.lists)) description += '\n' + data.lists.slice(0, 10).map((part: Data) => `${text(part.text)}\n${htmlText(text(part.content))}`).join('\n');
       description += '\n' + text(data.additionalPlain || '');
       location = text(data.categories?.location || data.location?.name, 300) || location;
-      employment = text(data.categories?.commitment); structured = true;
+      if(data.applyUrl){const candidate=publicUrl(data.applyUrl);if(candidate&&new URL(candidate).hostname===parsed.hostname)applicationUrl=candidate;}
+      employment = text(data.categories?.commitment); structured = true; evidence={kind:'ats_api',url:api};
+      structuredPay=data.salaryRange?{currency:data.salaryRange.currency,value:{minValue:data.salaryRange.min,maxValue:data.salaryRange.max,unitText:data.salaryRange.interval}}:null;
       // Greenhouse updated_at is an edit time, not a posting date.
       if (data.createdAt) posted = new Date(data.createdAt).toISOString();
     } catch { return reject('invalid_ats_response'); }
   } else {
     const detail = await detailBody(url, budget); if (!detail || !listingUrl(detail.url)) return reject('unavailable_detail');
-    verifiedUrl = listingUrl(detail.url)!;
+    verifiedUrl = listingUrl(detail.url)!;applicationUrl=verifiedUrl;
     const posting = jobPosting(detail.body);
     const visible = htmlText(detail.body);
     if (/\b(?:this (?:vacancy|job|position|role)(?: has)?(?: now)? (?:expired|closed|been filled)|no longer accepting applications|job is no longer available|position has been filled)\b/i.test(visible.slice(0, 16000))) return reject('expired_banner');
     if (posting) {
       title = text(posting.title, 300) || title; company = text(posting.hiringOrganization?.name, 300) || company;
       description = htmlText(text(posting.description, 60000)); posted = text(posting.datePosted) || posted; validThrough = text(posting.validThrough);
+      evidence={kind:'json_ld',url:verifiedUrl};structuredPay=posting.baseSalary || null;declaredSkills=(Array.isArray(posting.skills)?posting.skills:typeof posting.skills==='string'?posting.skills.split(/[,;|\n]/):[]).filter((value:unknown):value is string=>typeof value==='string'&&value.length>0&&value.length<=80).slice(0,50);
+      if(declaredSkills.length)description+='\nSkills stated in metadata: '+declaredSkills.join(', ');
       employment = Array.isArray(posting.employmentType) ? posting.employmentType.join(' ') : text(posting.employmentType);
       const place = Array.isArray(posting.jobLocation) ? posting.jobLocation[0] : posting.jobLocation;
       location = text(place?.address?.addressLocality || posting.jobLocationType, 300) || location; structured = true;
@@ -594,7 +586,7 @@ async function listingDetails(result: SearchResult, url: string, budget: Budget,
       // Department/career landing pages are not individual opportunities even
       // when their search snippet mentions a role matching the query.
       if (/\/careers?\//i.test(parsed.pathname) && !/\d|(?:job|req|requisition|opening)[-_]/i.test(parsed.pathname)) return reject('career_directory');
-      description = result.content.length > 300 ? result.content : visible.length > 100 ? visible : result.content;
+      description = visible.length > 100 ? visible : ''; // A search snippet is not a verified full JD.
     }
   }
   description = description.trim().slice(0, 30000);
@@ -604,7 +596,7 @@ async function listingDetails(result: SearchResult, url: string, budget: Budget,
   if (Number.isFinite(published) && (published < Date.now() - 30 * 86400000 || published > Date.now() + 86400000)) return reject('outside_freshness_window');
   if (!title || !company || description.length < 100 || /\b(?:search results|job vacancies|jobs? in |careers? at |find .*jobs|all openings|\d+ .*jobs)\b/i.test(title)) return reject('missing_job_fields');
   if (!structured && /\b(?:this (?:vacancy|job|position|role)(?: has)?(?: now)? (?:expired|closed|been filled)|no longer accepting applications|job is no longer available)\b/i.test(description.slice(0, 16000))) return reject('expired_description');
-  return { title, company, url: verifiedUrl, description, listing_type: listingType, ...(location ? { location } : {}), ...(Number.isFinite(published) ? { posted_date: new Date(published).toISOString() } : {}) };
+  return enrichListing({ title, company, url: verifiedUrl,application_url:applicationUrl,description, listing_type: listingType, provenance:evidence, required_skills:declaredSkills,structured_compensation:structuredPay, expires_at:validThrough || null, ...(location ? { location } : {}), ...(Number.isFinite(published) ? { posted_date: new Date(published).toISOString() } : {}) },extractSkills) as DiscoveredJob;
 }
 export async function discoverJobs(env: Env, profile: Data, diagnostics?: DiscoveryDiagnostics): Promise<DiscoveredJob[]> {
   if (!searchReady(env)) throw new IntelligenceError('Configure TAVILY_API_KEY or SERPAPI_API_KEY for live job discovery');

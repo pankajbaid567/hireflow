@@ -34,6 +34,7 @@ Usage:
 from __future__ import annotations
 
 import logging
+import json
 import os
 import re
 import shutil
@@ -65,23 +66,15 @@ def _escape_latex(text: str) -> str:
     Escape special LaTeX characters in plain text.
     Called on every user-supplied string before insertion into the template.
     """
-    replacements = [
-        ("\\", r"\textbackslash{}"),
-        ("&",  r"\&"),
-        ("%",  r"\%"),
-        ("$",  r"\$"),
-        ("#",  r"\#"),
-        ("_",  r"\_"),
-        ("{",  r"\{"),
-        ("}",  r"\}"),
-        ("~",  r"\textasciitilde{}"),
-        ("^",  r"\textasciicircum{}"),
-        ("<",  r"\textless{}"),
-        (">",  r"\textgreater{}"),
-    ]
-    for char, escaped in replacements:
-        text = text.replace(char, escaped)
-    return text
+    replacements = {
+        "\\": r"\textbackslash{}", "&": r"\&", "%": r"\%", "$": r"\$",
+        "#": r"\#", "_": r"\_", "{": r"\{", "}": r"\}",
+        "~": r"\textasciitilde{}", "^": r"\textasciicircum{}",
+        "<": r"\textless{}", ">": r"\textgreater{}",
+    }
+    # One pass: inserted braces/backslashes are never escaped a second time.
+    return "".join(replacements.get(char, char) for char in text)
+
 
 
 def _e(value: object) -> str:
@@ -177,12 +170,20 @@ def _build_certifications_block(certifications: list[str] | None) -> str:
 # Versioning helper
 # ---------------------------------------------------------------------------
 
+def _identifier(value: str | int) -> str:
+    value = str(value)
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,120}", value):
+        raise ValueError("Resume identifiers must be short file-safe identifiers")
+    return value
+
+
 def _next_version(resumes_dir: Path, user_id: str, job_id: str) -> int:
     """
     Returns the next version number for a given (user_id, job_id) pair.
     Scans for files matching '{job_id}_resume_v*.pdf' in the user directory.
     """
-    user_dir = resumes_dir / str(user_id)
+    user_id, job_id = _identifier(user_id), _identifier(job_id)
+    user_dir = resumes_dir / user_id
     user_dir.mkdir(parents=True, exist_ok=True)
 
     pattern = re.compile(
@@ -237,13 +238,14 @@ class PDFGenerator:
         raw = self.template_path.read_text(encoding="utf-8")
         tmpl = Template(raw)
 
+        from .resume_fonts import safe_link
         substitutions = {
             "name":        _e(resume_content.get("name", "Candidate")),
             "email":       _e(resume_content.get("email", "")),
             "phone":       _e(resume_content.get("phone", "")),
             "location":    _e(resume_content.get("location", "")),
-            "linkedin":    resume_content.get("linkedin", ""),   # URL — not escaped
-            "github":      resume_content.get("github", ""),     # URL — not escaped
+            "linkedin":    _e(safe_link(resume_content.get("linkedin", "")) or ""),
+            "github":      _e(safe_link(resume_content.get("github", "")) or ""),
             "summary":     _e(resume_content.get("summary", "")),
             "skills_line": _build_skills_line(resume_content.get("skills")),
             "experience_block":     _build_experience_block(resume_content.get("experience")),
@@ -271,6 +273,7 @@ class PDFGenerator:
 
         cmd = [
             self.xelatex_bin,
+            "-no-shell-escape",
             "-interaction=nonstopmode",
             "-halt-on-error",
             str(tex_file),
@@ -350,8 +353,7 @@ class PDFGenerator:
         FileNotFoundError
             If the LaTeX template is missing.
         """
-        user_id = str(user_id)
-        job_id  = str(job_id)
+        user_id, job_id = _identifier(user_id), _identifier(job_id)
 
         version    = _next_version(self.resumes_dir, user_id, job_id)
         filename   = f"{job_id}_resume_v{version}.pdf"
@@ -363,12 +365,23 @@ class PDFGenerator:
             "Generating PDF for user=%s job=%s version=%d", user_id, job_id, version
         )
 
-        tex_source = self._render_latex(resume_content)
-
-        with tempfile.TemporaryDirectory(prefix="hireflow_pdf_") as tmp:
-            tmp_path = Path(tmp)
-            pdf_tmp  = self._compile_latex(tex_source, tmp_path)
-            shutil.copy2(str(pdf_tmp), str(final_path))
+        # The optional legacy LaTeX template is ASCII-only. Unicode and richer
+        # profile schemas use the same reviewed text renderer as normal plans,
+        # rather than losing characters or fields in that older template.
+        rich = any(resume_content.get(key) for key in ["links", "website", "portfolio", "achievements", "languages", "resume_text"])
+        rich = rich or bool(resume_content.get("education") and not isinstance(resume_content["education"], dict))
+        rich = rich or any(not isinstance(item, dict) or set(item) - {"title", "company", "dates", "bullets"} for item in resume_content.get("experience", []))
+        rich = rich or any(not isinstance(item, dict) or set(item) - {"name", "description", "tech"} for item in resume_content.get("projects", []))
+        encoded = json.dumps(resume_content, ensure_ascii=False)
+        if rich or not encoded.isascii():
+            from .resume_service import ResumeService
+            ResumeService._render(final_path, resume_content)
+        else:
+            tex_source = self._render_latex(resume_content)
+            with tempfile.TemporaryDirectory(prefix="hireflow_pdf_") as tmp:
+                tmp_path = Path(tmp)
+                pdf_tmp = self._compile_latex(tex_source, tmp_path)
+                shutil.copy2(str(pdf_tmp), str(final_path))
 
         logger.info("PDF saved to %s", final_path)
 

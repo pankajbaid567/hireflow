@@ -23,6 +23,7 @@ RUN if [ "$INSTALL_EMBEDDINGS" = "true" ]; then \
 COPY alembic.ini .
 COPY migrations ./migrations
 COPY src ./src
+COPY assets/fonts ./assets/fonts
 RUN useradd --create-home --uid 10001 hireflow \
     && mkdir -p /app/data \
     && chown -R hireflow:hireflow /app/data
