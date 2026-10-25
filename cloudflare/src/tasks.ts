@@ -1,10 +1,16 @@
 import { fillApplication } from './automation';
+import {processEmailDelivery,recoverEmailDeliveries} from './email_delivery';
 import {processDiscovery,recoverDiscovery} from './discovery_tasks';
+import {processDiscoveryCycle,recoverDiscoveryCycles} from './discovery_cycles';
+import {processPrepExport,recoverPrepExports} from './prep_exports';
+import {processWorkspaceBackup,processWorkspaceDeletion,pendingWorkspaceLifecycleTasks} from './workspace_backup';
+import {processWeeklySchedule,recoverWeeklySchedules} from './weekly_scheduler';
 import {processPlanTask,recoverPlanWork} from './plan_tasks';
 import {cleanupAccountSecurity} from './account_security';
 import {pruneOperations} from './telemetry';
 import {pruneSemanticCache} from './semantic_matching';
 import { buildPrepGuide } from './intelligence';
+import {processPrepRefresh,recoverPrepRefreshes} from './prep_refresh';
 import { all, first, run, applicationQuery, transition, userById, dispatchOutbox, historicalListing } from './storage';
 import { submittedCompanies, companyWasSubmitted } from './company_policy';
 import { type Env, type Task, parsed } from './types';
@@ -15,8 +21,13 @@ import { browserDailyBudgetSeconds, submissionDelayMs, newOperationContext, reco
 
 export async function processTask(env: Env, message: Message<Task>) {
   const task = message.body;
+  if(task?.kind==='email_delivery'){if(typeof task.delivery_id==='string')await processEmailDelivery(env,task.delivery_id);message.ack();return;}
+  if(task?.kind==='workspace_backup'||task?.kind==='workspace_delete'){const result=task.kind==='workspace_backup'?await processWorkspaceBackup(env,task.id):await processWorkspaceDeletion(env,task.id);if(result.requeue)await env.APPLICATION_QUEUE.send(task,{delaySeconds:2});message.ack();return;}
+  if(task?.kind==='weekly_schedule'){await processWeeklySchedule(env,task.run_id);message.ack();return;}
+  if(task?.kind==='discovery_cycle'){if(typeof task.cycle_id==='string')await processDiscoveryCycle(env,task.cycle_id);message.ack();return;}
+  if(task?.kind==='prep_export'){if(typeof task.export_id==='string')await processPrepExport(env,task.export_id);message.ack();return;}
   if(task?.kind==='plan'){if(Number.isSafeInteger(task.application_id)&&task.application_id>0&&typeof task.token==='string')await processPlanTask(env,task.application_id,task.token);message.ack();return;}
-  if(task?.kind==='maintenance'){await scheduledRecovery(env);await cleanupAccountSecurity(env);await pruneOperations(env);await pruneSemanticCache(env);await recoverDiscovery(env);await recoverPlanWork(env);message.ack();return;}
+  if(task?.kind==='maintenance'){await scheduledRecovery(env);await cleanupAccountSecurity(env);await pruneOperations(env);await pruneSemanticCache(env);await recoverDiscovery(env);await recoverPlanWork(env);await recoverPrepExports(env);await recoverEmailDeliveries(env);await recoverPrepRefreshes(env);await recoverDiscoveryCycles(env);await recoverWeeklySchedules(env);for(const pending of await pendingWorkspaceLifecycleTasks(env))await env.APPLICATION_QUEUE.send(pending);message.ack();return;}
   if(task?.kind==='discover'){if(/^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/.test(task.discovery_id))await processDiscovery(env,task.discovery_id);message.ack();return;}
   if (!task || !Number.isSafeInteger(task.application_id) || !['apply','prep'].includes(task.kind)) { message.ack(); return; }
   const application = await first(env, `${applicationQuery} WHERE a.id=?`, task.application_id);
@@ -25,11 +36,12 @@ export async function processTask(env: Env, message: Message<Task>) {
   env = { ...env, OPERATION_CONTEXT: context };
   const log = (outcome: 'success'|'degraded'|'failed'|'retry_scheduled'|'limited'|'skipped'|'cancelled', extra: Record<string, any> = {}) => recordOperation(env, { ...context, operation: task.kind === 'apply' ? 'queue_apply' : 'queue_prep', outcome, latency_ms: Date.now()-started, ...extra });
   if (task.kind === 'prep') {
+    if(task.refresh_token!==undefined){if(typeof task.refresh_token==='string')await processPrepRefresh(env,application.id,task.refresh_token);message.ack();return;}
     if (await first(env, 'SELECT id FROM prep_guides WHERE application_id=?', application.id)) { message.ack(); return; }
     try {
       const user = await userById(env, application.user_id);
       const guide = await buildPrepGuide(env, user.master_profile, historicalListing(application));
-      await run(env, 'INSERT INTO prep_guides(application_id,structured_data,company_intel) VALUES(?,?,?) ON CONFLICT(application_id) DO NOTHING', application.id, JSON.stringify(guide), JSON.stringify(guide.company_intel || {}));
+      await run(env, 'INSERT INTO prep_guides(application_id,structured_data,company_intel,source_profile_version,source_job_version) VALUES(?,?,?,?,?) ON CONFLICT(application_id) DO NOTHING', application.id, JSON.stringify(guide), JSON.stringify(guide.company_intel || {}),user.profile_version,historicalListing(application).facts_version);
       await log('success'); message.ack();
     } catch { await log('retry_scheduled',{error_kind:'unavailable',queue_delay_seconds:60}); message.retry({ delaySeconds: 60 }); }
     return;

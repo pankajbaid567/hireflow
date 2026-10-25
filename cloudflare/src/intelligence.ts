@@ -1,4 +1,6 @@
 import type { Env } from './types';
+import {readPublicSource,reserveDiscoveryUsage,SourceDeferred} from './source_reader';
+import { buildEvidencePrepGuide } from './prep_intelligence';
 import { compensationFit, enrichListing, experienceFit, parseCompensation, parseExperience } from './listing_details';
 import { classifyProviderError, recordProviderOutcome, type ProviderName } from './provider_health';
 
@@ -315,7 +317,7 @@ function publicUrl(raw: unknown): string | null {
 }
 class Budget {
   used = 0;
-  constructor(private readonly deadline = Infinity, private readonly trace?: (data: DiscoveryTrace) => void) {}
+  constructor(private readonly deadline = Infinity, private readonly trace?: (data: DiscoveryTrace) => void,private readonly sourceEnv?:Env) {}
   get exhausted(): boolean { return this.used >= 24 || Date.now() >= this.deadline; }
   remaining(maximum = 15000): number {
     const remaining = Math.min(maximum, this.deadline - Date.now());
@@ -324,10 +326,25 @@ class Budget {
   }
   async fetch(url: string, init: RequestInit = {}): Promise<Response> {
     if (this.used >= 24) throw new IntelligenceError('Research request budget reached');
+    this.remaining(); // Never reserve another shared request after the task deadline.
     this.used += 1;
     const host = new URL(url).hostname;
     try {
-      const response = await boundedFetch(url, { ...init, redirect: 'manual' }, this.remaining(this.deadline === Infinity ? 15000 : 7000));
+      const shared=this.sourceEnv?.DISCOVERY_SHARED_GUARDS==='true';
+      const provider=host==='api.tavily.com'||host==='serpapi.com';
+      if(shared&&provider)await reserveDiscoveryUsage(this.sourceEnv!,'searches');
+      let response:Response;
+      if(shared&&!provider){
+        try{response=await readPublicSource(this.sourceEnv!,url,init);}
+        catch(error){
+          // A canonical same-host redirect or HEAD→GET fallback must not
+          // restart forever at its first hop. Wait once, preserving the shared
+          // host reservation; no network/quota attempt occurred on this denial.
+          if(!(error instanceof SourceDeferred)||error.attempted||error.delaySeconds>2||/Daily discovery/.test(error.reason)||this.remaining()<=error.delaySeconds*1000+100)throw error;
+          await new Promise(resolve=>setTimeout(resolve,error.delaySeconds*1000));
+          response=await readPublicSource(this.sourceEnv!,url,init);
+        }
+      }else response=await boundedFetch(url,{...init,redirect:'manual'},this.remaining(this.deadline===Infinity?15000:7000));
       this.trace?.({ stage: 'fetch', host, status: response.status });
       return response;
     } catch (error) {
@@ -358,7 +375,7 @@ async function searchRaw(env: Env, query: string, budget: Budget, news = false, 
 async function search(env: Env, query: string, budget: Budget, news = false, jobs = false, domains?: string[], jobLimit = 8): Promise<SearchResult[]> {
   const provider:ProviderName=key(env.TAVILY_API_KEY)?'tavily':'serpapi',started=Date.now();
   try {const result=await searchRaw(env,query,budget,news,jobs,domains,jobLimit);await recordProviderOutcome(env,provider,'search',{success:true,latency_ms:Date.now()-started,operation:'provider_search'});return result;}
-  catch(error){const failure=classifyProviderError(provider,error,{notConfigured:!searchReady(env),retryAfter:error instanceof IntelligenceError?error.retryAfter:undefined});await recordProviderOutcome(env,provider,'search',{success:false,latency_ms:Date.now()-started,failure,operation:'provider_search'});if(error instanceof Error)Object.assign(error,{provider_failure:failure});throw error;}
+  catch(error){if(error instanceof SourceDeferred)throw error;const failure=classifyProviderError(provider,error,{notConfigured:!searchReady(env),retryAfter:error instanceof IntelligenceError?error.retryAfter:undefined});await recordProviderOutcome(env,provider,'search',{success:false,latency_ms:Date.now()-started,failure,operation:'provider_search'});if(error instanceof Error)Object.assign(error,{provider_failure:failure});throw error;}
 }
 async function accessible(raw: unknown, budget: Budget): Promise<string | null> {
   let url = publicUrl(raw);
@@ -378,95 +395,23 @@ async function accessible(raw: unknown, budget: Budget): Promise<string | null> 
   } catch { /* Unreachable sources are omitted, including when the budget runs out. */ }
   return null;
 }
-function predictRounds(jd: string, stage: string, internship: boolean): Data {
-  const words: Record<string, number> = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6 };
-  const mention = jd.match(/\b(\d{1,2}|one|two|three|four|five|six)\s*(?:interview\s+)?rounds?\b/i);
-  const process = jd.split(/[.\n]/).filter(s => /round|interview|hiring process/i.test(s)).join(' ');
-  const types = [...new Set([...process.matchAll(/\b(technical|coding|hr|behavioral|founder|system design|manager|assessment)\b/gi)].map(m => m[0].toLowerCase() === 'coding' ? 'technical' : m[0].toLowerCase() === 'hr' ? 'HR' : m[0].toLowerCase()))];
-  const count = Math.max(1, Math.min(12, mention ? Number(mention[1]) || words[mention[1].toLowerCase()] : types.length || (internship ? 2 : /enterprise|public|series [d-f]/i.test(stage) ? 4 : 3)));
-  const stack = extractSkills(jd).slice(0, 5).join(', ') || 'role fundamentals';
-  const defaults = ['technical', /startup|seed/i.test(stage) ? 'founder' : 'HR', 'system design', 'manager'];
-  const focus: Record<string, string> = { technical: `${stack}${internship ? '; a small project and fundamentals' : '; production tradeoffs and failure recovery'}`, HR: 'motivation, teamwork, availability and role expectations', founder: 'product understanding, ownership and motivation', behavioral: 'collaboration and project decisions', 'system design': 'data flow, scalability and reliability', manager: 'impact, decisions and communication', assessment: stack };
-  return { round_count: count, rounds: Array.from({ length: count }, (_, index) => { const type = types[index] || defaults[index] || 'technical'; return { number: index + 1, type, focus: focus[type] }; }), source: mention || types.length ? 'explicit' : 'estimated', note: 'Preparation estimates; confirm the process with your recruiter.' };
-}
-function topicsFor(profile: Data, skills: string[]): Data {
-  const user = new Set(strings(profile.skills).map(v => canonical(v).toLowerCase()));
-  const related = [['python', 'fastapi', 'django', 'flask'], ['javascript', 'typescript', 'node.js'], ['docker', 'kubernetes'], ['langchain', 'langgraph', 'rag', 'multi-agent systems'], ['sql', 'postgresql']];
-  const result: Data = { strong: [], moderate: [], gaps: [] };
-  for (const skill of skills) {
-    const lower = skill.toLowerCase();
-    const group = user.has(lower) ? 'strong' : related.some(set => set.includes(lower) && set.some(value => user.has(value))) ? 'moderate' : 'gaps';
-    result[group].push(skill);
-  }
-  return result;
-}
-function localQuestions(jd: string, company: string, internship: boolean): Data[] {
-  const stack = extractSkills(jd).slice(0, 4), requirement = jd.replace(/\s+/g, ' ').slice(0, 300);
-  return [...(stack.length ? stack : ['the role fundamentals']).map(skill => ({ category: 'technical', question: internship ? `For ${company}'s requirement "${requirement}", show a small ${skill} example and one test.` : `How would you apply ${skill} to ${company}'s requirement "${requirement}" in production and investigate reliability or performance failures?` })), { category: 'behavioral', question: `Describe a ${internship ? 'course or personal' : 'production'} project related to ${stack.join(', ') || requirement}. How did feedback change your approach, and how does this prepare you for ${company}?` }, { category: 'design', question: `${internship ? 'Sketch a small prototype and its data flow' : 'Design a scalable service and discuss monitoring, failure recovery, cost and security'} using ${stack.join(', ') || requirement} for ${company}'s requirement "${requirement}".` }];
-}
-async function companyResearch(env: Env, job: Data, budget: Budget, warnings: string[]): Promise<Data> {
-  const company = text(job.company, 200) || 'this company';
-  const intel: Data = { stage: text(job.company_stage, 100) || 'unknown', team_size: 'unknown', tech_stack: [], recent_news: [], interview_patterns: [], sources: [], interview_review_status: 'No interview reviews found', fallback_guidance: 'Ask the recruiter about interview stages and prepare examples from your own projects.' };
-  for (const kind of ['facts', 'news', 'reviews']) {
-    try {
-      const query = kind === 'facts' ? `"${company}" company funding stage team size technology` : kind === 'news' ? `"${company}" company recent news` : `"${company}" Glassdoor AmbitionBox interview experience rounds`;
-      const results = await search(env, query, budget, kind === 'news');
-      for (const result of results.slice(0, kind === 'facts' ? 2 : 3)) {
-        const url = publicUrl(result.url); if (!url) continue;
-        if (kind === 'reviews' && !/(^|\.)(glassdoor\.(com|co\.in|co\.uk|ca|de|fr|com\.au)|ambitionbox\.com)$/.test(new URL(url).hostname)) continue;
-        const published = Date.parse(result.published_date || '');
-        if (kind === 'news' && (!Number.isFinite(published) || published < Date.now() - 90 * 86400000 || published > Date.now())) continue;
-        const verified = await accessible(url, budget); if (!verified) continue;
-        intel.sources.push({ title: result.title, url: verified });
-        if (kind === 'facts') {
-          const stage = result.content.match(/\b(pre-seed|seed|series [a-f]|bootstrapped|public company|startup|enterprise)\b/i);
-          const size = result.content.match(/\b(\d[\d,]*(?:\s*[-–]\s*\d[\d,]*)?)\s+(?:employees|people|team members)\b/i);
-          if (stage) intel.stage = stage[0]; if (size) intel.team_size = size[1];
-          intel.tech_stack = [...new Set([...intel.tech_stack, ...extractSkills(result.content)])];
-        } else if (kind === 'news') intel.recent_news.push({ title: result.title, url: verified, published_at: new Date(published).toISOString(), summary: result.content.slice(0, 500) });
-        else intel.interview_patterns.push({ title: result.title, url: verified, summary: result.content.slice(0, 600) });
-      }
-    } catch (error) { warnings.push(`${kind === 'reviews' ? 'Interview reviews' : kind === 'news' ? 'Recent news' : 'Company information'} unavailable: ${error instanceof IntelligenceError ? error.message : 'research failed'}`); }
-  }
-  if (intel.interview_patterns.length) intel.interview_review_status = 'Source-backed candidate reports; experiences may vary';
-  return intel;
-}
 export async function buildPrepGuide(env: Env, profile: Data, job: Data): Promise<Data> {
-  const jd = text(job.description, 20000), company = text(job.company, 200) || 'this company', internship = job.listing_type === 'internship';
-  const skills = extractSkills(`${text(job.title)} ${jd}`), topics = topicsFor(profile, skills), warnings: string[] = [], budget = new Budget();
-  const resources: Data = {};
-  let companyIntel: Data = { stage: text(job.company_stage) || 'unknown', team_size: 'unknown', tech_stack: [], recent_news: [], interview_patterns: [], sources: [], interview_review_status: 'No interview reviews found', fallback_guidance: 'Ask the recruiter about interview stages and prepare project examples.' };
-  if (searchReady(env)) {
-    for (const topic of [...new Set([...topics.gaps, ...topics.moderate, ...topics.strong])].slice(0, 3) as string[]) {
-      resources[topic] = [];
-      try {
-        const candidates = await search(env, `${topic} official documentation tutorial learn`, budget);
-        const seen = new Set<string>();
-        for (const result of candidates.slice(0, 5)) {
-          const verified = await accessible(result.url, budget);
-          if (verified && !seen.has(verified)) { resources[topic].push({ title: result.title || topic, url: verified, description: result.content.slice(0, 200) }); seen.add(verified); }
-          if (resources[topic].length === 3) break;
-        }
-      } catch (error) { warnings.push(`Resources for ${topic} unavailable: ${error instanceof IntelligenceError ? error.message : 'research failed'}`); }
-      if (resources[topic].length < 2) warnings.push(`Fewer than two accessible resources found for ${topic}`);
-    }
-    companyIntel = await companyResearch(env, job, budget, warnings);
-  } else warnings.push('Search provider is not configured; resources, current company facts and reviews are unavailable.');
-  let questions = localQuestions(jd || text(job.title), company, internship);
-  if (configured(env)) {
-    try {
-      const raw = await generateText(env, `Generate a JSON array of 5 interview questions for ${company}. JD: ${jd}. Level: ${internship ? 'internship fundamentals and small projects' : 'experienced production systems and tradeoffs'}. Categories must include technical, behavioral and design. Each object has category and question string. Every technical/design question must explicitly name a JD skill. Return raw JSON only.`);
-      const parsed = JSON.parse(raw.slice(raw.indexOf('['), raw.lastIndexOf(']') + 1));
-      if (!Array.isArray(parsed) || parsed.length < 3 || !['technical', 'behavioral', 'design'].every(category => parsed.some(q => q?.category === category)) || !parsed.every(q => q && ['technical', 'behavioral', 'design'].includes(q.category) && typeof q.question === 'string' && q.question.trim() && (q.category === 'behavioral' || !skills.length || skills.some(s => hasSkill(q.question, s))))) throw new IntelligenceError('LLM returned invalid interview questions');
-      questions = parsed.slice(0, 8).map(q => ({ category: q.category, question: text(q.question, 1500) }));
-    } catch (error) { warnings.push(`Question generation unavailable: ${error instanceof IntelligenceError ? error.message : 'invalid response'}. Using JD-based guidance.`); }
-  } else warnings.push('LLM provider is not configured; using JD-based interview questions.');
-  return { ...predictRounds(jd, companyIntel.stage, internship), topics, resources, questions, company_intel: companyIntel, warnings: [...new Set(warnings)] };
+  const budget=new Budget(Date.now()+45000,undefined,env);
+  return buildEvidencePrepGuide(env,profile,job,{
+    skills:extractSkills,canonical,hasSkill,searchReady:searchReady(env),configured:configured(env),
+    search:(query,news=false)=>search(env,query,budget,news),accessible:url=>accessible(url,budget),publicUrl,
+    page:async url=>{const source=await detailBody(url,budget);return source?{...source,text:htmlText(source.body)}:null;},
+    generate:prompt=>generateText(env,prompt),
+    failureMessage:error=>error instanceof IntelligenceError?error.message:'invalid response',
+  });
 }
 
 function listingUrl(raw: unknown): string | null {
   const safe = publicUrl(raw); if (!safe) return null;
   const url = new URL(safe), host = url.hostname.replace(/^www\./, ''), path = url.pathname;
+  // Public ATS identifiers live in the path; these two documented referral
+  // fields are tracking there. Other career pages may use them as job IDs.
+  if (/^(jobs\.(?:eu\.)?lever\.co|(?:job-)?boards\.greenhouse\.io|jobs\.ashbyhq\.com)$/.test(host)) {url.searchParams.delete('ref');url.searchParams.delete('source');}
   if (/^(jobs\.(?:eu\.)?lever\.co|(?:job-)?boards\.greenhouse\.io|jobs\.ashbyhq\.com)$/.test(host)) url.protocol = 'https:';
   if (/(^|\.)(linkedin\.com)$/.test(host) && !/^\/jobs\/view\/[^/]+/.test(path)) return null;
   if (host === 'internshala.com' && !/^\/(internship|job)\/detail\/[^/]+/.test(path)) return null;
@@ -475,7 +420,7 @@ function listingUrl(raw: unknown): string | null {
   if (/(^|\.)lever\.co$/.test(host) && !/^\/[^/]+\/[^/]+/.test(path)) return null;
   if (/(^|\.)ashbyhq\.com$/.test(host) && !/^\/[^/]+\/[^/]+/.test(path)) return null;
   if (!/\/(jobs?|careers?|positions?|openings?|vacancies|job-listing|internship)\/.+/i.test(path) && !/^(jobs\.(?:eu\.)?lever\.co|jobs\.ashbyhq\.com|naukri\.com|internshala\.com)$/.test(host) && !/\.myworkdayjobs\.com$/.test(host) && !/(^|\.)indeed\./.test(host)) return null;
-  for (const name of [...url.searchParams.keys()]) if (/^(utm_|ref$|referrer$|source$|trackingid$|gh_src$)/i.test(name)) url.searchParams.delete(name);
+  for (const name of [...url.searchParams.keys()]) if (/^(utm_|referrer$|trackingid$|gh_src$)/i.test(name)) url.searchParams.delete(name);
   return url.toString();
 }
 function listingIdentity(url: string): string {
@@ -558,14 +503,15 @@ async function detailBody(raw: string, budget: Budget): Promise<{ url: string; b
     }
     if (!response.ok) { await response.body?.cancel(); return null; }
     const reader = response.body?.getReader(); if (!reader) return { url, body: '' };
+    const limit=new URL(url).hostname==='api.ashbyhq.com'?4*1024*1024:180000;
     const chunks: Uint8Array[] = []; let length = 0;
     const controller = responseControllers.get(response), timer = setTimeout(() => controller?.abort(), budget.remaining(4000));
     try {
-      while (length < 180000) {
+      while (length < limit) {
         const part = await reader.read(); if (part.done) break;
-        const bytes = part.value.subarray(0, 180000 - length); chunks.push(bytes); length += bytes.length;
+        const bytes = part.value.subarray(0, limit - length); chunks.push(bytes); length += bytes.length;
       }
-      if (length >= 180000) await reader.cancel();
+      if (length >= limit) await reader.cancel();
       // Typical ATS JSON fits one chunk; avoid copying the entire document
       // before decoding it. Multiple chunks still preserve split UTF-8 safely.
       let bytes = chunks[0] || new Uint8Array();
@@ -602,26 +548,43 @@ async function listingDetails(result: SearchResult, url: string, budget: Budget,
   let api = '';
   if (/^jobs\.(?:eu\.)?lever\.co$/.test(parsed.hostname)) api = `https://api.${parsed.hostname.includes('.eu.') ? 'eu.' : ''}lever.co/v0/postings/${encodeURIComponent(segments[0])}/${encodeURIComponent(segments[1])}?mode=json`;
   else if (/^(?:job-)?boards\.greenhouse\.io$/.test(parsed.hostname) && segments[1] === 'jobs' && /^\d+$/.test(segments[2] || '')) api = `https://boards-api.greenhouse.io/v1/boards/${encodeURIComponent(segments[0])}/jobs/${segments[2]}`;
+  if(parsed.hostname==='jobs.ashbyhq.com')api=`https://api.ashbyhq.com/posting-api/job-board/${encodeURIComponent(segments[0])}?includeCompensation=true`;
   if (api) {
     const detail = await detailBody(api, budget); if (!detail) return reject('unavailable_detail');
     try {
-      const data = JSON.parse(detail.body);
+      let data = JSON.parse(detail.body);
+      if(parsed.hostname==='jobs.ashbyhq.com'){
+        if(!Array.isArray(data.jobs))return reject('invalid_ashby_board');
+        const listingPath=parsed.pathname.replace(/\/(?:apply|application)\/?$/,'').replace(/\/$/,'');
+        data=data.jobs.find((item:Data)=>{if(!item||typeof item!=='object'||Array.isArray(item))return false;const candidate=publicUrl(item.jobUrl);return item.isListed===true&&candidate&&new URL(candidate).hostname==='jobs.ashbyhq.com'&&new URL(candidate).pathname.replace(/\/$/,'')===listingPath;});
+        if(!data)return reject('unlisted_or_closed_ashby_job');
+        verifiedUrl=publicUrl(data.jobUrl)!;applicationUrl=verifiedUrl;
+      }
       title = text(data.text || data.title, 300) || title;
-      description = htmlText(data.descriptionPlain || data.content || data.description || '');
+      company=text(data.company_name,300)||company;
+      description = htmlText(data.descriptionPlain || data.content || data.descriptionHtml || data.description || '');
+      if(data.compensation?.scrapeableCompensationSalarySummary)description+='\nCompensation: '+text(data.compensation.scrapeableCompensationSalarySummary,1000);
       if (Array.isArray(data.lists)) description += '\n' + data.lists.slice(0, 10).map((part: Data) => `${text(part.text)}\n${htmlText(text(part.content))}`).join('\n');
       description += '\n' + text(data.additionalPlain || '');
-      location = text(data.categories?.location || data.location?.name, 300) || location;
+      location = text(data.categories?.location || (typeof data.location==='string'?data.location:data.location?.name),300) || location;
+      if(data.absolute_url&&publicUrl(data.absolute_url))applicationUrl=publicUrl(data.absolute_url)!;
       if(data.applyUrl){const candidate=publicUrl(data.applyUrl);if(candidate&&new URL(candidate).hostname===parsed.hostname)applicationUrl=candidate;}
-      employment = text(data.categories?.commitment); structured = true; evidence={kind:'ats_api',url:api};
+      employment = text(data.categories?.commitment || data.employmentType); structured = true; evidence={kind:'ats_api',url:api};
       structuredPay=data.salaryRange?{currency:data.salaryRange.currency,value:{minValue:data.salaryRange.min,maxValue:data.salaryRange.max,unitText:data.salaryRange.interval}}:null;
+      if(parsed.hostname==='jobs.ashbyhq.com'){
+        const pay=data.compensation,components=Array.isArray(pay?.summaryComponents)?pay.summaryComponents:Array.isArray(pay?.compensationTiers)&&pay.compensationTiers.length===1?pay.compensationTiers[0]?.components:[];
+        const salary=Array.isArray(components)?components.filter((item:Data)=>item.compensationType==='Salary'&&typeof item.currencyCode==='string'&&(Number.isFinite(item.minValue)||Number.isFinite(item.maxValue))):[];
+        if(salary.length===1){const value=salary[0],unit=String(value.interval||'').replace(/^1\s+/,'');structuredPay={currency:value.currencyCode,value:{minValue:value.minValue,maxValue:value.maxValue,unitText:unit}};}
+      }
       // Greenhouse updated_at is an edit time, not a posting date.
-      if (data.createdAt) posted = new Date(data.createdAt).toISOString();
+      if (data.createdAt||data.publishedAt||data.first_published) posted = new Date(data.createdAt||data.publishedAt||data.first_published).toISOString();
     } catch { return reject('invalid_ats_response'); }
   } else {
     const detail = await detailBody(url, budget); if (!detail || !listingUrl(detail.url)) return reject('unavailable_detail');
     verifiedUrl = listingUrl(detail.url)!;applicationUrl=verifiedUrl;
     const posting = jobPosting(detail.body);
     const visible = htmlText(detail.body);
+    if(/\b(?:verify (?:that )?you are human|checking your browser|access to this page has been denied|log ?in to view (?:this|the) job|sign in to view (?:this|the) job|complete (?:the |a )?captcha challenge)\b/i.test(visible.slice(0,12000)))return reject('restricted_source_interstitial');
     if (/\b(?:this (?:vacancy|job|position|role)(?: has)?(?: now)? (?:expired|closed|been filled)|no longer accepting applications|job is no longer available|position has been filled)\b/i.test(visible.slice(0, 16000))) return reject('expired_banner');
     if (posting) {
       title = text(posting.title, 300) || title; company = text(posting.hiringOrganization?.name, 300) || company;
@@ -654,7 +617,7 @@ export async function discoverJobs(env: Env, profile: Data, diagnostics?: Discov
   const budget = new Budget(Date.now() + 35000, event => {
     trace?.(event);
     if (currentSource && event.stage === 'fetch' && [0, 403, 429, 999].includes(Number(event.status))) currentSource.restricted++;
-  });
+  },env);
   const results: DiscoveredJob[] = [], seen = new Set<string>();
   const mode = profile.mode === 'internship' ? 'internship' : 'job';
   const roles = strings(profile.target_roles).slice(0, 2), role = roles.join(' OR ') || 'software engineer';
@@ -736,3 +699,14 @@ export async function discoverJobs(env: Env, profile: Data, diagnostics?: Discov
   report();
   return results;
 }
+
+/** Bounded primitives for resumable Queue cycles; each call has its own deadline. */
+export async function searchDiscoveryPage(env:Env,query:string,domains:string[],maximum=10){
+ const budget=new Budget(Date.now()+15000,undefined,env);
+ return search(env,query,budget,false,true,domains,Math.min(20,Math.max(1,maximum)));
+}
+export async function verifyDiscoveryDetail(env:Env,candidate:{url:string;title:string;company?:string;location?:string},trace?:(data:DiscoveryTrace)=>void){
+ const url=listingUrl(candidate.url);if(!url)return null;
+ return listingDetails({...candidate,content:''},url,new Budget(Date.now()+20000,trace,env),trace);
+}
+export const discoveryCanonicalIdentity=(raw:string)=>{const url=listingUrl(raw);return url?listingIdentity(url):null;};

@@ -1,3 +1,4 @@
+import DiscoveryCyclePanel from '../components/DiscoveryCyclePanel';
 import { useCallback, useEffect, useState } from 'react';
 import { ArrowRight, Check, CheckCircle2, ListFilter, RefreshCw, Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -65,6 +66,7 @@ function Plan({ userId, profile }) {
   const reviewed=selected.every(id=>jobs.some(job=>job.job_id===id&&job.review_id&&!job.resume_rejected));
   return <><PageHeading eyebrow="MAKE YOUR NEXT MOVE" title="Your weekly plan." action={<button className="button button-secondary button-small" onClick={refresh} disabled={loading || busy}><RefreshCw size={15} />Refresh plan</button>}>A thoughtful shortlist, tailored to {profile?.name?.split(' ')[0] || 'you'}. Review each opportunity, then make it yours.</PageHeading>
     {isCloudflare() && <OpportunityDiscovery userId={userId} profile={profile} onUpdated={reload} />}
+    {isCloudflare() && typeof api.getDiscoveryCycle==='function' && <DiscoveryCyclePanel userId={userId} onUpdated={reload}/>}
     {isCloudflare() && <OperationsStatus userId={userId} loadStatus={api.getOperations} runDiagnostics={api.runModelDiagnostics}/>}
     <div className="plan-banner"><span className="banner-icon"><Sparkles size={22} /></span><div><strong>A little focus. A lot of possibility.</strong><p>Review your resumes and choose the opportunities you’re ready to pursue.</p></div><span className="pill">{data?.quota || profile?.weekly_quota || '—'} per week</span></div>
     {isCloudflare() && (data?.warnings || []).map((warning, index) => <div className="notice notice-info" role="status" key={index}>{warning}</div>)}

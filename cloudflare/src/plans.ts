@@ -27,7 +27,7 @@ async function scoredJobs(env:Env,user:Row,rows:Row[]):Promise<Row[]>{
   const semantic=await rankWithSemantic(env,user.id,user.profile_version,profile,jobs);
   return jobs.map(job=>({...job,matching_state:semantic.state,...(semantic.items.find(item=>item.job_id===job.id)||{matching_method:'lexical',lexical_score:job.lexical_score,semantic_score:null,embedding_model:null,matching_algorithm:MATCHING_ALGORITHM}),score:semantic.items.find(item=>item.job_id===job.id)?.score??job.lexical_score}));
 }
-export async function addJobs(env: Env, userId: number, incoming: Row[], verifiedDiscovery=false, discovery?:{id:string;profileVersion:number}) {
+export async function addJobs(env: Env, userId: number, incoming: Row[], verifiedDiscovery=false, discovery?:{id:string;profileVersion:number;cycle?:boolean;token?:string},deferScoring=false) {
   const user = await userById(env, userId);const submitted=await submittedCompanies(env,userId,user.master_profile);
   if(discovery&&user.profile_version!==discovery.profileVersion)throw new ApiError(409,'Your profile changed during job search.');
   const jobs = incoming.slice(0, 20).map(raw => {
@@ -53,15 +53,15 @@ export async function addJobs(env: Env, userId: number, incoming: Row[], verifie
   // Known applications are refreshed lazily by getPlan's version gate. Scoring
   // them here would spend CPU/embeddings before INSERT ... DO NOTHING discards it.
   const rows = await all(env, 'SELECT j.* FROM jobs j LEFT JOIN applications a ON a.job_id=j.id AND a.user_id=? WHERE a.id IS NULL AND j.url IN (SELECT value FROM json_each(?))',userId,JSON.stringify(jobs.map(job=>job.url)));
-  const deferred=env.PLAN_WORK_IN_QUEUE==='true'&&!verifiedDiscovery;
+  const deferred=env.PLAN_WORK_IN_QUEUE==='true'&&(!verifiedDiscovery||deferScoring);
   const eligibleRows=rows.filter(job=>eligible(job,user,submitted));
   const scored:Row[] = deferred?eligibleRows.map(job=>({...job,score:0,gaps:'[]',matched:'[]',matching_method:'pending',lexical_score:null,semantic_score:null,embedding_model:null,matching_algorithm:'pending',matching_state:'queued'})):await scoredJobs(env,user,eligibleRows);
   if(!scored.length)return 0;
   const inserted=await env.DB.batch(scored.map(job=>env.DB.prepare(`INSERT INTO applications(user_id,job_id,match_score,skill_gaps,matched_skills,scored_profile_version,scored_job_version,matching_method,lexical_score,semantic_score,embedding_model,matching_algorithm,matching_state)
     SELECT ?,?,?,?,?,?,?,?,?,?,?,?,? WHERE EXISTS(SELECT 1 FROM users WHERE id=? AND profile_version=? AND mode=?)
       AND EXISTS(SELECT 1 FROM jobs WHERE id=? AND facts_version=?)
-      AND (? IS NULL OR EXISTS(SELECT 1 FROM discovery_runs WHERE id=? AND user_id=? AND profile_version=? AND state='running' AND expires_at>strftime('%Y-%m-%dT%H:%M:%fZ','now')))
-    ON CONFLICT(user_id,job_id) DO NOTHING RETURNING id`).bind(userId,job.id,job.score,job.gaps,job.matched,deferred?0:user.profile_version,deferred?0:job.facts_version,job.matching_method,job.lexical_score,job.semantic_score,job.embedding_model,job.matching_algorithm,job.matching_state,userId,user.profile_version,user.mode,job.id,job.facts_version,discovery?.id??null,discovery?.id??null,userId,user.profile_version)));
+      AND (? IS NULL OR EXISTS(SELECT 1 FROM ${discovery?.cycle?'discovery_cycles':'discovery_runs'} WHERE id=? AND user_id=? AND profile_version=? AND state='running' ${discovery?.cycle?"AND lease_token=?":''} AND expires_at>strftime('%Y-%m-%dT%H:%M:%fZ','now')))
+    ON CONFLICT(user_id,job_id) DO NOTHING RETURNING id`).bind(userId,job.id,job.score,job.gaps,job.matched,deferred?0:user.profile_version,deferred?0:job.facts_version,job.matching_method,job.lexical_score,job.semantic_score,job.embedding_model,job.matching_algorithm,job.matching_state,userId,user.profile_version,user.mode,job.id,job.facts_version,discovery?.id??null,discovery?.id??null,userId,user.profile_version,...(discovery?.cycle?[discovery.token]:[]))));
 
   return inserted.reduce((count,result)=>count+result.results.length,0);
 }

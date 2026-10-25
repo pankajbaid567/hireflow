@@ -1,0 +1,24 @@
+{
+  "version": "prep-quality-v2",
+  "corpus_sha256": "c5a169eedc5b8bfe25fdbfb557ac4d87e4ac0b54a04d5ae01ccf2b6bfd484cc3",
+  "scope": "Known frozen P1 preparation cases reused for regression comparison, not a new blind heldout evaluation. New quality/source tests are separately controlled fixtures.",
+  "thresholds_declared_before_p2_evaluation": true,
+  "thresholds": {
+    "rich_jd_questions_min": 5,
+    "questions_max": 10,
+    "category_coverage_min": 1,
+    "jd_goal_token_coverage_min": 0.6,
+    "behavioral_exact_duplicate_rate_max": 0.1,
+    "behavioral_near_duplicate_rate_max": 0.2,
+    "near_duplicate_jaccard": 0.85,
+    "unsupported_jd_evidence_max": 0,
+    "explicit_round_count_accuracy_min": 1,
+    "mode_depth_accuracy_min": 1
+  },
+  "normalization": "Question duplicate comparison removes company and actual profile project names before punctuation/case normalization. JD goal coverage removes skill names and generic role words. Metadata evidence is checked separately, never counted as question relevance.",
+  "limitations": [
+    "These cases were inspected during development and measure regression on known synthetic inputs, not unseen hiring outcomes.",
+    "Automatic domain-token overlap, duplicate checks and exact source quotes do not replace independent human review.",
+    "No provider inference or live source usefulness is claimed by this offline evaluation."
+  ]
+}

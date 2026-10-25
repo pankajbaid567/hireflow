@@ -1,0 +1,897 @@
+{
+  "version": "prep-quality-v2",
+  "created_at": "2026-10-25T12:46:34.340Z",
+  "corpus_sha256": "c5a169eedc5b8bfe25fdbfb557ac4d87e4ac0b54a04d5ae01ccf2b6bfd484cc3",
+  "cases": 16,
+  "known_case_regression_not_blind_holdout": true,
+  "thresholds": {
+    "rich_jd_questions_min": 5,
+    "questions_max": 10,
+    "category_coverage_min": 1,
+    "jd_goal_token_coverage_min": 0.6,
+    "behavioral_exact_duplicate_rate_max": 0.1,
+    "behavioral_near_duplicate_rate_max": 0.2,
+    "near_duplicate_jaccard": 0.85,
+    "unsupported_jd_evidence_max": 0,
+    "explicit_round_count_accuracy_min": 1,
+    "mode_depth_accuracy_min": 1
+  },
+  "baseline": {
+    "source": "evals/results/offline.json at fa07874",
+    "behavioral_question_duplicate_rate": 0.875,
+    "cross_case_question_duplicate_rate": 0.21875
+  },
+  "p2": {
+    "behavioral_question_duplicate_rate": 0,
+    "behavioral_near_duplicate_rate": 0,
+    "cross_case_question_duplicate_rate": 0,
+    "minimum_jd_goal_token_coverage": 1,
+    "unsupported_evidence": 0
+  },
+  "gates": {
+    "question_count": true,
+    "categories": true,
+    "concrete_jd_context": true,
+    "behavioral_exact_duplicates": true,
+    "behavioral_near_duplicates": true,
+    "source_evidence": true,
+    "reported_rounds": true,
+    "mode_depth": true
+  },
+  "passed": true,
+  "results": [
+    {
+      "id": "prep-00",
+      "split": "dev",
+      "questions": 5,
+      "category_coverage": 1,
+      "round_count_correct": true,
+      "question_method": "jd_grounded_templates",
+      "minimum_jd_goal_coverage": 1,
+      "unsupported_evidence": 0,
+      "mode_depth_correct": true,
+      "output": [
+        {
+          "category": "technical",
+          "question": "For Synthetic Employer's task to index library collections and help students discover relevant books, show a small Python example. Explain the main input/output contract and test a query whose useful result is missing.",
+          "key": "for s task to index library collections and help students discover relevant books show a small python example explain the main input output contract and test a query whose useful result is missing",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        },
+        {
+          "category": "technical",
+          "question": "For Synthetic Employer's task to index library collections and help students discover relevant books, show a small SQL example. Explain the data model and a query; include missing and repeated records.",
+          "key": "for s task to index library collections and help students discover relevant books show a small sql example explain the data model and a query include missing and repeated records",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        },
+        {
+          "category": "behavioral",
+          "question": "The JD asks you to index library collections and help students discover relevant books. Using your project \"University Library Catalogs And Book Circulation Tool\", explain how to handle feedback that a result is irrelevant. What evidence would you show a mentor, and what would make you revise your decision?",
+          "key": "the jd asks you to index library collections and help students discover relevant books using your project explain how to handle feedback that a result is irrelevant what evidence would you show a mentor and what would make you revise your decision",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        },
+        {
+          "category": "behavioral",
+          "question": "While learning to index library collections and help students discover relevant books, suppose feedback points out irrelevant or missing results. What small experiment would you run, what help would you ask for, and how would you explain the result?",
+          "key": "while learning to index library collections and help students discover relevant books suppose feedback points out irrelevant or missing results what small experiment would you run what help would you ask for and how would you explain the result",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        },
+        {
+          "category": "design",
+          "question": "Sketch a small prototype and its data flow using Python, SQL to index library collections and help students discover relevant books. Show where you would detect irrelevant or missing results, and one test before expanding it.",
+          "key": "sketch a small prototype and its data flow using python sql to index library collections and help students discover relevant books show where you would detect irrelevant or missing results and one test before expanding it",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        }
+      ]
+    },
+    {
+      "id": "prep-01",
+      "split": "dev",
+      "questions": 5,
+      "category_coverage": 1,
+      "round_count_correct": true,
+      "question_method": "jd_grounded_templates",
+      "minimum_jd_goal_coverage": 1,
+      "unsupported_evidence": 0,
+      "mode_depth_correct": true,
+      "output": [
+        {
+          "category": "technical",
+          "question": "For Synthetic Employer's task to track warehouse stock levels and reconcile purchase orders, describe a production Python implementation. Explain the main input/output contract and test a repeated or out-of-order stock update. What would you measure before changing it?",
+          "key": "for s task to track warehouse stock levels and reconcile purchase orders describe a production python implementation explain the main input output contract and test a repeated or out of order stock update what would you measure before changing it",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        },
+        {
+          "category": "technical",
+          "question": "For Synthetic Employer's task to track warehouse stock levels and reconcile purchase orders, describe a production SQL implementation. Explain the data model and a query; include missing and repeated records. What would you measure before changing it?",
+          "key": "for s task to track warehouse stock levels and reconcile purchase orders describe a production sql implementation explain the data model and a query include missing and repeated records what would you measure before changing it",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        },
+        {
+          "category": "behavioral",
+          "question": "The JD asks you to track warehouse stock levels and reconcile purchase orders. Using your project \"Retail Inventory And Warehouse Stock Tool\", explain which source of a conflicting count to trust. What evidence would you show a stakeholder, and what would make you revise your decision?",
+          "key": "the jd asks you to track warehouse stock levels and reconcile purchase orders using your project explain which source of a conflicting count to trust what evidence would you show a stakeholder and what would make you revise your decision",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        },
+        {
+          "category": "behavioral",
+          "question": "For work to track warehouse stock levels and reconcile purchase orders, describe how you would handle a disagreement about disagreeing counts or repeated updates. Which observable result would settle the tradeoff, and how would you communicate an unresolved risk?",
+          "key": "for work to track warehouse stock levels and reconcile purchase orders describe how you would handle a disagreement about disagreeing counts or repeated updates which observable result would settle the tradeoff and how would you communicate an unresolved risk",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        },
+        {
+          "category": "design",
+          "question": "Design a scalable service and discuss production boundaries using Python, SQL to track warehouse stock levels and reconcile purchase orders. Show where you would detect disagreeing counts or repeated updates, and how recovery, monitoring and access controls affect your design.",
+          "key": "design a scalable service and discuss production boundaries using python sql to track warehouse stock levels and reconcile purchase orders show where you would detect disagreeing counts or repeated updates and how recovery monitoring and access controls affect your design",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        }
+      ]
+    },
+    {
+      "id": "prep-02",
+      "split": "dev",
+      "questions": 5,
+      "category_coverage": 1,
+      "round_count_correct": true,
+      "question_method": "jd_grounded_templates",
+      "minimum_jd_goal_coverage": 1,
+      "unsupported_evidence": 0,
+      "mode_depth_correct": true,
+      "output": [
+        {
+          "category": "technical",
+          "question": "For Synthetic Employer's task to coordinate clinic appointments and patient booking slots, show a small Python example. Explain the main input/output contract and test two requests competing for the same slot.",
+          "key": "for s task to coordinate clinic appointments and patient booking slots show a small python example explain the main input output contract and test two requests competing for the same slot",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        },
+        {
+          "category": "technical",
+          "question": "For Synthetic Employer's task to coordinate clinic appointments and patient booking slots, show a small SQL example. Explain the data model and a query; include missing and repeated records.",
+          "key": "for s task to coordinate clinic appointments and patient booking slots show a small sql example explain the data model and a query include missing and repeated records",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        },
+        {
+          "category": "behavioral",
+          "question": "The JD asks you to coordinate clinic appointments and patient booking slots. Using your project \"Clinic Appointment Scheduling Tool\", explain how to resolve a conflict between two requests. What evidence would you show a mentor, and what would make you revise your decision?",
+          "key": "the jd asks you to coordinate clinic appointments and patient booking slots using your project explain how to resolve a conflict between two requests what evidence would you show a mentor and what would make you revise your decision",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        },
+        {
+          "category": "behavioral",
+          "question": "While learning to coordinate clinic appointments and patient booking slots, suppose feedback points out conflicting or duplicate reservations. What small experiment would you run, what help would you ask for, and how would you explain the result?",
+          "key": "while learning to coordinate clinic appointments and patient booking slots suppose feedback points out conflicting or duplicate reservations what small experiment would you run what help would you ask for and how would you explain the result",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        },
+        {
+          "category": "design",
+          "question": "Sketch a small prototype and its data flow using Python, SQL to coordinate clinic appointments and patient booking slots. Show where you would detect conflicting or duplicate reservations, and one test before expanding it.",
+          "key": "sketch a small prototype and its data flow using python sql to coordinate clinic appointments and patient booking slots show where you would detect conflicting or duplicate reservations and one test before expanding it",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        }
+      ]
+    },
+    {
+      "id": "prep-03",
+      "split": "dev",
+      "questions": 5,
+      "category_coverage": 1,
+      "round_count_correct": true,
+      "question_method": "jd_grounded_templates",
+      "minimum_jd_goal_coverage": 1,
+      "unsupported_evidence": 0,
+      "mode_depth_correct": true,
+      "output": [
+        {
+          "category": "technical",
+          "question": "For Synthetic Employer's task to analyze cricket scorecards and match performance statistics, describe a production Python implementation. Explain the main input/output contract and test an invalid or incomplete input. What would you measure before changing it?",
+          "key": "for s task to analyze cricket scorecards and match performance statistics describe a production python implementation explain the main input output contract and test an invalid or incomplete input what would you measure before changing it",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        },
+        {
+          "category": "technical",
+          "question": "For Synthetic Employer's task to analyze cricket scorecards and match performance statistics, describe a production SQL implementation. Explain the data model and a query; include missing and repeated records. What would you measure before changing it?",
+          "key": "for s task to analyze cricket scorecards and match performance statistics describe a production sql implementation explain the data model and a query include missing and repeated records what would you measure before changing it",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        },
+        {
+          "category": "behavioral",
+          "question": "The JD asks you to analyze cricket scorecards and match performance statistics. Using your project \"Cricket Score Statistics Tool\", explain which missing requirement to clarify before implementing. What evidence would you show a stakeholder, and what would make you revise your decision?",
+          "key": "the jd asks you to analyze cricket scorecards and match performance statistics using your project explain which missing requirement to clarify before implementing what evidence would you show a stakeholder and what would make you revise your decision",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        },
+        {
+          "category": "behavioral",
+          "question": "For work to analyze cricket scorecards and match performance statistics, describe how you would handle a disagreement about an invalid input or an unclear requirement. Which observable result would settle the tradeoff, and how would you communicate an unresolved risk?",
+          "key": "for work to analyze cricket scorecards and match performance statistics describe how you would handle a disagreement about an invalid input or an unclear requirement which observable result would settle the tradeoff and how would you communicate an unresolved risk",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        },
+        {
+          "category": "design",
+          "question": "Design a scalable service and discuss production boundaries using Python, SQL to analyze cricket scorecards and match performance statistics. Show where you would detect an invalid input or an unclear requirement, and how recovery, monitoring and access controls affect your design.",
+          "key": "design a scalable service and discuss production boundaries using python sql to analyze cricket scorecards and match performance statistics show where you would detect an invalid input or an unclear requirement and how recovery monitoring and access controls affect your design",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        }
+      ]
+    },
+    {
+      "id": "prep-04",
+      "split": "dev",
+      "questions": 5,
+      "category_coverage": 1,
+      "round_count_correct": true,
+      "question_method": "jd_grounded_templates",
+      "minimum_jd_goal_coverage": 1,
+      "unsupported_evidence": 0,
+      "mode_depth_correct": true,
+      "output": [
+        {
+          "category": "technical",
+          "question": "For Synthetic Employer's task to schedule irrigation from soil moisture readings for farms, show a small Python example. Explain the main input/output contract and test a missing or implausible observation.",
+          "key": "for s task to schedule irrigation from soil moisture readings for farms show a small python example explain the main input output contract and test a missing or implausible observation",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        },
+        {
+          "category": "technical",
+          "question": "For Synthetic Employer's task to schedule irrigation from soil moisture readings for farms, show a small SQL example. Explain the data model and a query; include missing and repeated records.",
+          "key": "for s task to schedule irrigation from soil moisture readings for farms show a small sql example explain the data model and a query include missing and repeated records",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        },
+        {
+          "category": "behavioral",
+          "question": "The JD asks you to schedule irrigation from soil moisture readings for farms. Using your project \"Farm Irrigation And Soil Moisture Tool\", explain how to communicate uncertainty before choosing a threshold. What evidence would you show a mentor, and what would make you revise your decision?",
+          "key": "the jd asks you to schedule irrigation from soil moisture readings for farms using your project explain how to communicate uncertainty before choosing a threshold what evidence would you show a mentor and what would make you revise your decision",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        },
+        {
+          "category": "behavioral",
+          "question": "While learning to schedule irrigation from soil moisture readings for farms, suppose feedback points out missing or uncertain observations. What small experiment would you run, what help would you ask for, and how would you explain the result?",
+          "key": "while learning to schedule irrigation from soil moisture readings for farms suppose feedback points out missing or uncertain observations what small experiment would you run what help would you ask for and how would you explain the result",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        },
+        {
+          "category": "design",
+          "question": "Sketch a small prototype and its data flow using Python, SQL to schedule irrigation from soil moisture readings for farms. Show where you would detect missing or uncertain observations, and one test before expanding it.",
+          "key": "sketch a small prototype and its data flow using python sql to schedule irrigation from soil moisture readings for farms show where you would detect missing or uncertain observations and one test before expanding it",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        }
+      ]
+    },
+    {
+      "id": "prep-05",
+      "split": "dev",
+      "questions": 5,
+      "category_coverage": 1,
+      "round_count_correct": true,
+      "question_method": "jd_grounded_templates",
+      "minimum_jd_goal_coverage": 1,
+      "unsupported_evidence": 0,
+      "mode_depth_correct": true,
+      "output": [
+        {
+          "category": "technical",
+          "question": "For Synthetic Employer's task to manage train seat reservations and passenger itineraries, describe a production Python implementation. Explain the main input/output contract and test two requests competing for the same slot. What would you measure before changing it?",
+          "key": "for s task to manage train seat reservations and passenger itineraries describe a production python implementation explain the main input output contract and test two requests competing for the same slot what would you measure before changing it",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        },
+        {
+          "category": "technical",
+          "question": "For Synthetic Employer's task to manage train seat reservations and passenger itineraries, describe a production SQL implementation. Explain the data model and a query; include missing and repeated records. What would you measure before changing it?",
+          "key": "for s task to manage train seat reservations and passenger itineraries describe a production sql implementation explain the data model and a query include missing and repeated records what would you measure before changing it",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        },
+        {
+          "category": "behavioral",
+          "question": "The JD asks you to manage train seat reservations and passenger itineraries. Using your project \"Railway Travel Reservations Tool\", explain how to resolve a conflict between two requests. What evidence would you show a stakeholder, and what would make you revise your decision?",
+          "key": "the jd asks you to manage train seat reservations and passenger itineraries using your project explain how to resolve a conflict between two requests what evidence would you show a stakeholder and what would make you revise your decision",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        },
+        {
+          "category": "behavioral",
+          "question": "For work to manage train seat reservations and passenger itineraries, describe how you would handle a disagreement about conflicting or duplicate reservations. Which observable result would settle the tradeoff, and how would you communicate an unresolved risk?",
+          "key": "for work to manage train seat reservations and passenger itineraries describe how you would handle a disagreement about conflicting or duplicate reservations which observable result would settle the tradeoff and how would you communicate an unresolved risk",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        },
+        {
+          "category": "design",
+          "question": "Design a scalable service and discuss production boundaries using Python, SQL to manage train seat reservations and passenger itineraries. Show where you would detect conflicting or duplicate reservations, and how recovery, monitoring and access controls affect your design.",
+          "key": "design a scalable service and discuss production boundaries using python sql to manage train seat reservations and passenger itineraries show where you would detect conflicting or duplicate reservations and how recovery monitoring and access controls affect your design",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        }
+      ]
+    },
+    {
+      "id": "prep-06",
+      "split": "dev",
+      "questions": 5,
+      "category_coverage": 1,
+      "round_count_correct": true,
+      "question_method": "jd_grounded_templates",
+      "minimum_jd_goal_coverage": 1,
+      "unsupported_evidence": 0,
+      "mode_depth_correct": true,
+      "output": [
+        {
+          "category": "technical",
+          "question": "For Synthetic Employer's task to recommend songs and organize listening playlists, show a small Python example. Explain the main input/output contract and test a query whose useful result is missing.",
+          "key": "for s task to recommend songs and organize listening playlists show a small python example explain the main input output contract and test a query whose useful result is missing",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        },
+        {
+          "category": "technical",
+          "question": "For Synthetic Employer's task to recommend songs and organize listening playlists, show a small SQL example. Explain the data model and a query; include missing and repeated records.",
+          "key": "for s task to recommend songs and organize listening playlists show a small sql example explain the data model and a query include missing and repeated records",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        },
+        {
+          "category": "behavioral",
+          "question": "The JD asks you to recommend songs and organize listening playlists. Using your project \"Music Recommendation Playlists Tool\", explain how to handle feedback that a result is irrelevant. What evidence would you show a mentor, and what would make you revise your decision?",
+          "key": "the jd asks you to recommend songs and organize listening playlists using your project explain how to handle feedback that a result is irrelevant what evidence would you show a mentor and what would make you revise your decision",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        },
+        {
+          "category": "behavioral",
+          "question": "While learning to recommend songs and organize listening playlists, suppose feedback points out irrelevant or missing results. What small experiment would you run, what help would you ask for, and how would you explain the result?",
+          "key": "while learning to recommend songs and organize listening playlists suppose feedback points out irrelevant or missing results what small experiment would you run what help would you ask for and how would you explain the result",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        },
+        {
+          "category": "design",
+          "question": "Sketch a small prototype and its data flow using Python, SQL to recommend songs and organize listening playlists. Show where you would detect irrelevant or missing results, and one test before expanding it.",
+          "key": "sketch a small prototype and its data flow using python sql to recommend songs and organize listening playlists show where you would detect irrelevant or missing results and one test before expanding it",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        }
+      ]
+    },
+    {
+      "id": "prep-07",
+      "split": "dev",
+      "questions": 5,
+      "category_coverage": 1,
+      "round_count_correct": true,
+      "question_method": "jd_grounded_templates",
+      "minimum_jd_goal_coverage": 1,
+      "unsupported_evidence": 0,
+      "mode_depth_correct": true,
+      "output": [
+        {
+          "category": "technical",
+          "question": "For Synthetic Employer's task to optimize parcel delivery routes and dispatch schedules, describe a production Python implementation. Explain the main input/output contract and test an unavailable stop or delayed update. What would you measure before changing it?",
+          "key": "for s task to optimize parcel delivery routes and dispatch schedules describe a production python implementation explain the main input output contract and test an unavailable stop or delayed update what would you measure before changing it",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        },
+        {
+          "category": "technical",
+          "question": "For Synthetic Employer's task to optimize parcel delivery routes and dispatch schedules, describe a production SQL implementation. Explain the data model and a query; include missing and repeated records. What would you measure before changing it?",
+          "key": "for s task to optimize parcel delivery routes and dispatch schedules describe a production sql implementation explain the data model and a query include missing and repeated records what would you measure before changing it",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        },
+        {
+          "category": "behavioral",
+          "question": "The JD asks you to optimize parcel delivery routes and dispatch schedules. Using your project \"Parcel Delivery Route Planning Tool\", explain when to communicate a delay rather than silently change a plan. What evidence would you show a stakeholder, and what would make you revise your decision?",
+          "key": "the jd asks you to optimize parcel delivery routes and dispatch schedules using your project explain when to communicate a delay rather than silently change a plan what evidence would you show a stakeholder and what would make you revise your decision",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        },
+        {
+          "category": "behavioral",
+          "question": "For work to optimize parcel delivery routes and dispatch schedules, describe how you would handle a disagreement about a disrupted route or delayed update. Which observable result would settle the tradeoff, and how would you communicate an unresolved risk?",
+          "key": "for work to optimize parcel delivery routes and dispatch schedules describe how you would handle a disagreement about a disrupted route or delayed update which observable result would settle the tradeoff and how would you communicate an unresolved risk",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        },
+        {
+          "category": "design",
+          "question": "Design a scalable service and discuss production boundaries using Python, SQL to optimize parcel delivery routes and dispatch schedules. Show where you would detect a disrupted route or delayed update, and how recovery, monitoring and access controls affect your design.",
+          "key": "design a scalable service and discuss production boundaries using python sql to optimize parcel delivery routes and dispatch schedules show where you would detect a disrupted route or delayed update and how recovery monitoring and access controls affect your design",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        }
+      ]
+    },
+    {
+      "id": "prep-08",
+      "split": "dev",
+      "questions": 5,
+      "category_coverage": 1,
+      "round_count_correct": true,
+      "question_method": "jd_grounded_templates",
+      "minimum_jd_goal_coverage": 1,
+      "unsupported_evidence": 0,
+      "mode_depth_correct": true,
+      "output": [
+        {
+          "category": "technical",
+          "question": "For Synthetic Employer's task to detect unusual banking payment patterns and investigate fraud, show a small Python example. Explain the main input/output contract and test a legitimate transaction that looks unusual.",
+          "key": "for s task to detect unusual banking payment patterns and investigate fraud show a small python example explain the main input output contract and test a legitimate transaction that looks unusual",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        },
+        {
+          "category": "technical",
+          "question": "For Synthetic Employer's task to detect unusual banking payment patterns and investigate fraud, show a small SQL example. Explain the data model and a query; include missing and repeated records.",
+          "key": "for s task to detect unusual banking payment patterns and investigate fraud show a small sql example explain the data model and a query include missing and repeated records",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        },
+        {
+          "category": "behavioral",
+          "question": "The JD asks you to detect unusual banking payment patterns and investigate fraud. Using your project \"Bank Payment Fraud Detection Tool\", explain when to escalate a suspicious result instead of acting automatically. What evidence would you show a mentor, and what would make you revise your decision?",
+          "key": "the jd asks you to detect unusual banking payment patterns and investigate fraud using your project explain when to escalate a suspicious result instead of acting automatically what evidence would you show a mentor and what would make you revise your decision",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        },
+        {
+          "category": "behavioral",
+          "question": "While learning to detect unusual banking payment patterns and investigate fraud, suppose feedback points out false positives and sensitive records. What small experiment would you run, what help would you ask for, and how would you explain the result?",
+          "key": "while learning to detect unusual banking payment patterns and investigate fraud suppose feedback points out false positives and sensitive records what small experiment would you run what help would you ask for and how would you explain the result",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        },
+        {
+          "category": "design",
+          "question": "Sketch a small prototype and its data flow using Python, SQL to detect unusual banking payment patterns and investigate fraud. Show where you would detect false positives and sensitive records, and one test before expanding it.",
+          "key": "sketch a small prototype and its data flow using python sql to detect unusual banking payment patterns and investigate fraud show where you would detect false positives and sensitive records and one test before expanding it",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        }
+      ]
+    },
+    {
+      "id": "prep-09",
+      "split": "dev",
+      "questions": 5,
+      "category_coverage": 1,
+      "round_count_correct": true,
+      "question_method": "jd_grounded_templates",
+      "minimum_jd_goal_coverage": 1,
+      "unsupported_evidence": 0,
+      "mode_depth_correct": true,
+      "output": [
+        {
+          "category": "technical",
+          "question": "For Synthetic Employer's task to process rainfall forecasts and local weather observations, describe a production Python implementation. Explain the main input/output contract and test a missing or implausible observation. What would you measure before changing it?",
+          "key": "for s task to process rainfall forecasts and local weather observations describe a production python implementation explain the main input output contract and test a missing or implausible observation what would you measure before changing it",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        },
+        {
+          "category": "technical",
+          "question": "For Synthetic Employer's task to process rainfall forecasts and local weather observations, describe a production SQL implementation. Explain the data model and a query; include missing and repeated records. What would you measure before changing it?",
+          "key": "for s task to process rainfall forecasts and local weather observations describe a production sql implementation explain the data model and a query include missing and repeated records what would you measure before changing it",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        },
+        {
+          "category": "behavioral",
+          "question": "The JD asks you to process rainfall forecasts and local weather observations. Using your project \"Weather Forecast Data Tool\", explain how to communicate uncertainty before choosing a threshold. What evidence would you show a stakeholder, and what would make you revise your decision?",
+          "key": "the jd asks you to process rainfall forecasts and local weather observations using your project explain how to communicate uncertainty before choosing a threshold what evidence would you show a stakeholder and what would make you revise your decision",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        },
+        {
+          "category": "behavioral",
+          "question": "For work to process rainfall forecasts and local weather observations, describe how you would handle a disagreement about missing or uncertain observations. Which observable result would settle the tradeoff, and how would you communicate an unresolved risk?",
+          "key": "for work to process rainfall forecasts and local weather observations describe how you would handle a disagreement about missing or uncertain observations which observable result would settle the tradeoff and how would you communicate an unresolved risk",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        },
+        {
+          "category": "design",
+          "question": "Design a scalable service and discuss production boundaries using Python, SQL to process rainfall forecasts and local weather observations. Show where you would detect missing or uncertain observations, and how recovery, monitoring and access controls affect your design.",
+          "key": "design a scalable service and discuss production boundaries using python sql to process rainfall forecasts and local weather observations show where you would detect missing or uncertain observations and how recovery monitoring and access controls affect your design",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        }
+      ]
+    },
+    {
+      "id": "prep-10",
+      "split": "heldout",
+      "questions": 5,
+      "category_coverage": 1,
+      "round_count_correct": true,
+      "question_method": "jd_grounded_templates",
+      "minimum_jd_goal_coverage": 1,
+      "unsupported_evidence": 0,
+      "mode_depth_correct": true,
+      "output": [
+        {
+          "category": "technical",
+          "question": "For Synthetic Employer's task to transcribe speech for accessible meeting captions, show a small Python example. Explain the main input/output contract and test an incomplete or incorrectly transcribed input.",
+          "key": "for s task to transcribe speech for accessible meeting captions show a small python example explain the main input output contract and test an incomplete or incorrectly transcribed input",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        },
+        {
+          "category": "technical",
+          "question": "For Synthetic Employer's task to transcribe speech for accessible meeting captions, show a small SQL example. Explain the data model and a query; include missing and repeated records.",
+          "key": "for s task to transcribe speech for accessible meeting captions show a small sql example explain the data model and a query include missing and repeated records",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        },
+        {
+          "category": "behavioral",
+          "question": "The JD asks you to transcribe speech for accessible meeting captions. Using your project \"Speech Accessibility Tools Tool\", explain how to respond when a user cannot rely on the output. What evidence would you show a mentor, and what would make you revise your decision?",
+          "key": "the jd asks you to transcribe speech for accessible meeting captions using your project explain how to respond when a user cannot rely on the output what evidence would you show a mentor and what would make you revise your decision",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        },
+        {
+          "category": "behavioral",
+          "question": "While learning to transcribe speech for accessible meeting captions, suppose feedback points out incorrect or inaccessible output. What small experiment would you run, what help would you ask for, and how would you explain the result?",
+          "key": "while learning to transcribe speech for accessible meeting captions suppose feedback points out incorrect or inaccessible output what small experiment would you run what help would you ask for and how would you explain the result",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        },
+        {
+          "category": "design",
+          "question": "Sketch a small prototype and its data flow using Python, SQL to transcribe speech for accessible meeting captions. Show where you would detect incorrect or inaccessible output, and one test before expanding it.",
+          "key": "sketch a small prototype and its data flow using python sql to transcribe speech for accessible meeting captions show where you would detect incorrect or inaccessible output and one test before expanding it",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        }
+      ]
+    },
+    {
+      "id": "prep-11",
+      "split": "heldout",
+      "questions": 5,
+      "category_coverage": 1,
+      "round_count_correct": true,
+      "question_method": "jd_grounded_templates",
+      "minimum_jd_goal_coverage": 1,
+      "unsupported_evidence": 0,
+      "mode_depth_correct": true,
+      "output": [
+        {
+          "category": "technical",
+          "question": "For Synthetic Employer's task to create adaptive quizzes and track student learning progress, describe a production Python implementation. Explain the main input/output contract and test an incomplete or repeated learner response. What would you measure before changing it?",
+          "key": "for s task to create adaptive quizzes and track student learning progress describe a production python implementation explain the main input output contract and test an incomplete or repeated learner response what would you measure before changing it",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        },
+        {
+          "category": "technical",
+          "question": "For Synthetic Employer's task to create adaptive quizzes and track student learning progress, describe a production SQL implementation. Explain the data model and a query; include missing and repeated records. What would you measure before changing it?",
+          "key": "for s task to create adaptive quizzes and track student learning progress describe a production sql implementation explain the data model and a query include missing and repeated records what would you measure before changing it",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        },
+        {
+          "category": "behavioral",
+          "question": "The JD asks you to create adaptive quizzes and track student learning progress. Using your project \"Adaptive Study Quizzes Tool\", explain how to interpret feedback when a learner is struggling. What evidence would you show a stakeholder, and what would make you revise your decision?",
+          "key": "the jd asks you to create adaptive quizzes and track student learning progress using your project explain how to interpret feedback when a learner is struggling what evidence would you show a stakeholder and what would make you revise your decision",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        },
+        {
+          "category": "behavioral",
+          "question": "For work to create adaptive quizzes and track student learning progress, describe how you would handle a disagreement about misleading progress feedback. Which observable result would settle the tradeoff, and how would you communicate an unresolved risk?",
+          "key": "for work to create adaptive quizzes and track student learning progress describe how you would handle a disagreement about misleading progress feedback which observable result would settle the tradeoff and how would you communicate an unresolved risk",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        },
+        {
+          "category": "design",
+          "question": "Design a scalable service and discuss production boundaries using Python, SQL to create adaptive quizzes and track student learning progress. Show where you would detect misleading progress feedback, and how recovery, monitoring and access controls affect your design.",
+          "key": "design a scalable service and discuss production boundaries using python sql to create adaptive quizzes and track student learning progress show where you would detect misleading progress feedback and how recovery monitoring and access controls affect your design",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        }
+      ]
+    },
+    {
+      "id": "prep-12",
+      "split": "heldout",
+      "questions": 5,
+      "category_coverage": 1,
+      "round_count_correct": true,
+      "question_method": "jd_grounded_templates",
+      "minimum_jd_goal_coverage": 1,
+      "unsupported_evidence": 0,
+      "mode_depth_correct": true,
+      "output": [
+        {
+          "category": "technical",
+          "question": "For Synthetic Employer's task to investigate network security events and suspicious access logs, show a small Python example. Explain the main input/output contract and test an invalid or incomplete input.",
+          "key": "for s task to investigate network security events and suspicious access logs show a small python example explain the main input output contract and test an invalid or incomplete input",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        },
+        {
+          "category": "technical",
+          "question": "For Synthetic Employer's task to investigate network security events and suspicious access logs, show a small SQL example. Explain the data model and a query; include missing and repeated records.",
+          "key": "for s task to investigate network security events and suspicious access logs show a small sql example explain the data model and a query include missing and repeated records",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        },
+        {
+          "category": "behavioral",
+          "question": "The JD asks you to investigate network security events and suspicious access logs. Using your project \"Network Security Event Logs Tool\", explain which missing requirement to clarify before implementing. What evidence would you show a mentor, and what would make you revise your decision?",
+          "key": "the jd asks you to investigate network security events and suspicious access logs using your project explain which missing requirement to clarify before implementing what evidence would you show a mentor and what would make you revise your decision",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        },
+        {
+          "category": "behavioral",
+          "question": "While learning to investigate network security events and suspicious access logs, suppose feedback points out an invalid input or an unclear requirement. What small experiment would you run, what help would you ask for, and how would you explain the result?",
+          "key": "while learning to investigate network security events and suspicious access logs suppose feedback points out an invalid input or an unclear requirement what small experiment would you run what help would you ask for and how would you explain the result",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        },
+        {
+          "category": "design",
+          "question": "Sketch a small prototype and its data flow using Python, SQL to investigate network security events and suspicious access logs. Show where you would detect an invalid input or an unclear requirement, and one test before expanding it.",
+          "key": "sketch a small prototype and its data flow using python sql to investigate network security events and suspicious access logs show where you would detect an invalid input or an unclear requirement and one test before expanding it",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        }
+      ]
+    },
+    {
+      "id": "prep-13",
+      "split": "heldout",
+      "questions": 5,
+      "category_coverage": 1,
+      "round_count_correct": true,
+      "question_method": "jd_grounded_templates",
+      "minimum_jd_goal_coverage": 1,
+      "unsupported_evidence": 0,
+      "mode_depth_correct": true,
+      "output": [
+        {
+          "category": "technical",
+          "question": "For Synthetic Employer's task to analyze road traffic images and detect vehicles, describe a production Python implementation. Explain the main input/output contract and test an invalid or incomplete input. What would you measure before changing it?",
+          "key": "for s task to analyze road traffic images and detect vehicles describe a production python implementation explain the main input output contract and test an invalid or incomplete input what would you measure before changing it",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        },
+        {
+          "category": "technical",
+          "question": "For Synthetic Employer's task to analyze road traffic images and detect vehicles, describe a production SQL implementation. Explain the data model and a query; include missing and repeated records. What would you measure before changing it?",
+          "key": "for s task to analyze road traffic images and detect vehicles describe a production sql implementation explain the data model and a query include missing and repeated records what would you measure before changing it",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        },
+        {
+          "category": "behavioral",
+          "question": "The JD asks you to analyze road traffic images and detect vehicles. Using your project \"Traffic Image Analysis Tool\", explain which missing requirement to clarify before implementing. What evidence would you show a stakeholder, and what would make you revise your decision?",
+          "key": "the jd asks you to analyze road traffic images and detect vehicles using your project explain which missing requirement to clarify before implementing what evidence would you show a stakeholder and what would make you revise your decision",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        },
+        {
+          "category": "behavioral",
+          "question": "For work to analyze road traffic images and detect vehicles, describe how you would handle a disagreement about an invalid input or an unclear requirement. Which observable result would settle the tradeoff, and how would you communicate an unresolved risk?",
+          "key": "for work to analyze road traffic images and detect vehicles describe how you would handle a disagreement about an invalid input or an unclear requirement which observable result would settle the tradeoff and how would you communicate an unresolved risk",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        },
+        {
+          "category": "design",
+          "question": "Design a scalable service and discuss production boundaries using Python, SQL to analyze road traffic images and detect vehicles. Show where you would detect an invalid input or an unclear requirement, and how recovery, monitoring and access controls affect your design.",
+          "key": "design a scalable service and discuss production boundaries using python sql to analyze road traffic images and detect vehicles show where you would detect an invalid input or an unclear requirement and how recovery monitoring and access controls affect your design",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        }
+      ]
+    },
+    {
+      "id": "prep-14",
+      "split": "heldout",
+      "questions": 5,
+      "category_coverage": 1,
+      "round_count_correct": true,
+      "question_method": "jd_grounded_templates",
+      "minimum_jd_goal_coverage": 1,
+      "unsupported_evidence": 0,
+      "mode_depth_correct": true,
+      "output": [
+        {
+          "category": "technical",
+          "question": "For Synthetic Employer's task to index telescope observations and classify celestial objects, show a small Python example. Explain the main input/output contract and test a query whose useful result is missing.",
+          "key": "for s task to index telescope observations and classify celestial objects show a small python example explain the main input output contract and test a query whose useful result is missing",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        },
+        {
+          "category": "technical",
+          "question": "For Synthetic Employer's task to index telescope observations and classify celestial objects, show a small SQL example. Explain the data model and a query; include missing and repeated records.",
+          "key": "for s task to index telescope observations and classify celestial objects show a small sql example explain the data model and a query include missing and repeated records",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        },
+        {
+          "category": "behavioral",
+          "question": "The JD asks you to index telescope observations and classify celestial objects. Using your project \"Astronomical Telescope Observations Tool\", explain how to handle feedback that a result is irrelevant. What evidence would you show a mentor, and what would make you revise your decision?",
+          "key": "the jd asks you to index telescope observations and classify celestial objects using your project explain how to handle feedback that a result is irrelevant what evidence would you show a mentor and what would make you revise your decision",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        },
+        {
+          "category": "behavioral",
+          "question": "While learning to index telescope observations and classify celestial objects, suppose feedback points out irrelevant or missing results. What small experiment would you run, what help would you ask for, and how would you explain the result?",
+          "key": "while learning to index telescope observations and classify celestial objects suppose feedback points out irrelevant or missing results what small experiment would you run what help would you ask for and how would you explain the result",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        },
+        {
+          "category": "design",
+          "question": "Sketch a small prototype and its data flow using Python, SQL to index telescope observations and classify celestial objects. Show where you would detect irrelevant or missing results, and one test before expanding it.",
+          "key": "sketch a small prototype and its data flow using python sql to index telescope observations and classify celestial objects show where you would detect irrelevant or missing results and one test before expanding it",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        }
+      ]
+    },
+    {
+      "id": "prep-15",
+      "split": "heldout",
+      "questions": 5,
+      "category_coverage": 1,
+      "round_count_correct": true,
+      "question_method": "jd_grounded_templates",
+      "minimum_jd_goal_coverage": 1,
+      "unsupported_evidence": 0,
+      "mode_depth_correct": true,
+      "output": [
+        {
+          "category": "technical",
+          "question": "For Synthetic Employer's task to route municipal service complaints and track civic issue resolution, describe a production Python implementation. Explain the main input/output contract and test an unavailable stop or delayed update. What would you measure before changing it?",
+          "key": "for s task to route municipal service complaints and track civic issue resolution describe a production python implementation explain the main input output contract and test an unavailable stop or delayed update what would you measure before changing it",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        },
+        {
+          "category": "technical",
+          "question": "For Synthetic Employer's task to route municipal service complaints and track civic issue resolution, describe a production SQL implementation. Explain the data model and a query; include missing and repeated records. What would you measure before changing it?",
+          "key": "for s task to route municipal service complaints and track civic issue resolution describe a production sql implementation explain the data model and a query include missing and repeated records what would you measure before changing it",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        },
+        {
+          "category": "behavioral",
+          "question": "The JD asks you to route municipal service complaints and track civic issue resolution. Using your project \"Municipal Complaint Tracking Tool\", explain when to communicate a delay rather than silently change a plan. What evidence would you show a stakeholder, and what would make you revise your decision?",
+          "key": "the jd asks you to route municipal service complaints and track civic issue resolution using your project explain when to communicate a delay rather than silently change a plan what evidence would you show a stakeholder and what would make you revise your decision",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        },
+        {
+          "category": "behavioral",
+          "question": "For work to route municipal service complaints and track civic issue resolution, describe how you would handle a disagreement about a disrupted route or delayed update. Which observable result would settle the tradeoff, and how would you communicate an unresolved risk?",
+          "key": "for work to route municipal service complaints and track civic issue resolution describe how you would handle a disagreement about a disrupted route or delayed update which observable result would settle the tradeoff and how would you communicate an unresolved risk",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        },
+        {
+          "category": "design",
+          "question": "Design a scalable service and discuss production boundaries using Python, SQL to route municipal service complaints and track civic issue resolution. Show where you would detect a disrupted route or delayed update, and how recovery, monitoring and access controls affect your design.",
+          "key": "design a scalable service and discuss production boundaries using python sql to route municipal service complaints and track civic issue resolution show where you would detect a disrupted route or delayed update and how recovery monitoring and access controls affect your design",
+          "jd_goal_token_coverage": 1,
+          "evidence_supported": true,
+          "mode_correct": true
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "These cases were inspected during development and measure regression on known synthetic inputs, not unseen hiring outcomes.",
+    "Automatic domain-token overlap, duplicate checks and exact source quotes do not replace independent human review.",
+    "No provider inference or live source usefulness is claimed by this offline evaluation."
+  ]
+}

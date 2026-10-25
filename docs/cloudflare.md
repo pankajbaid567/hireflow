@@ -82,7 +82,7 @@ every pending migration: `0002` adds transfers; `0003` adds draft leases and
 tailoring metadata; `0004` adds account/passkey/recovery tables, session metadata
 and source-bound atomic transfers; `0005` adds private automation checkpoints;
 `0006` adds immutable answer/PDF review authorization; `0007` adds operational
-telemetry/diagnostics; `0008` adds source-backed listing facts, historical snapshots and review invalidation; `0009` adds private semantic cache/usage and matching metadata; `0010` adds the bounded operations-request index; `0011` adds durable owner-scoped discovery tickets; `0012` extends score/PDF leases with dispatch, kind, captured versions, bounded attempts and interrupted-upload cleanup. Apply all pending migrations before code publication.
+telemetry/diagnostics; `0008` adds source-backed listing facts, historical snapshots and review invalidation; `0009` adds private semantic cache/usage and matching metadata; `0010` adds the bounded operations-request index; `0011` adds durable owner-scoped discovery tickets; `0012` extends score/PDF leases with dispatch, kind, captured versions, bounded attempts and interrupted-upload cleanup. P2 adds `0013` discovery cycles/public read budgets, `0014` private guide export versions, `0015` weekly draft schedules, `0016` coordinated workspace lifecycle, `0017` immutable email delivery tickets and `0018` explicit prep refresh leases. Apply all pending migrations before code publication.
 Back up D1 first; deployment does not copy local database contents. Existing
 sessions survive `0004`, but old unbound transfer links require reminting.
 
@@ -176,7 +176,7 @@ CAPTCHAs are detected, not solved. Expired listings, unsupported/missing form st
 
 ## Reports and email gap
 
-Reports collect cycle applications, states/reasons, resume/guide links, match summaries and study priorities. HTML reports and downloads remain private. **Actual production email delivery is not configured or verified.** Set a supported `RESEND_API_KEY` or `SENDGRID_API_KEY` and a provider-verified `FROM_EMAIL` before an explicitly authorized send. The current placeholder sender is rejected. Report generation alone does not send email; there is no complete autonomous weekly delivery scheduler. See the [M7 audit](milestone-audit.md).
+Reports collect cycle applications, states/reasons, exact resume versions, standalone guide exports, match summaries and study priorities. HTML reports and downloads remain private. **Actual production email delivery is not configured or verified.** Set a supported `RESEND_API_KEY` or `SENDGRID_API_KEY` and a provider-verified `FROM_EMAIL` before an explicitly authorized send. The placeholder sender is rejected. A durable delivery ticket separates queued, provider-accepted and confirmed delivery states; uncertain sends cannot be blindly repeated. Report generation alone does not send email. The opt-in [weekly scheduler](p2-discovery-scheduler.md) prepares drafts and reminders, with separately opted-in email after configuration. It never authorizes applications. See [P2 verification](p2-verification.md) for measured release evidence and remaining external setup.
 
 ## Free-tier limits
 

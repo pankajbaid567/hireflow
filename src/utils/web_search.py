@@ -1,6 +1,8 @@
 """Small injectable search adapter. Missing credentials produce explicit errors."""
 
 import ipaddress
+from time import monotonic
+from bs4 import BeautifulSoup
 from urllib.parse import urlparse, urljoin
 
 import httpx
@@ -15,13 +17,16 @@ def public_url(url):
         if (
             parsed.scheme not in {"http", "https"}
             or not parsed.hostname
-            or parsed.username
+            or parsed.username is not None
+            or parsed.password is not None
+            or parsed.port not in {None, 80, 443}
+            or "." not in parsed.hostname
         ):
             return False
         if parsed.hostname in {
             "localhost",
             "metadata.google.internal",
-        } or parsed.hostname.endswith(".local"):
+        } or parsed.hostname.endswith((".local", ".internal", ".localhost", ".test", ".invalid")):
             return False
         try:
             return ipaddress.ip_address(parsed.hostname).is_global
@@ -89,6 +94,46 @@ class WebSearch:
             return False
         except (httpx.HTTPError, ValueError):
             return False
+
+    def read_page(self, url, *, max_bytes=180000, timeout_seconds=10):
+        """Read bounded visible public HTML; validate every redirect before I/O."""
+        if not public_url(url):
+            return None
+        maximum = max(1, min(180000, int(max_bytes)))
+        deadline = monotonic() + max(1, min(15, timeout_seconds))
+        try:
+            for _ in range(3):
+                remaining = deadline - monotonic()
+                if remaining <= 0 or not public_url(url):
+                    return None
+                with self.client.stream("GET", url, follow_redirects=False, timeout=remaining, headers={"Accept": "text/html, text/plain"}) as response:
+                    if response.is_redirect:
+                        location = response.headers.get("location")
+                        if not location:
+                            return None
+                        url = urljoin(url, location)
+                        continue
+                    if not response.is_success:
+                        return None
+                    chunks, size, truncated = [], 0, False
+                    for chunk in response.iter_bytes():
+                        if monotonic() >= deadline:
+                            return None
+                        remaining_bytes = maximum - size
+                        chunks.append(chunk[:remaining_bytes])
+                        size += min(len(chunk), remaining_bytes)
+                        if len(chunk) > remaining_bytes or size >= maximum:
+                            truncated = True
+                            break
+                    body = b"".join(chunks).decode("utf-8", errors="ignore")
+                    soup = BeautifulSoup(body, "html.parser")
+                    title = soup.title.get_text(" ", strip=True) if soup.title else ""
+                    for hidden in soup(["script", "style", "nav", "header", "footer", "noscript"]):
+                        hidden.decompose()
+                    return {"url": url, "body": body, "text": soup.get_text("\n", strip=True)[:30000], "title": title, "truncated": truncated, "content_type": response.headers.get("content-type", "")}
+            return None
+        except (httpx.HTTPError, ValueError, TypeError):
+            return None
 
     @staticmethod
     def _raise_for_status(response):

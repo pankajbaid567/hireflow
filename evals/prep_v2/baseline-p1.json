@@ -1,0 +1,817 @@
+{
+  "version": "p1-preparation-baseline-fa07874",
+  "source_artifact": "evals/results/offline.json at fa07874",
+  "source_sha256": "8e597141d00bcd68b26ccbd7aed53149cc9c23a0221b6d1b2628bf00694ec2a5",
+  "created_at": "2026-10-25T10:33:01.645Z",
+  "corpus_sha256": "c5a169eedc5b8bfe25fdbfb557ac4d87e4ac0b54a04d5ae01ccf2b6bfd484cc3",
+  "preparation": {
+    "cases": 16,
+    "question_skill_coverage": 1,
+    "jd_requirement_context_coverage": 1,
+    "behavioral_requirement_context_coverage": 0,
+    "cross_case_question_duplicate_rate": 0.21875,
+    "behavioral_question_duplicate_rate": 0.875,
+    "controlled_source_support": {
+      "fixture_version": "controlled-sources-v1",
+      "fixture_sha256": "9250e471cea04dcc8e7b97180c1d478e35b44636caedfd02c9202b04d2580c1a",
+      "scenarios": 16,
+      "controlled_fetches": 206,
+      "emitted_company_claims": 66,
+      "supported_company_claims": 66,
+      "claim_support_precision": 1,
+      "unsupported_company_claims": 0,
+      "unsupported_link_count": 0,
+      "failures": 0,
+      "scope": "Controlled positive, missing/stale/future/broken source fixtures; not live website factual verification."
+    },
+    "unsupported_company_claims": 0,
+    "source_precision": null,
+    "source_note": "No search configured: the actual fallback abstains from sourced company claims. This does not measure live resource quality.",
+    "results": [
+      {
+        "id": "prep-00",
+        "split": "dev",
+        "question_skill_coverage": 1,
+        "jd_requirement_context_coverage": 1,
+        "behavioral_requirement_context_coverage": 0,
+        "question_texts": [
+          {
+            "category": "technical",
+            "text": "for synthetic employer's requirement \"python and sql required to index library collections and help students discover relevant books. interview process: two rounds, technical and hr.\", show a small python example and one test."
+          },
+          {
+            "category": "technical",
+            "text": "for synthetic employer's requirement \"python and sql required to index library collections and help students discover relevant books. interview process: two rounds, technical and hr.\", show a small sql example and one test."
+          },
+          {
+            "category": "behavioral",
+            "text": "describe a course or personal project related to python, sql. how did feedback change your approach, and how does this prepare you for synthetic employer?"
+          },
+          {
+            "category": "design",
+            "text": "sketch a small prototype and its data flow using python, sql for synthetic employer's requirement \"python and sql required to index library collections and help students discover relevant books. interview process: two rounds, technical and hr.\"."
+          }
+        ],
+        "category_coverage": 1,
+        "round_count_correct": true,
+        "unsupported_company_claims": 0,
+        "source_backed_claims": 0,
+        "source_precision": null,
+        "source_state": "abstained_without_search_provider",
+        "controlled_sources": {
+          "source": "controlled search/source responses; no network",
+          "controlled_fetches": 11,
+          "emitted_company_claims": 0,
+          "supported_company_claims": 0,
+          "unsupported_company_claims": 0,
+          "expected_company_claims": 0,
+          "supported_claim_recall": null,
+          "claim_support_precision": null,
+          "returned_link_count": 4,
+          "unique_link_count": 4,
+          "unsupported_link_count": 0,
+          "broken_resource_links_skipped": true,
+          "resource_topics": 2,
+          "minimum_links_per_topic": 2,
+          "news_freshness_correct": true,
+          "missing_reviews_abstained": true
+        }
+      },
+      {
+        "id": "prep-01",
+        "split": "dev",
+        "question_skill_coverage": 1,
+        "jd_requirement_context_coverage": 1,
+        "behavioral_requirement_context_coverage": 0,
+        "question_texts": [
+          {
+            "category": "technical",
+            "text": "how would you apply python to synthetic employer's requirement \"python and sql required to track warehouse stock levels and reconcile purchase orders. interview process: two rounds, technical and hr.\" in production and investigate reliability or performance failures?"
+          },
+          {
+            "category": "technical",
+            "text": "how would you apply sql to synthetic employer's requirement \"python and sql required to track warehouse stock levels and reconcile purchase orders. interview process: two rounds, technical and hr.\" in production and investigate reliability or performance failures?"
+          },
+          {
+            "category": "behavioral",
+            "text": "describe a production project related to python, sql. how did feedback change your approach, and how does this prepare you for synthetic employer?"
+          },
+          {
+            "category": "design",
+            "text": "design a scalable service and discuss monitoring, failure recovery, cost and security using python, sql for synthetic employer's requirement \"python and sql required to track warehouse stock levels and reconcile purchase orders. interview process: two rounds, technical and hr.\"."
+          }
+        ],
+        "category_coverage": 1,
+        "round_count_correct": true,
+        "unsupported_company_claims": 0,
+        "source_backed_claims": 0,
+        "source_precision": null,
+        "source_state": "abstained_without_search_provider",
+        "controlled_sources": {
+          "source": "controlled search/source responses; no network",
+          "controlled_fetches": 13,
+          "emitted_company_claims": 5,
+          "supported_company_claims": 5,
+          "unsupported_company_claims": 0,
+          "expected_company_claims": 5,
+          "supported_claim_recall": 1,
+          "claim_support_precision": 1,
+          "returned_link_count": 6,
+          "unique_link_count": 6,
+          "unsupported_link_count": 0,
+          "broken_resource_links_skipped": true,
+          "resource_topics": 2,
+          "minimum_links_per_topic": 2,
+          "news_freshness_correct": true,
+          "missing_reviews_abstained": true
+        }
+      },
+      {
+        "id": "prep-02",
+        "split": "dev",
+        "question_skill_coverage": 1,
+        "jd_requirement_context_coverage": 1,
+        "behavioral_requirement_context_coverage": 0,
+        "question_texts": [
+          {
+            "category": "technical",
+            "text": "for synthetic employer's requirement \"python and sql required to coordinate clinic appointments and patient booking slots. interview process: two rounds, technical and hr.\", show a small python example and one test."
+          },
+          {
+            "category": "technical",
+            "text": "for synthetic employer's requirement \"python and sql required to coordinate clinic appointments and patient booking slots. interview process: two rounds, technical and hr.\", show a small sql example and one test."
+          },
+          {
+            "category": "behavioral",
+            "text": "describe a course or personal project related to python, sql. how did feedback change your approach, and how does this prepare you for synthetic employer?"
+          },
+          {
+            "category": "design",
+            "text": "sketch a small prototype and its data flow using python, sql for synthetic employer's requirement \"python and sql required to coordinate clinic appointments and patient booking slots. interview process: two rounds, technical and hr.\"."
+          }
+        ],
+        "category_coverage": 1,
+        "round_count_correct": true,
+        "unsupported_company_claims": 0,
+        "source_backed_claims": 0,
+        "source_precision": null,
+        "source_state": "abstained_without_search_provider",
+        "controlled_sources": {
+          "source": "controlled search/source responses; no network",
+          "controlled_fetches": 14,
+          "emitted_company_claims": 6,
+          "supported_company_claims": 6,
+          "unsupported_company_claims": 0,
+          "expected_company_claims": 6,
+          "supported_claim_recall": 1,
+          "claim_support_precision": 1,
+          "returned_link_count": 7,
+          "unique_link_count": 7,
+          "unsupported_link_count": 0,
+          "broken_resource_links_skipped": true,
+          "resource_topics": 2,
+          "minimum_links_per_topic": 2,
+          "news_freshness_correct": true,
+          "missing_reviews_abstained": true
+        }
+      },
+      {
+        "id": "prep-03",
+        "split": "dev",
+        "question_skill_coverage": 1,
+        "jd_requirement_context_coverage": 1,
+        "behavioral_requirement_context_coverage": 0,
+        "question_texts": [
+          {
+            "category": "technical",
+            "text": "how would you apply python to synthetic employer's requirement \"python and sql required to analyze cricket scorecards and match performance statistics. interview process: two rounds, technical and hr.\" in production and investigate reliability or performance failures?"
+          },
+          {
+            "category": "technical",
+            "text": "how would you apply sql to synthetic employer's requirement \"python and sql required to analyze cricket scorecards and match performance statistics. interview process: two rounds, technical and hr.\" in production and investigate reliability or performance failures?"
+          },
+          {
+            "category": "behavioral",
+            "text": "describe a production project related to python, sql. how did feedback change your approach, and how does this prepare you for synthetic employer?"
+          },
+          {
+            "category": "design",
+            "text": "design a scalable service and discuss monitoring, failure recovery, cost and security using python, sql for synthetic employer's requirement \"python and sql required to analyze cricket scorecards and match performance statistics. interview process: two rounds, technical and hr.\"."
+          }
+        ],
+        "category_coverage": 1,
+        "round_count_correct": true,
+        "unsupported_company_claims": 0,
+        "source_backed_claims": 0,
+        "source_precision": null,
+        "source_state": "abstained_without_search_provider",
+        "controlled_sources": {
+          "source": "controlled search/source responses; no network",
+          "controlled_fetches": 13,
+          "emitted_company_claims": 5,
+          "supported_company_claims": 5,
+          "unsupported_company_claims": 0,
+          "expected_company_claims": 5,
+          "supported_claim_recall": 1,
+          "claim_support_precision": 1,
+          "returned_link_count": 6,
+          "unique_link_count": 6,
+          "unsupported_link_count": 0,
+          "broken_resource_links_skipped": true,
+          "resource_topics": 2,
+          "minimum_links_per_topic": 2,
+          "news_freshness_correct": true,
+          "missing_reviews_abstained": true
+        }
+      },
+      {
+        "id": "prep-04",
+        "split": "dev",
+        "question_skill_coverage": 1,
+        "jd_requirement_context_coverage": 1,
+        "behavioral_requirement_context_coverage": 0,
+        "question_texts": [
+          {
+            "category": "technical",
+            "text": "for synthetic employer's requirement \"python and sql required to schedule irrigation from soil moisture readings for farms. interview process: two rounds, technical and hr.\", show a small python example and one test."
+          },
+          {
+            "category": "technical",
+            "text": "for synthetic employer's requirement \"python and sql required to schedule irrigation from soil moisture readings for farms. interview process: two rounds, technical and hr.\", show a small sql example and one test."
+          },
+          {
+            "category": "behavioral",
+            "text": "describe a course or personal project related to python, sql. how did feedback change your approach, and how does this prepare you for synthetic employer?"
+          },
+          {
+            "category": "design",
+            "text": "sketch a small prototype and its data flow using python, sql for synthetic employer's requirement \"python and sql required to schedule irrigation from soil moisture readings for farms. interview process: two rounds, technical and hr.\"."
+          }
+        ],
+        "category_coverage": 1,
+        "round_count_correct": true,
+        "unsupported_company_claims": 0,
+        "source_backed_claims": 0,
+        "source_precision": null,
+        "source_state": "abstained_without_search_provider",
+        "controlled_sources": {
+          "source": "controlled search/source responses; no network",
+          "controlled_fetches": 12,
+          "emitted_company_claims": 1,
+          "supported_company_claims": 1,
+          "unsupported_company_claims": 0,
+          "expected_company_claims": 1,
+          "supported_claim_recall": 1,
+          "claim_support_precision": 1,
+          "returned_link_count": 5,
+          "unique_link_count": 5,
+          "unsupported_link_count": 0,
+          "broken_resource_links_skipped": true,
+          "resource_topics": 2,
+          "minimum_links_per_topic": 2,
+          "news_freshness_correct": true,
+          "missing_reviews_abstained": true
+        }
+      },
+      {
+        "id": "prep-05",
+        "split": "dev",
+        "question_skill_coverage": 1,
+        "jd_requirement_context_coverage": 1,
+        "behavioral_requirement_context_coverage": 0,
+        "question_texts": [
+          {
+            "category": "technical",
+            "text": "how would you apply python to synthetic employer's requirement \"python and sql required to manage train seat reservations and passenger itineraries. interview process: two rounds, technical and hr.\" in production and investigate reliability or performance failures?"
+          },
+          {
+            "category": "technical",
+            "text": "how would you apply sql to synthetic employer's requirement \"python and sql required to manage train seat reservations and passenger itineraries. interview process: two rounds, technical and hr.\" in production and investigate reliability or performance failures?"
+          },
+          {
+            "category": "behavioral",
+            "text": "describe a production project related to python, sql. how did feedback change your approach, and how does this prepare you for synthetic employer?"
+          },
+          {
+            "category": "design",
+            "text": "design a scalable service and discuss monitoring, failure recovery, cost and security using python, sql for synthetic employer's requirement \"python and sql required to manage train seat reservations and passenger itineraries. interview process: two rounds, technical and hr.\"."
+          }
+        ],
+        "category_coverage": 1,
+        "round_count_correct": true,
+        "unsupported_company_claims": 0,
+        "source_backed_claims": 0,
+        "source_precision": null,
+        "source_state": "abstained_without_search_provider",
+        "controlled_sources": {
+          "source": "controlled search/source responses; no network",
+          "controlled_fetches": 13,
+          "emitted_company_claims": 5,
+          "supported_company_claims": 5,
+          "unsupported_company_claims": 0,
+          "expected_company_claims": 5,
+          "supported_claim_recall": 1,
+          "claim_support_precision": 1,
+          "returned_link_count": 6,
+          "unique_link_count": 6,
+          "unsupported_link_count": 0,
+          "broken_resource_links_skipped": true,
+          "resource_topics": 2,
+          "minimum_links_per_topic": 2,
+          "news_freshness_correct": true,
+          "missing_reviews_abstained": true
+        }
+      },
+      {
+        "id": "prep-06",
+        "split": "dev",
+        "question_skill_coverage": 1,
+        "jd_requirement_context_coverage": 1,
+        "behavioral_requirement_context_coverage": 0,
+        "question_texts": [
+          {
+            "category": "technical",
+            "text": "for synthetic employer's requirement \"python and sql required to recommend songs and organize listening playlists. interview process: two rounds, technical and hr.\", show a small python example and one test."
+          },
+          {
+            "category": "technical",
+            "text": "for synthetic employer's requirement \"python and sql required to recommend songs and organize listening playlists. interview process: two rounds, technical and hr.\", show a small sql example and one test."
+          },
+          {
+            "category": "behavioral",
+            "text": "describe a course or personal project related to python, sql. how did feedback change your approach, and how does this prepare you for synthetic employer?"
+          },
+          {
+            "category": "design",
+            "text": "sketch a small prototype and its data flow using python, sql for synthetic employer's requirement \"python and sql required to recommend songs and organize listening playlists. interview process: two rounds, technical and hr.\"."
+          }
+        ],
+        "category_coverage": 1,
+        "round_count_correct": true,
+        "unsupported_company_claims": 0,
+        "source_backed_claims": 0,
+        "source_precision": null,
+        "source_state": "abstained_without_search_provider",
+        "controlled_sources": {
+          "source": "controlled search/source responses; no network",
+          "controlled_fetches": 13,
+          "emitted_company_claims": 5,
+          "supported_company_claims": 5,
+          "unsupported_company_claims": 0,
+          "expected_company_claims": 5,
+          "supported_claim_recall": 1,
+          "claim_support_precision": 1,
+          "returned_link_count": 6,
+          "unique_link_count": 6,
+          "unsupported_link_count": 0,
+          "broken_resource_links_skipped": true,
+          "resource_topics": 2,
+          "minimum_links_per_topic": 2,
+          "news_freshness_correct": true,
+          "missing_reviews_abstained": true
+        }
+      },
+      {
+        "id": "prep-07",
+        "split": "dev",
+        "question_skill_coverage": 1,
+        "jd_requirement_context_coverage": 1,
+        "behavioral_requirement_context_coverage": 0,
+        "question_texts": [
+          {
+            "category": "technical",
+            "text": "how would you apply python to synthetic employer's requirement \"python and sql required to optimize parcel delivery routes and dispatch schedules. interview process: two rounds, technical and hr.\" in production and investigate reliability or performance failures?"
+          },
+          {
+            "category": "technical",
+            "text": "how would you apply sql to synthetic employer's requirement \"python and sql required to optimize parcel delivery routes and dispatch schedules. interview process: two rounds, technical and hr.\" in production and investigate reliability or performance failures?"
+          },
+          {
+            "category": "behavioral",
+            "text": "describe a production project related to python, sql. how did feedback change your approach, and how does this prepare you for synthetic employer?"
+          },
+          {
+            "category": "design",
+            "text": "design a scalable service and discuss monitoring, failure recovery, cost and security using python, sql for synthetic employer's requirement \"python and sql required to optimize parcel delivery routes and dispatch schedules. interview process: two rounds, technical and hr.\"."
+          }
+        ],
+        "category_coverage": 1,
+        "round_count_correct": true,
+        "unsupported_company_claims": 0,
+        "source_backed_claims": 0,
+        "source_precision": null,
+        "source_state": "abstained_without_search_provider",
+        "controlled_sources": {
+          "source": "controlled search/source responses; no network",
+          "controlled_fetches": 14,
+          "emitted_company_claims": 6,
+          "supported_company_claims": 6,
+          "unsupported_company_claims": 0,
+          "expected_company_claims": 6,
+          "supported_claim_recall": 1,
+          "claim_support_precision": 1,
+          "returned_link_count": 7,
+          "unique_link_count": 7,
+          "unsupported_link_count": 0,
+          "broken_resource_links_skipped": true,
+          "resource_topics": 2,
+          "minimum_links_per_topic": 2,
+          "news_freshness_correct": true,
+          "missing_reviews_abstained": true
+        }
+      },
+      {
+        "id": "prep-08",
+        "split": "dev",
+        "question_skill_coverage": 1,
+        "jd_requirement_context_coverage": 1,
+        "behavioral_requirement_context_coverage": 0,
+        "question_texts": [
+          {
+            "category": "technical",
+            "text": "for synthetic employer's requirement \"python and sql required to detect unusual banking payment patterns and investigate fraud. interview process: two rounds, technical and hr.\", show a small python example and one test."
+          },
+          {
+            "category": "technical",
+            "text": "for synthetic employer's requirement \"python and sql required to detect unusual banking payment patterns and investigate fraud. interview process: two rounds, technical and hr.\", show a small sql example and one test."
+          },
+          {
+            "category": "behavioral",
+            "text": "describe a course or personal project related to python, sql. how did feedback change your approach, and how does this prepare you for synthetic employer?"
+          },
+          {
+            "category": "design",
+            "text": "sketch a small prototype and its data flow using python, sql for synthetic employer's requirement \"python and sql required to detect unusual banking payment patterns and investigate fraud. interview process: two rounds, technical and hr.\"."
+          }
+        ],
+        "category_coverage": 1,
+        "round_count_correct": true,
+        "unsupported_company_claims": 0,
+        "source_backed_claims": 0,
+        "source_precision": null,
+        "source_state": "abstained_without_search_provider",
+        "controlled_sources": {
+          "source": "controlled search/source responses; no network",
+          "controlled_fetches": 12,
+          "emitted_company_claims": 1,
+          "supported_company_claims": 1,
+          "unsupported_company_claims": 0,
+          "expected_company_claims": 1,
+          "supported_claim_recall": 1,
+          "claim_support_precision": 1,
+          "returned_link_count": 5,
+          "unique_link_count": 5,
+          "unsupported_link_count": 0,
+          "broken_resource_links_skipped": true,
+          "resource_topics": 2,
+          "minimum_links_per_topic": 2,
+          "news_freshness_correct": true,
+          "missing_reviews_abstained": true
+        }
+      },
+      {
+        "id": "prep-09",
+        "split": "dev",
+        "question_skill_coverage": 1,
+        "jd_requirement_context_coverage": 1,
+        "behavioral_requirement_context_coverage": 0,
+        "question_texts": [
+          {
+            "category": "technical",
+            "text": "how would you apply python to synthetic employer's requirement \"python and sql required to process rainfall forecasts and local weather observations. interview process: two rounds, technical and hr.\" in production and investigate reliability or performance failures?"
+          },
+          {
+            "category": "technical",
+            "text": "how would you apply sql to synthetic employer's requirement \"python and sql required to process rainfall forecasts and local weather observations. interview process: two rounds, technical and hr.\" in production and investigate reliability or performance failures?"
+          },
+          {
+            "category": "behavioral",
+            "text": "describe a production project related to python, sql. how did feedback change your approach, and how does this prepare you for synthetic employer?"
+          },
+          {
+            "category": "design",
+            "text": "design a scalable service and discuss monitoring, failure recovery, cost and security using python, sql for synthetic employer's requirement \"python and sql required to process rainfall forecasts and local weather observations. interview process: two rounds, technical and hr.\"."
+          }
+        ],
+        "category_coverage": 1,
+        "round_count_correct": true,
+        "unsupported_company_claims": 0,
+        "source_backed_claims": 0,
+        "source_precision": null,
+        "source_state": "abstained_without_search_provider",
+        "controlled_sources": {
+          "source": "controlled search/source responses; no network",
+          "controlled_fetches": 12,
+          "emitted_company_claims": 4,
+          "supported_company_claims": 4,
+          "unsupported_company_claims": 0,
+          "expected_company_claims": 4,
+          "supported_claim_recall": 1,
+          "claim_support_precision": 1,
+          "returned_link_count": 5,
+          "unique_link_count": 5,
+          "unsupported_link_count": 0,
+          "broken_resource_links_skipped": true,
+          "resource_topics": 2,
+          "minimum_links_per_topic": 2,
+          "news_freshness_correct": true,
+          "missing_reviews_abstained": true
+        }
+      },
+      {
+        "id": "prep-10",
+        "split": "heldout",
+        "question_skill_coverage": 1,
+        "jd_requirement_context_coverage": 1,
+        "behavioral_requirement_context_coverage": 0,
+        "question_texts": [
+          {
+            "category": "technical",
+            "text": "for synthetic employer's requirement \"python and sql required to transcribe speech for accessible meeting captions. interview process: two rounds, technical and hr.\", show a small python example and one test."
+          },
+          {
+            "category": "technical",
+            "text": "for synthetic employer's requirement \"python and sql required to transcribe speech for accessible meeting captions. interview process: two rounds, technical and hr.\", show a small sql example and one test."
+          },
+          {
+            "category": "behavioral",
+            "text": "describe a course or personal project related to python, sql. how did feedback change your approach, and how does this prepare you for synthetic employer?"
+          },
+          {
+            "category": "design",
+            "text": "sketch a small prototype and its data flow using python, sql for synthetic employer's requirement \"python and sql required to transcribe speech for accessible meeting captions. interview process: two rounds, technical and hr.\"."
+          }
+        ],
+        "category_coverage": 1,
+        "round_count_correct": true,
+        "unsupported_company_claims": 0,
+        "source_backed_claims": 0,
+        "source_precision": null,
+        "source_state": "abstained_without_search_provider",
+        "controlled_sources": {
+          "source": "controlled search/source responses; no network",
+          "controlled_fetches": 14,
+          "emitted_company_claims": 6,
+          "supported_company_claims": 6,
+          "unsupported_company_claims": 0,
+          "expected_company_claims": 6,
+          "supported_claim_recall": 1,
+          "claim_support_precision": 1,
+          "returned_link_count": 7,
+          "unique_link_count": 7,
+          "unsupported_link_count": 0,
+          "broken_resource_links_skipped": true,
+          "resource_topics": 2,
+          "minimum_links_per_topic": 2,
+          "news_freshness_correct": true,
+          "missing_reviews_abstained": true
+        }
+      },
+      {
+        "id": "prep-11",
+        "split": "heldout",
+        "question_skill_coverage": 1,
+        "jd_requirement_context_coverage": 1,
+        "behavioral_requirement_context_coverage": 0,
+        "question_texts": [
+          {
+            "category": "technical",
+            "text": "how would you apply python to synthetic employer's requirement \"python and sql required to create adaptive quizzes and track student learning progress. interview process: two rounds, technical and hr.\" in production and investigate reliability or performance failures?"
+          },
+          {
+            "category": "technical",
+            "text": "how would you apply sql to synthetic employer's requirement \"python and sql required to create adaptive quizzes and track student learning progress. interview process: two rounds, technical and hr.\" in production and investigate reliability or performance failures?"
+          },
+          {
+            "category": "behavioral",
+            "text": "describe a production project related to python, sql. how did feedback change your approach, and how does this prepare you for synthetic employer?"
+          },
+          {
+            "category": "design",
+            "text": "design a scalable service and discuss monitoring, failure recovery, cost and security using python, sql for synthetic employer's requirement \"python and sql required to create adaptive quizzes and track student learning progress. interview process: two rounds, technical and hr.\"."
+          }
+        ],
+        "category_coverage": 1,
+        "round_count_correct": true,
+        "unsupported_company_claims": 0,
+        "source_backed_claims": 0,
+        "source_precision": null,
+        "source_state": "abstained_without_search_provider",
+        "controlled_sources": {
+          "source": "controlled search/source responses; no network",
+          "controlled_fetches": 14,
+          "emitted_company_claims": 6,
+          "supported_company_claims": 6,
+          "unsupported_company_claims": 0,
+          "expected_company_claims": 6,
+          "supported_claim_recall": 1,
+          "claim_support_precision": 1,
+          "returned_link_count": 7,
+          "unique_link_count": 7,
+          "unsupported_link_count": 0,
+          "broken_resource_links_skipped": true,
+          "resource_topics": 2,
+          "minimum_links_per_topic": 2,
+          "news_freshness_correct": true,
+          "missing_reviews_abstained": true
+        }
+      },
+      {
+        "id": "prep-12",
+        "split": "heldout",
+        "question_skill_coverage": 1,
+        "jd_requirement_context_coverage": 1,
+        "behavioral_requirement_context_coverage": 0,
+        "question_texts": [
+          {
+            "category": "technical",
+            "text": "for synthetic employer's requirement \"python and sql required to investigate network security events and suspicious access logs. interview process: two rounds, technical and hr.\", show a small python example and one test."
+          },
+          {
+            "category": "technical",
+            "text": "for synthetic employer's requirement \"python and sql required to investigate network security events and suspicious access logs. interview process: two rounds, technical and hr.\", show a small sql example and one test."
+          },
+          {
+            "category": "behavioral",
+            "text": "describe a course or personal project related to python, sql. how did feedback change your approach, and how does this prepare you for synthetic employer?"
+          },
+          {
+            "category": "design",
+            "text": "sketch a small prototype and its data flow using python, sql for synthetic employer's requirement \"python and sql required to investigate network security events and suspicious access logs. interview process: two rounds, technical and hr.\"."
+          }
+        ],
+        "category_coverage": 1,
+        "round_count_correct": true,
+        "unsupported_company_claims": 0,
+        "source_backed_claims": 0,
+        "source_precision": null,
+        "source_state": "abstained_without_search_provider",
+        "controlled_sources": {
+          "source": "controlled search/source responses; no network",
+          "controlled_fetches": 11,
+          "emitted_company_claims": 0,
+          "supported_company_claims": 0,
+          "unsupported_company_claims": 0,
+          "expected_company_claims": 0,
+          "supported_claim_recall": null,
+          "claim_support_precision": null,
+          "returned_link_count": 4,
+          "unique_link_count": 4,
+          "unsupported_link_count": 0,
+          "broken_resource_links_skipped": true,
+          "resource_topics": 2,
+          "minimum_links_per_topic": 2,
+          "news_freshness_correct": true,
+          "missing_reviews_abstained": true
+        }
+      },
+      {
+        "id": "prep-13",
+        "split": "heldout",
+        "question_skill_coverage": 1,
+        "jd_requirement_context_coverage": 1,
+        "behavioral_requirement_context_coverage": 0,
+        "question_texts": [
+          {
+            "category": "technical",
+            "text": "how would you apply python to synthetic employer's requirement \"python and sql required to analyze road traffic images and detect vehicles. interview process: two rounds, technical and hr.\" in production and investigate reliability or performance failures?"
+          },
+          {
+            "category": "technical",
+            "text": "how would you apply sql to synthetic employer's requirement \"python and sql required to analyze road traffic images and detect vehicles. interview process: two rounds, technical and hr.\" in production and investigate reliability or performance failures?"
+          },
+          {
+            "category": "behavioral",
+            "text": "describe a production project related to python, sql. how did feedback change your approach, and how does this prepare you for synthetic employer?"
+          },
+          {
+            "category": "design",
+            "text": "design a scalable service and discuss monitoring, failure recovery, cost and security using python, sql for synthetic employer's requirement \"python and sql required to analyze road traffic images and detect vehicles. interview process: two rounds, technical and hr.\"."
+          }
+        ],
+        "category_coverage": 1,
+        "round_count_correct": true,
+        "unsupported_company_claims": 0,
+        "source_backed_claims": 0,
+        "source_precision": null,
+        "source_state": "abstained_without_search_provider",
+        "controlled_sources": {
+          "source": "controlled search/source responses; no network",
+          "controlled_fetches": 13,
+          "emitted_company_claims": 5,
+          "supported_company_claims": 5,
+          "unsupported_company_claims": 0,
+          "expected_company_claims": 5,
+          "supported_claim_recall": 1,
+          "claim_support_precision": 1,
+          "returned_link_count": 6,
+          "unique_link_count": 6,
+          "unsupported_link_count": 0,
+          "broken_resource_links_skipped": true,
+          "resource_topics": 2,
+          "minimum_links_per_topic": 2,
+          "news_freshness_correct": true,
+          "missing_reviews_abstained": true
+        }
+      },
+      {
+        "id": "prep-14",
+        "split": "heldout",
+        "question_skill_coverage": 1,
+        "jd_requirement_context_coverage": 1,
+        "behavioral_requirement_context_coverage": 0,
+        "question_texts": [
+          {
+            "category": "technical",
+            "text": "for synthetic employer's requirement \"python and sql required to index telescope observations and classify celestial objects. interview process: two rounds, technical and hr.\", show a small python example and one test."
+          },
+          {
+            "category": "technical",
+            "text": "for synthetic employer's requirement \"python and sql required to index telescope observations and classify celestial objects. interview process: two rounds, technical and hr.\", show a small sql example and one test."
+          },
+          {
+            "category": "behavioral",
+            "text": "describe a course or personal project related to python, sql. how did feedback change your approach, and how does this prepare you for synthetic employer?"
+          },
+          {
+            "category": "design",
+            "text": "sketch a small prototype and its data flow using python, sql for synthetic employer's requirement \"python and sql required to index telescope observations and classify celestial objects. interview process: two rounds, technical and hr.\"."
+          }
+        ],
+        "category_coverage": 1,
+        "round_count_correct": true,
+        "unsupported_company_claims": 0,
+        "source_backed_claims": 0,
+        "source_precision": null,
+        "source_state": "abstained_without_search_provider",
+        "controlled_sources": {
+          "source": "controlled search/source responses; no network",
+          "controlled_fetches": 14,
+          "emitted_company_claims": 6,
+          "supported_company_claims": 6,
+          "unsupported_company_claims": 0,
+          "expected_company_claims": 6,
+          "supported_claim_recall": 1,
+          "claim_support_precision": 1,
+          "returned_link_count": 7,
+          "unique_link_count": 7,
+          "unsupported_link_count": 0,
+          "broken_resource_links_skipped": true,
+          "resource_topics": 2,
+          "minimum_links_per_topic": 2,
+          "news_freshness_correct": true,
+          "missing_reviews_abstained": true
+        }
+      },
+      {
+        "id": "prep-15",
+        "split": "heldout",
+        "question_skill_coverage": 1,
+        "jd_requirement_context_coverage": 1,
+        "behavioral_requirement_context_coverage": 0,
+        "question_texts": [
+          {
+            "category": "technical",
+            "text": "how would you apply python to synthetic employer's requirement \"python and sql required to route municipal service complaints and track civic issue resolution. interview process: two rounds, technical and hr.\" in production and investigate reliability or performance failures?"
+          },
+          {
+            "category": "technical",
+            "text": "how would you apply sql to synthetic employer's requirement \"python and sql required to route municipal service complaints and track civic issue resolution. interview process: two rounds, technical and hr.\" in production and investigate reliability or performance failures?"
+          },
+          {
+            "category": "behavioral",
+            "text": "describe a production project related to python, sql. how did feedback change your approach, and how does this prepare you for synthetic employer?"
+          },
+          {
+            "category": "design",
+            "text": "design a scalable service and discuss monitoring, failure recovery, cost and security using python, sql for synthetic employer's requirement \"python and sql required to route municipal service complaints and track civic issue resolution. interview process: two rounds, technical and hr.\"."
+          }
+        ],
+        "category_coverage": 1,
+        "round_count_correct": true,
+        "unsupported_company_claims": 0,
+        "source_backed_claims": 0,
+        "source_precision": null,
+        "source_state": "abstained_without_search_provider",
+        "controlled_sources": {
+          "source": "controlled search/source responses; no network",
+          "controlled_fetches": 13,
+          "emitted_company_claims": 5,
+          "supported_company_claims": 5,
+          "unsupported_company_claims": 0,
+          "expected_company_claims": 5,
+          "supported_claim_recall": 1,
+          "claim_support_precision": 1,
+          "returned_link_count": 6,
+          "unique_link_count": 6,
+          "unsupported_link_count": 0,
+          "broken_resource_links_skipped": true,
+          "resource_topics": 2,
+          "minimum_links_per_topic": 2,
+          "news_freshness_correct": true,
+          "missing_reviews_abstained": true
+        }
+      }
+    ]
+  }
+}

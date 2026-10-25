@@ -222,3 +222,15 @@ PYTHONPATH=. venv/bin/python evals/run_live_extraction.py --run-live --output /t
 
 Do not put real resumes, account credentials, provider keys or cookies in this
 public corpus. Provider success today does not guarantee future availability.
+
+## P2 preparation comparison
+
+The P1 preparation baseline above is retained at
+[`evals/prep_v2/baseline-p1.json`](../evals/prep_v2/baseline-p1.json).
+The separately versioned P2 evaluator compares the same known cases, removes
+company/project labels before duplicate checks and measures responsibility-token
+coverage in the actual question text. Behavioral duplicates improve from 87.5%
+to 0%, with zero near-duplicates at Jaccard 0.85 and full goal-token coverage on
+these cases. This is known-case regression evidence rather than a new blind
+holdout or human quality assessment. Full policy, source and refresh limitations
+are documented in [P2 preparation quality](p2-preparation-quality.md).

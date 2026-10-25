@@ -12,6 +12,12 @@ mobile and logout. [Verification](docs/p1-verification.md) ·
 [Watch the 4:45 demo](https://hireflow-dashboard.pages.dev/assets/hireflow-p1-demo.webm).
 The old Vercel origin remains a temporary workspace-migration bridge.
 
+P2 adds resumable larger discovery, evidence-labelled preparation, private
+versioned guide exports, opt-in weekly draft scheduling, durable report delivery
+and coordinated workspace backup/restore. [P2 verification](docs/p2-verification.md)
+separates controlled tests and live evidence. Actual email sender setup and inbox
+receipt are still required; a queued or provider-accepted email is not delivery.
+
 The original specification is **not fully complete**. Read the [milestone audit](docs/milestone-audit.md) for implemented, partial, missing, and unverified requirements, and the [prioritized roadmap](future.md) for remaining work, improvements and future additions.
 
 **P0 is implemented and deployed:** passkeys/single-use recovery keys, Python

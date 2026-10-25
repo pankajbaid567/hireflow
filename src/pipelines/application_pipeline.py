@@ -4,11 +4,10 @@ import logging
 
 from src.agents.application_agent import ApplicationAgent
 from src.agents.company_intel_agent import CompanyIntelAgent
-from src.agents.prep_guide_agent import PrepGuideAgent
 from src.agents.report_generator import ReportGenerator
 from src.config.settings import get_settings
 from src.models import Application, ApplicationStatus
-from src.pipelines.resume_service import ResumeService
+from src.pipelines.preparation_services import build_resume_service, build_prep_guide_agent
 from src.utils.status_logger import StatusLogger
 from src.utils.web_search import WebSearch
 
@@ -45,12 +44,12 @@ def process_confirmed_applications(application_ids, session_factory):
                     if changed or reason:
                         StatusLogger(db).log(application, "needs_action", "Listing or eligibility changed after confirmation. Review before applying again." if changed else str(reason))
                         continue
-                    ResumeService().prepare(application, db)
+                    build_resume_service(settings).prepare(application, db)
                     try:
                         intel = CompanyIntelAgent(search).research(
                             application.job.company
                         )
-                        PrepGuideAgent(search_client=search).generate(
+                        build_prep_guide_agent(search_client=search, settings=settings).generate(
                             application,
                             db,
                             company_stage=intel["stage"],

@@ -27,6 +27,8 @@ class Settings(BaseSettings):
     spam_filter_threshold: float = 0.7
     embedding_model: str = "BAAI/bge-small-en-v1.5"
     semantic_matching_enabled: bool = False
+    python_llm_tailoring_enabled: bool = False
+    python_llm_prep_enabled: bool = False
     faiss_index_path: str = "data/faiss_index"
     tavily_api_key: str | None = None
     serpapi_api_key: str | None = None

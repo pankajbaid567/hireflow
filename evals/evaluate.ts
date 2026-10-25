@@ -38,7 +38,7 @@ async function controlledSourceEval(item:Case):Promise<Row>{
    return Response.json({results});
   }
   if(url.origin===sourceFixture.resources.origin&&url.pathname.endsWith('/broken'))return new Response(null,{status:404});
-  if(validURLs.has(url.href))return new Response('Synthetic accessible source fixture',{status:200,headers:{'Content-Type':'text/html'}});
+  if(validURLs.has(url.href)){const content=url.href===sourceFixture.facts_url?sourceFixture.facts_content:url.href===sourceFixture.news_url?sourceFixture.news_content:url.href===sourceFixture.review_url?sourceFixture.review_content:'Synthetic accessible learning resource';return new Response(`<h1>${item.job.company}</h1><p>${content}</p>`,{status:200,headers:{'Content-Type':'text/html'}});}
   throw new Error('Unrecognized fixture URL; actual network access is forbidden');
  };
  globalThis.fetch=fixtureFetch;
@@ -51,7 +51,7 @@ async function controlledSourceEval(item:Case):Promise<Row>{
   for(const review of intel.interview_patterns||[]){emitted++;if(!reviewsAbsent&&review.url===sourceFixture.review_url&&review.summary===sourceFixture.review_content)supported++;}
   const resources=(Object.values(guide.resources) as Row[][]).flat(),urls=[...resources.map(row=>row.url),...(intel.sources||[]).map((row:Row)=>row.url)];
   const expected=(factsAbsent?0:4)+(newsExpected?1:0)+(reviewsAbsent?0:1);
-  return{source:'controlled search/source responses; no network',controlled_fetches:fetches,emitted_company_claims:emitted,supported_company_claims:supported,unsupported_company_claims:emitted-supported,expected_company_claims:expected,supported_claim_recall:expected?supported/expected:null,claim_support_precision:emitted?supported/emitted:null,returned_link_count:urls.length,unique_link_count:new Set(urls).size,unsupported_link_count:urls.filter(url=>!validURLs.has(url)).length,broken_resource_links_skipped:resources.every(row=>!row.url.endsWith('/broken')),resource_topics:Object.keys(guide.resources).length,minimum_links_per_topic:Math.min(...(Object.values(guide.resources) as Row[][]).map(rows=>rows.length)),news_freshness_correct:(intel.recent_news?.length||0)===(newsExpected?1:0),missing_reviews_abstained:!reviewsAbsent||intel.interview_review_status==='No interview reviews found'};
+  return{source:'controlled search/source responses; no network',response_adapter:'company_identity_html_body_v2',controlled_fetches:fetches,emitted_company_claims:emitted,supported_company_claims:supported,unsupported_company_claims:emitted-supported,expected_company_claims:expected,supported_claim_recall:expected?supported/expected:null,claim_support_precision:emitted?supported/emitted:null,returned_link_count:urls.length,unique_link_count:new Set(urls).size,unsupported_link_count:urls.filter(url=>!validURLs.has(url)).length,broken_resource_links_skipped:resources.every(row=>!row.url.endsWith('/broken')),resource_topics:Object.keys(guide.resources).length,minimum_links_per_topic:Math.min(...(Object.values(guide.resources) as Row[][]).map(rows=>rows.length)),news_freshness_correct:(intel.recent_news?.length||0)===(newsExpected?1:0),missing_reviews_abstained:!reviewsAbsent||intel.interview_review_status==='No interview reviews found'};
  }finally{globalThis.fetch=original;}
 }
 

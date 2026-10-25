@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from src.config.database import get_db
 from src.pipelines.quota_selector import QuotaSelector
 from src.pipelines.match_scorer import score_jobs_for_user
-from src.pipelines.resume_service import ResumeService
+from src.pipelines.preparation_services import build_resume_service
 from src.pipelines.application_pipeline import process_confirmed_applications
 from src.models import Application, ApplicationStatus, User, Job
 from src.api.serializers import job_data
@@ -112,12 +112,16 @@ def confirm_plan(
 
 
 def _enrich_plan(plan, db):
+    service = build_resume_service()
+    warnings = list(plan.get("warnings", []))
     for item in plan["plan"]:
         application = db.get(Application, item["application_id"])
-        ResumeService().prepare(application, db)
+        service.prepare(application, db)
         item["resume_url"] = f"/resumes/{application.user_id}/{application.id}/download"
         item["resume_version"] = application.resume_version
         item["resume_summary"] = "Review your tailored resume before confirming."
+        item["resume_preparation"] = service.last_preparation
+        warnings.extend(service.last_preparation["warnings"])
         matching = application.skill_gaps or {}
         for key in ("matching_method", "matching_state", "lexical_score", "semantic_score", "embedding_model"):
             item[key] = matching.get(key)
@@ -158,4 +162,5 @@ def _enrich_plan(plan, db):
             }
         )
     plan["alternatives"] = alternatives
+    plan["warnings"] = list(dict.fromkeys(warnings))
     return plan

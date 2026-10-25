@@ -1,0 +1,93 @@
+{
+  "version": "public-source-read-check-v1",
+  "checked_at": "2026-10-25T12:20:03.557Z",
+  "runtime": "Actual bundled Worker functions in isolated workerd with D1; live public GET responses forwarded unchanged.",
+  "network_requests": 8,
+  "provider_searches": 0,
+  "model_requests": 0,
+  "employer_submissions": 0,
+  "emails": 0,
+  "outcomes": [
+    {
+      "source": "Ashby",
+      "scope": "official public board and one adapter detail",
+      "status": 200,
+      "bytes": 2199625,
+      "truncated": false,
+      "published_entries": 67,
+      "within_30_days": 17,
+      "adapter": {
+        "verified": true,
+        "description_characters": 9490,
+        "description_sha256": "fb2a1e28218ed4b86c83c099e4cdd8a40aa7cfc0b60f171ac3f15eaf2da57ffa",
+        "title_present": true,
+        "company_present": true,
+        "location_present": true,
+        "listing_type": "job",
+        "posting_date_present": true,
+        "required_skills": 0,
+        "compensation_disclosed": true,
+        "application_url_present": true,
+        "source": "Ashby",
+        "provenance": "ats_api"
+      }
+    },
+    {
+      "source": "Greenhouse",
+      "scope": "official individual-post API",
+      "adapter": {
+        "verified": false,
+        "rejection": "outside_freshness_window"
+      },
+      "reason": null
+    },
+    {
+      "source": "Lever",
+      "scope": "official public tenant index",
+      "status": 200,
+      "returned_entries": 0,
+      "note": "Current tenant returned no postings; no live detail field coverage claimed."
+    },
+    {
+      "source": "Internshala",
+      "scope": "public portal landing; not individual-JD verification",
+      "status": 301,
+      "bytes": 0,
+      "restricted": false,
+      "reason": null,
+      "note": "No login, CAPTCHA bypass, browser interaction or application was attempted."
+    },
+    {
+      "source": "Wellfound",
+      "scope": "public portal landing; not individual-JD verification",
+      "status": 200,
+      "bytes": 180000,
+      "restricted": false,
+      "reason": null,
+      "note": "No login, CAPTCHA bypass, browser interaction or application was attempted."
+    },
+    {
+      "source": "LinkedIn",
+      "scope": "public portal landing; not individual-JD verification",
+      "status": 200,
+      "bytes": 132513,
+      "restricted": false,
+      "reason": null,
+      "note": "No login, CAPTCHA bypass, browser interaction or application was attempted."
+    },
+    {
+      "source": "Naukri",
+      "scope": "public portal landing; not individual-JD verification",
+      "status": 200,
+      "bytes": 39580,
+      "restricted": false,
+      "reason": null,
+      "note": "No login, CAPTCHA bypass, browser interaction or application was attempted."
+    }
+  ],
+  "limitations": [
+    "Individual samples do not establish source-wide coverage or automatic application support.",
+    "Old/undated/restricted/oversized source responses are not counted as fresh verified listings.",
+    "No authenticated portal integration or browser-only source extraction was tested."
+  ]
+}

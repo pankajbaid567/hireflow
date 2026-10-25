@@ -2,10 +2,10 @@ name: Cloudflare CI
 
 on:
   pull_request:
-    paths: ['cloudflare/**', 'frontend/**', 'evals/**', 'scripts/run_ai_evaluation.mjs', 'scripts/verify_cloudflare_dashboard.mjs', '.github/workflows/cloudflare-ci.yml']
+    paths: ['cloudflare/**', 'frontend/**', 'evals/**', 'scripts/run_ai_evaluation.mjs', 'scripts/evaluate_prep_quality.mjs', 'scripts/verify_cloudflare_dashboard.mjs', '.github/workflows/cloudflare-ci.yml']
   push:
     branches: [main, dev]
-    paths: ['cloudflare/**', 'frontend/**', 'evals/**', 'scripts/run_ai_evaluation.mjs', 'scripts/verify_cloudflare_dashboard.mjs', '.github/workflows/cloudflare-ci.yml']
+    paths: ['cloudflare/**', 'frontend/**', 'evals/**', 'scripts/run_ai_evaluation.mjs', 'scripts/evaluate_prep_quality.mjs', 'scripts/verify_cloudflare_dashboard.mjs', '.github/workflows/cloudflare-ci.yml']
 
 jobs:
   test-worker:
@@ -25,10 +25,22 @@ jobs:
       - run: npx playwright-core install --with-deps chromium
       - name: Install real PDF reader for Unicode and layout regressions
         run: sudo apt-get install -y --no-install-recommends poppler-utils
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install PDF structure reader for prep export regressions
+        run: python -m pip install pypdf
       - run: npm run typecheck
       - run: npm test
       - name: Run frozen AI evaluation without provider calls
         run: node ../scripts/run_ai_evaluation.mjs
+      - name: Check evidence and question duplication regression
+        run: node ../scripts/evaluate_prep_quality.mjs
+      - name: Exercise persistent local discovery and resume without external calls
+        run: |
+          node -e "require('node:fs').writeFileSync('/tmp/hireflow-profile.json',JSON.stringify({name:'Local CI',email:'ci@example.com',mode:'internship',skills:['Python']}),{mode:0o600})"
+          node scripts/discover_local.mjs --offline-fixture --profile /tmp/hireflow-profile.json --directory /tmp/hireflow-local-cycle --target 1
+          node scripts/discover_local.mjs --offline-fixture --directory /tmp/hireflow-local-cycle --resume
       - run: npm ci --prefix ../frontend
       - name: Verify React dashboard against isolated Worker, D1 and R2
         run: node ../scripts/verify_cloudflare_dashboard.mjs

@@ -98,19 +98,19 @@ def test_resources_skip_broken_duplicates_and_search_alternatives():
     search = Mock()
     search.search.side_effect = [
         [
-            {"title": "Broken", "url": "https://learn.example.com/broken"},
-            {"title": "Official docs", "url": "https://docs.example.com/start"},
-            {"title": "Duplicate docs", "url": "https://docs.example.com/start"},
+            {"title": "Docker broken tutorial", "url": "https://learn.example.com/broken"},
+            {"title": "Docker Official docs", "url": "https://docs.example.com/start"},
+            {"title": "Docker Duplicate docs", "url": "https://docs.example.com/start"},
         ],
         [
-            {"title": "Guide", "url": "https://learn.example.com/guide"},
-            {"title": "Video", "url": "https://video.example.com/tutorial"},
+            {"title": "Docker Guide", "url": "https://learn.example.com/guide"},
+            {"title": "Docker Video tutorial", "url": "https://video.example.com/tutorial"},
         ],
     ]
     search.accessible.side_effect = lambda url: not url.endswith("broken")
     agent = PrepGuideAgent(search_client=search)
     result = agent.find_resources(["Docker", "Docker"])
-    assert [r["title"] for r in result["Docker"]] == ["Official docs", "Guide", "Video"]
+    assert [r["title"] for r in result["Docker"]] == ["Docker Official docs", "Docker Guide", "Docker Video tutorial"]
     assert len({r["url"] for r in result["Docker"]}) == 3
     assert search.search.call_count == 2
     assert all("Docker" in call.args[0] for call in search.search.call_args_list)
@@ -124,7 +124,7 @@ def test_resources_missing_search_credentials_return_explicit_warning():
     )
     agent = PrepGuideAgent(search_client=search)
     assert agent.find_resources(["TypeScript"]) == {"TypeScript": []}
-    assert any("API_KEY" in warning for warning in agent.warnings)
+    assert any("search provider" in warning for warning in agent.warnings)
     assert any("Fewer than two" in warning for warning in agent.warnings)
 
 
@@ -256,7 +256,8 @@ def test_questions_are_jd_specific_and_cover_all_categories():
         "internship",
     )
     assert {q["category"] for q in questions} == {"technical", "behavioral", "design"}
-    assert all("AIBridge" in q["question"] for q in questions)
+    assert all(q["evidence"]["quote"] for q in questions)
+    assert any("AIBridge" in q["question"] for q in questions)
     technical = " ".join(
         q["question"] for q in questions if q["category"] == "technical"
     )
@@ -269,7 +270,7 @@ def test_questions_are_jd_specific_and_cover_all_categories():
 
 def test_questions_internship_is_lighter_than_same_job_stack():
     agent = PrepGuideAgent(search_client=Mock())
-    jd = "Python LangChain RAG Docker"
+    jd = "Python LangChain RAG Docker to retrieve internal training notes and answer student questions."
     internship = agent.generate_questions(jd, "AIBridge", "internship")
     job = agent.generate_questions(jd, "AIBridge", "job")
     assert any("small prototype" in q["question"] for q in internship)
@@ -281,23 +282,16 @@ def test_questions_internship_is_lighter_than_same_job_stack():
 def test_questions_llm_receives_jd_company_and_level():
     llm = Mock()
     llm.extract.return_value = [
-        {
-            "category": "technical",
-            "question": "How does LangChain compose a RAG pipeline?",
-        },
-        {
-            "category": "behavioral",
-            "question": "Describe feedback on your Python project.",
-        },
-        {
-            "category": "design",
-            "question": "Sketch a small LangChain prototype for AIBridge.",
-        },
+        {"category": "technical", "question": "How would Python retrieve library documents and validate an empty result?"},
+        {"category": "technical", "question": "How would LangChain ground student questions in retrieved library documents?"},
+        {"category": "behavioral", "question": "How would you clarify feedback that library documents do not answer student questions?"},
+        {"category": "behavioral", "question": "What learning experiment would test how well student questions retrieve library documents?"},
+        {"category": "design", "question": "Sketch a small RAG prototype that retrieves library documents for student questions."},
     ]
     agent = PrepGuideAgent(llm_client=llm, search_client=Mock())
-    jd = "Intern building Python LangChain RAG"
+    jd = "Intern building Python LangChain RAG to retrieve library documents and answer student questions"
     assert (
-        agent.generate_questions(jd, "AIBridge", "internship")
+        [{"category": q["category"], "question": q["question"]} for q in agent.generate_questions(jd, "AIBridge", "internship")]
         == llm.extract.return_value
     )
     prompt = llm.extract.call_args.args[0]

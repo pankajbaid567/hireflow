@@ -1,3 +1,4 @@
+import {startPrepRefresh,prepRefreshStatus} from './prep_refresh';
 import { ApiError, type Env, type Row, type Task, json, parsed } from './types';
 import { all, first, run, userById, applicationQuery, historicalListing } from './storage';
 import { checkAccessCode, logout, requireUser, sessionUser, startSession } from './auth';
@@ -5,9 +6,14 @@ import { readJson, saveProfile } from './profile';
 import { addJobs, confirmPlan, getPlan, swapPlan, refreshMatches } from './plans';
 import { scoreMatch } from './intelligence';
 import { emailReport, generateReport, latestReport } from './reports';
+import {emailReadiness,emailDeliveryStatus} from './email_delivery';
 import { processTask } from './tasks';
+import {workspaceBackupRoutes} from './workspace_backup';
+import {schedulerRoutes} from './weekly_scheduler';
 import { discoveryStatus, startDiscovery } from './discovery_tasks';
+import {startDiscoveryCycle,discoveryCycleStatus,changeDiscoveryCycle} from './discovery_cycles';
 import { files } from './files';
+import {startPrepExport,getPrepExports,prepExportStatus,downloadPrepExport} from './prep_exports';
 import { createTransfer, consumeTransfer } from './session_transfer';
 import { accountSecurity } from './account_security';
 import { cancelQueuedApplication, createSubmissionReview, editResume, regenerateResume, rejectResume, resumeDraft, reviewQuestions } from './reviews';
@@ -37,6 +43,9 @@ async function route(request: Request, env: Env): Promise<Response> {
   }
   if (method==='GET' && path==='/docs') return json({title:'HireFlow Cloudflare API',authentication:'Create a profile through the dashboard. Private requests require its HttpOnly session cookie. Administrative recovery uses a separate operator credential.',
     endpoints:['POST /profile','GET/PATCH /profile/{id}','POST /session/login','POST /session/logout','GET /session','POST /jobs/{id}','POST /jobs/{id}/discover','GET /weekly-plan/{id}','POST /weekly-plan/{id}/swap','POST /weekly-plan/{id}/confirm','GET /applications/{id}','GET /applications/{application_id}/prep-guide','GET /resumes/{id}','GET /resumes/{id}/{application_id}/download','POST /report/{id}/generate','GET /report/{id}/latest','GET /report/{id}/latest/html','POST /report/{id}/latest/email','POST /hiring/shortlist']});
+  const lifecycle=await workspaceBackupRoutes(request,env,async task=>{await env.APPLICATION_QUEUE.send(task);});
+  if(lifecycle)return lifecycle;
+  const schedule=await schedulerRoutes(request,env);if(schedule)return schedule;
   const accountResponse=await accountSecurity(request,env);
   if(accountResponse)return accountResponse;
   if((match=path.match(/^\/operations\/(\d+)(\/diagnostics)?$/))) {
@@ -65,6 +74,12 @@ async function route(request: Request, env: Env): Promise<Response> {
   if((match=path.match(/^\/jobs\/(\d+)\/discover\/([a-f0-9-]{36})$/)) && method==='GET'){
     const id=number(match[1]);await requireUser(request,env,id);return json(await discoveryStatus(env,id,match[2]));
   }
+  if((match=path.match(/^\/jobs\/(\d+)\/discovery-cycles(?:\/([a-f0-9-]{36})(?:\/(cancel|resume))?)?$/))){
+    const id=number(match[1]);await requireUser(request,env,id);
+    if(method==='POST'&&!match[2]){const input=await readJson(request);return json(await startDiscoveryCycle(env,id,{target:input.target,max_search_calls:input.max_search_calls,max_detail_checks:input.max_detail_checks}),202);}
+    if(method==='GET')return json(await discoveryCycleStatus(env,id,match[2]));
+    if(method==='POST'&&match[2]&&match[3])return json(await changeDiscoveryCycle(env,id,match[2],match[3] as 'cancel'|'resume'));
+  }
   if ((match=path.match(/^\/jobs\/(\d+)(\/discover)?$/)) && method==='POST') {
     const id=number(match[1]); await requireUser(request,env,id);
     if(match[2]) return json(await startDiscovery(env,id),202);
@@ -90,13 +105,23 @@ async function route(request: Request, env: Env): Promise<Response> {
     if(method==='POST'&&action==='review')return json(await createSubmissionReview(env,owner,id,await readJson(request)),201);
     if(method==='POST'&&action==='cancel')return json(await cancelQueuedApplication(env,owner,id));
   }
+  if((match=path.match(/^\/applications\/(\d+)\/prep-guide\/refresh$/))&&method==='POST'){
+    const owner=await requireUser(request,env);return json(await startPrepRefresh(env,owner,number(match[1])),202);
+  }
+  if((match=path.match(/^\/applications\/(\d+)\/prep-guide\/exports(?:\/([a-f0-9-]{36})(?:\/(html|pdf))?)?$/))){
+    const owner=await requireUser(request,env),appId=number(match[1]);
+    if(method==='POST'&&!match[2]){const data=await readJson(request),result=await startPrepExport(env,owner,appId,data);return json(result,result.state==='ready'?200:202);}
+    if(method==='GET'&&!match[2])return json(await getPrepExports(env,owner,appId));
+    if(method==='GET'&&match[2]&&match[3])return downloadPrepExport(env,owner,appId,match[2],match[3] as 'html'|'pdf');
+    if(method==='GET'&&match[2])return json(await prepExportStatus(env,owner,appId,match[2]));
+  }
   if((match=path.match(/^\/applications\/(\d+)\/prep-guide$/)) && method==='GET') {
     const id=number(match[1]); const app=await first(env,`${applicationQuery} WHERE a.id=?`,id);
     if(!app) { await requireUser(request,env); throw new ApiError(404,'Application not found'); }
     await requireUser(request,env,app.user_id);
-    const guide=await first(env,'SELECT * FROM prep_guides WHERE application_id=?',id);
+    const guide=await first(env,'SELECT g.*,(SELECT profile_version FROM users WHERE id=?) AS current_profile_version FROM prep_guides g WHERE application_id=?',app.user_id,id);
     if(!guide) throw new ApiError(404,'Prep guide is not ready yet. Refresh shortly.');
-    return json({...parsed(guide.structured_data,{}),company:historicalListing(app).company,role:historicalListing(app).title,company_intel:parsed(guide.company_intel,{})});
+    return json({...parsed(guide.structured_data,{}),guide_revision:guide.revision,guide_source_profile_version:guide.source_profile_version,guide_source_job_version:guide.source_job_version,guide_stale:guide.source_profile_version!==guide.current_profile_version||guide.source_job_version!==historicalListing(app).facts_version,refresh:await prepRefreshStatus(env,id),company:historicalListing(app).company,role:historicalListing(app).title,company_intel:parsed(guide.company_intel,{})});
   }
   if((match=path.match(/^\/applications\/(\d+)$/)) && method==='GET') {
     const id=number(match[1]); await requireUser(request,env,id);
@@ -129,10 +154,16 @@ async function route(request: Request, env: Env): Promise<Response> {
     if(!resume) throw new ApiError(404,'Resume not found');
     return privateFile(env,resume.object_key,'application/pdf',`${app.job_id}_resume_v${version}.pdf`);
   }
+  if((match=path.match(/^\/report\/(\d+)\/(email-readiness|email-deliveries)(?:\/([a-f0-9-]{36}))?$/))&&method==='GET'){
+    const id=number(match[1]);await requireUser(request,env,id);
+    if(match[2]==='email-readiness'&&!match[3])return json(emailReadiness(env));
+    if(match[2]==='email-deliveries'&&match[3])return json(await emailDeliveryStatus(env,id,match[3]));
+    throw new ApiError(404,'Not found');
+  }
   if((match=path.match(/^\/report\/(\d+)\/(generate|latest)(?:\/(html|email))?$/))) {
     const id=number(match[1]); await requireUser(request,env,id);
     if(method==='POST' && match[2]==='generate'&&!match[3]) return json(await generateReport(env,id));
-    if(method==='POST' && match[2]==='latest'&&match[3]==='email') return json(await emailReport(env,id));
+    if(method==='POST' && match[2]==='latest'&&match[3]==='email') {const delivery=await emailReport(env,id);return json(delivery,['accepted','delivered'].includes(delivery.state)?200:202);}
     if(method==='GET' && match[2]==='latest') {
       const report=await latestReport(env,id);
       return match[3]==='html'?privateFile(env,report.html_path,'text/html; charset=utf-8'):!match[3]?json(report):json({detail:'Not found'},404);

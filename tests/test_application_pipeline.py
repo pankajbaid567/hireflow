@@ -49,9 +49,9 @@ def pipeline_boundaries(monkeypatch):
     mocks = {}
     for name in (
         "WebSearch",
-        "ResumeService",
+        "build_resume_service",
         "CompanyIntelAgent",
-        "PrepGuideAgent",
+        "build_prep_guide_agent",
         "ApplicationAgent",
         "ReportGenerator",
     ):
@@ -83,7 +83,7 @@ def test_changed_actual_target_requires_action_before_resume_or_browser(
     assert application.status_history[-1].status == "needs_action"
     assert application.status_history[-1].reason == application.failure_reason
     assert application.job_snapshot["target_url"] == approved_url
-    for name in ("ResumeService", "CompanyIntelAgent", "PrepGuideAgent", "ApplicationAgent"):
+    for name in ("build_resume_service", "CompanyIntelAgent", "build_prep_guide_agent", "ApplicationAgent"):
         pipeline_boundaries[name].assert_not_called()
     pipeline_boundaries["WebSearch"].return_value.search.assert_not_called()
     pipeline_boundaries["WebSearch"].return_value.close.assert_called_once_with()
@@ -105,9 +105,9 @@ def test_unchanged_approved_target_reaches_submission_pipeline(
         [application_id], sessionmaker(bind=db_session.get_bind())
     )
 
-    pipeline_boundaries["ResumeService"].return_value.prepare.assert_called_once()
+    pipeline_boundaries["build_resume_service"].return_value.prepare.assert_called_once()
     pipeline_boundaries["CompanyIntelAgent"].return_value.research.assert_called_once()
-    pipeline_boundaries["PrepGuideAgent"].return_value.generate.assert_called_once()
+    pipeline_boundaries["build_prep_guide_agent"].return_value.generate.assert_called_once()
     browser_apply.assert_called_once()
     assert browser_apply.call_args.args[0] == approved_url
     assert browser_apply.call_args.kwargs["application_id"] == application_id

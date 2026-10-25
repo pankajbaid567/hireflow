@@ -1,7 +1,7 @@
 {
   "dataset_version": "hireflow-synthetic-v1",
   "corpus_sha256": "c5a169eedc5b8bfe25fdbfb557ac4d87e4ac0b54a04d5ae01ccf2b6bfd484cc3",
-  "created_at": "2026-10-25T10:33:01.645Z",
+  "created_at": "2026-10-25T12:49:08.113Z",
   "case_count": 120,
   "counts": {
     "ranking": 48,
@@ -2209,15 +2209,15 @@
   "preparation": {
     "cases": 16,
     "question_skill_coverage": 1,
-    "jd_requirement_context_coverage": 1,
+    "jd_requirement_context_coverage": 0,
     "behavioral_requirement_context_coverage": 0,
-    "cross_case_question_duplicate_rate": 0.21875,
-    "behavioral_question_duplicate_rate": 0.875,
+    "cross_case_question_duplicate_rate": 0,
+    "behavioral_question_duplicate_rate": 0,
     "controlled_source_support": {
       "fixture_version": "controlled-sources-v1",
       "fixture_sha256": "9250e471cea04dcc8e7b97180c1d478e35b44636caedfd02c9202b04d2580c1a",
       "scenarios": 16,
-      "controlled_fetches": 206,
+      "controlled_fetches": 182,
       "emitted_company_claims": 66,
       "supported_company_claims": 66,
       "claim_support_precision": 1,
@@ -2234,24 +2234,28 @@
         "id": "prep-00",
         "split": "dev",
         "question_skill_coverage": 1,
-        "jd_requirement_context_coverage": 1,
+        "jd_requirement_context_coverage": 0,
         "behavioral_requirement_context_coverage": 0,
         "question_texts": [
           {
             "category": "technical",
-            "text": "for synthetic employer's requirement \"python and sql required to index library collections and help students discover relevant books. interview process: two rounds, technical and hr.\", show a small python example and one test."
+            "text": "for synthetic employer's task to index library collections and help students discover relevant books, show a small python example. explain the main input/output contract and test a query whose useful result is missing."
           },
           {
             "category": "technical",
-            "text": "for synthetic employer's requirement \"python and sql required to index library collections and help students discover relevant books. interview process: two rounds, technical and hr.\", show a small sql example and one test."
+            "text": "for synthetic employer's task to index library collections and help students discover relevant books, show a small sql example. explain the data model and a query; include missing and repeated records."
           },
           {
             "category": "behavioral",
-            "text": "describe a course or personal project related to python, sql. how did feedback change your approach, and how does this prepare you for synthetic employer?"
+            "text": "the jd asks you to index library collections and help students discover relevant books. using your project \"university library catalogs and book circulation tool\", explain how to handle feedback that a result is irrelevant. what evidence would you show a mentor, and what would make you revise your decision?"
+          },
+          {
+            "category": "behavioral",
+            "text": "while learning to index library collections and help students discover relevant books, suppose feedback points out irrelevant or missing results. what small experiment would you run, what help would you ask for, and how would you explain the result?"
           },
           {
             "category": "design",
-            "text": "sketch a small prototype and its data flow using python, sql for synthetic employer's requirement \"python and sql required to index library collections and help students discover relevant books. interview process: two rounds, technical and hr.\"."
+            "text": "sketch a small prototype and its data flow using python, sql to index library collections and help students discover relevant books. show where you would detect irrelevant or missing results, and one test before expanding it."
           }
         ],
         "category_coverage": 1,
@@ -2262,7 +2266,8 @@
         "source_state": "abstained_without_search_provider",
         "controlled_sources": {
           "source": "controlled search/source responses; no network",
-          "controlled_fetches": 11,
+          "response_adapter": "company_identity_html_body_v2",
+          "controlled_fetches": 10,
           "emitted_company_claims": 0,
           "supported_company_claims": 0,
           "unsupported_company_claims": 0,
@@ -2283,24 +2288,28 @@
         "id": "prep-01",
         "split": "dev",
         "question_skill_coverage": 1,
-        "jd_requirement_context_coverage": 1,
+        "jd_requirement_context_coverage": 0,
         "behavioral_requirement_context_coverage": 0,
         "question_texts": [
           {
             "category": "technical",
-            "text": "how would you apply python to synthetic employer's requirement \"python and sql required to track warehouse stock levels and reconcile purchase orders. interview process: two rounds, technical and hr.\" in production and investigate reliability or performance failures?"
+            "text": "for synthetic employer's task to track warehouse stock levels and reconcile purchase orders, describe a production python implementation. explain the main input/output contract and test a repeated or out-of-order stock update. what would you measure before changing it?"
           },
           {
             "category": "technical",
-            "text": "how would you apply sql to synthetic employer's requirement \"python and sql required to track warehouse stock levels and reconcile purchase orders. interview process: two rounds, technical and hr.\" in production and investigate reliability or performance failures?"
+            "text": "for synthetic employer's task to track warehouse stock levels and reconcile purchase orders, describe a production sql implementation. explain the data model and a query; include missing and repeated records. what would you measure before changing it?"
           },
           {
             "category": "behavioral",
-            "text": "describe a production project related to python, sql. how did feedback change your approach, and how does this prepare you for synthetic employer?"
+            "text": "the jd asks you to track warehouse stock levels and reconcile purchase orders. using your project \"retail inventory and warehouse stock tool\", explain which source of a conflicting count to trust. what evidence would you show a stakeholder, and what would make you revise your decision?"
+          },
+          {
+            "category": "behavioral",
+            "text": "for work to track warehouse stock levels and reconcile purchase orders, describe how you would handle a disagreement about disagreeing counts or repeated updates. which observable result would settle the tradeoff, and how would you communicate an unresolved risk?"
           },
           {
             "category": "design",
-            "text": "design a scalable service and discuss monitoring, failure recovery, cost and security using python, sql for synthetic employer's requirement \"python and sql required to track warehouse stock levels and reconcile purchase orders. interview process: two rounds, technical and hr.\"."
+            "text": "design a scalable service and discuss production boundaries using python, sql to track warehouse stock levels and reconcile purchase orders. show where you would detect disagreeing counts or repeated updates, and how recovery, monitoring and access controls affect your design."
           }
         ],
         "category_coverage": 1,
@@ -2311,7 +2320,8 @@
         "source_state": "abstained_without_search_provider",
         "controlled_sources": {
           "source": "controlled search/source responses; no network",
-          "controlled_fetches": 13,
+          "response_adapter": "company_identity_html_body_v2",
+          "controlled_fetches": 12,
           "emitted_company_claims": 5,
           "supported_company_claims": 5,
           "unsupported_company_claims": 0,
@@ -2332,24 +2342,28 @@
         "id": "prep-02",
         "split": "dev",
         "question_skill_coverage": 1,
-        "jd_requirement_context_coverage": 1,
+        "jd_requirement_context_coverage": 0,
         "behavioral_requirement_context_coverage": 0,
         "question_texts": [
           {
             "category": "technical",
-            "text": "for synthetic employer's requirement \"python and sql required to coordinate clinic appointments and patient booking slots. interview process: two rounds, technical and hr.\", show a small python example and one test."
+            "text": "for synthetic employer's task to coordinate clinic appointments and patient booking slots, show a small python example. explain the main input/output contract and test two requests competing for the same slot."
           },
           {
             "category": "technical",
-            "text": "for synthetic employer's requirement \"python and sql required to coordinate clinic appointments and patient booking slots. interview process: two rounds, technical and hr.\", show a small sql example and one test."
+            "text": "for synthetic employer's task to coordinate clinic appointments and patient booking slots, show a small sql example. explain the data model and a query; include missing and repeated records."
           },
           {
             "category": "behavioral",
-            "text": "describe a course or personal project related to python, sql. how did feedback change your approach, and how does this prepare you for synthetic employer?"
+            "text": "the jd asks you to coordinate clinic appointments and patient booking slots. using your project \"clinic appointment scheduling tool\", explain how to resolve a conflict between two requests. what evidence would you show a mentor, and what would make you revise your decision?"
+          },
+          {
+            "category": "behavioral",
+            "text": "while learning to coordinate clinic appointments and patient booking slots, suppose feedback points out conflicting or duplicate reservations. what small experiment would you run, what help would you ask for, and how would you explain the result?"
           },
           {
             "category": "design",
-            "text": "sketch a small prototype and its data flow using python, sql for synthetic employer's requirement \"python and sql required to coordinate clinic appointments and patient booking slots. interview process: two rounds, technical and hr.\"."
+            "text": "sketch a small prototype and its data flow using python, sql to coordinate clinic appointments and patient booking slots. show where you would detect conflicting or duplicate reservations, and one test before expanding it."
           }
         ],
         "category_coverage": 1,
@@ -2360,7 +2374,8 @@
         "source_state": "abstained_without_search_provider",
         "controlled_sources": {
           "source": "controlled search/source responses; no network",
-          "controlled_fetches": 14,
+          "response_adapter": "company_identity_html_body_v2",
+          "controlled_fetches": 12,
           "emitted_company_claims": 6,
           "supported_company_claims": 6,
           "unsupported_company_claims": 0,
@@ -2381,24 +2396,28 @@
         "id": "prep-03",
         "split": "dev",
         "question_skill_coverage": 1,
-        "jd_requirement_context_coverage": 1,
+        "jd_requirement_context_coverage": 0,
         "behavioral_requirement_context_coverage": 0,
         "question_texts": [
           {
             "category": "technical",
-            "text": "how would you apply python to synthetic employer's requirement \"python and sql required to analyze cricket scorecards and match performance statistics. interview process: two rounds, technical and hr.\" in production and investigate reliability or performance failures?"
+            "text": "for synthetic employer's task to analyze cricket scorecards and match performance statistics, describe a production python implementation. explain the main input/output contract and test an invalid or incomplete input. what would you measure before changing it?"
           },
           {
             "category": "technical",
-            "text": "how would you apply sql to synthetic employer's requirement \"python and sql required to analyze cricket scorecards and match performance statistics. interview process: two rounds, technical and hr.\" in production and investigate reliability or performance failures?"
+            "text": "for synthetic employer's task to analyze cricket scorecards and match performance statistics, describe a production sql implementation. explain the data model and a query; include missing and repeated records. what would you measure before changing it?"
           },
           {
             "category": "behavioral",
-            "text": "describe a production project related to python, sql. how did feedback change your approach, and how does this prepare you for synthetic employer?"
+            "text": "the jd asks you to analyze cricket scorecards and match performance statistics. using your project \"cricket score statistics tool\", explain which missing requirement to clarify before implementing. what evidence would you show a stakeholder, and what would make you revise your decision?"
+          },
+          {
+            "category": "behavioral",
+            "text": "for work to analyze cricket scorecards and match performance statistics, describe how you would handle a disagreement about an invalid input or an unclear requirement. which observable result would settle the tradeoff, and how would you communicate an unresolved risk?"
           },
           {
             "category": "design",
-            "text": "design a scalable service and discuss monitoring, failure recovery, cost and security using python, sql for synthetic employer's requirement \"python and sql required to analyze cricket scorecards and match performance statistics. interview process: two rounds, technical and hr.\"."
+            "text": "design a scalable service and discuss production boundaries using python, sql to analyze cricket scorecards and match performance statistics. show where you would detect an invalid input or an unclear requirement, and how recovery, monitoring and access controls affect your design."
           }
         ],
         "category_coverage": 1,
@@ -2409,7 +2428,8 @@
         "source_state": "abstained_without_search_provider",
         "controlled_sources": {
           "source": "controlled search/source responses; no network",
-          "controlled_fetches": 13,
+          "response_adapter": "company_identity_html_body_v2",
+          "controlled_fetches": 11,
           "emitted_company_claims": 5,
           "supported_company_claims": 5,
           "unsupported_company_claims": 0,
@@ -2430,24 +2450,28 @@
         "id": "prep-04",
         "split": "dev",
         "question_skill_coverage": 1,
-        "jd_requirement_context_coverage": 1,
+        "jd_requirement_context_coverage": 0,
         "behavioral_requirement_context_coverage": 0,
         "question_texts": [
           {
             "category": "technical",
-            "text": "for synthetic employer's requirement \"python and sql required to schedule irrigation from soil moisture readings for farms. interview process: two rounds, technical and hr.\", show a small python example and one test."
+            "text": "for synthetic employer's task to schedule irrigation from soil moisture readings for farms, show a small python example. explain the main input/output contract and test a missing or implausible observation."
           },
           {
             "category": "technical",
-            "text": "for synthetic employer's requirement \"python and sql required to schedule irrigation from soil moisture readings for farms. interview process: two rounds, technical and hr.\", show a small sql example and one test."
+            "text": "for synthetic employer's task to schedule irrigation from soil moisture readings for farms, show a small sql example. explain the data model and a query; include missing and repeated records."
           },
           {
             "category": "behavioral",
-            "text": "describe a course or personal project related to python, sql. how did feedback change your approach, and how does this prepare you for synthetic employer?"
+            "text": "the jd asks you to schedule irrigation from soil moisture readings for farms. using your project \"farm irrigation and soil moisture tool\", explain how to communicate uncertainty before choosing a threshold. what evidence would you show a mentor, and what would make you revise your decision?"
+          },
+          {
+            "category": "behavioral",
+            "text": "while learning to schedule irrigation from soil moisture readings for farms, suppose feedback points out missing or uncertain observations. what small experiment would you run, what help would you ask for, and how would you explain the result?"
           },
           {
             "category": "design",
-            "text": "sketch a small prototype and its data flow using python, sql for synthetic employer's requirement \"python and sql required to schedule irrigation from soil moisture readings for farms. interview process: two rounds, technical and hr.\"."
+            "text": "sketch a small prototype and its data flow using python, sql to schedule irrigation from soil moisture readings for farms. show where you would detect missing or uncertain observations, and one test before expanding it."
           }
         ],
         "category_coverage": 1,
@@ -2458,7 +2482,8 @@
         "source_state": "abstained_without_search_provider",
         "controlled_sources": {
           "source": "controlled search/source responses; no network",
-          "controlled_fetches": 12,
+          "response_adapter": "company_identity_html_body_v2",
+          "controlled_fetches": 11,
           "emitted_company_claims": 1,
           "supported_company_claims": 1,
           "unsupported_company_claims": 0,
@@ -2479,24 +2504,28 @@
         "id": "prep-05",
         "split": "dev",
         "question_skill_coverage": 1,
-        "jd_requirement_context_coverage": 1,
+        "jd_requirement_context_coverage": 0,
         "behavioral_requirement_context_coverage": 0,
         "question_texts": [
           {
             "category": "technical",
-            "text": "how would you apply python to synthetic employer's requirement \"python and sql required to manage train seat reservations and passenger itineraries. interview process: two rounds, technical and hr.\" in production and investigate reliability or performance failures?"
+            "text": "for synthetic employer's task to manage train seat reservations and passenger itineraries, describe a production python implementation. explain the main input/output contract and test two requests competing for the same slot. what would you measure before changing it?"
           },
           {
             "category": "technical",
-            "text": "how would you apply sql to synthetic employer's requirement \"python and sql required to manage train seat reservations and passenger itineraries. interview process: two rounds, technical and hr.\" in production and investigate reliability or performance failures?"
+            "text": "for synthetic employer's task to manage train seat reservations and passenger itineraries, describe a production sql implementation. explain the data model and a query; include missing and repeated records. what would you measure before changing it?"
           },
           {
             "category": "behavioral",
-            "text": "describe a production project related to python, sql. how did feedback change your approach, and how does this prepare you for synthetic employer?"
+            "text": "the jd asks you to manage train seat reservations and passenger itineraries. using your project \"railway travel reservations tool\", explain how to resolve a conflict between two requests. what evidence would you show a stakeholder, and what would make you revise your decision?"
+          },
+          {
+            "category": "behavioral",
+            "text": "for work to manage train seat reservations and passenger itineraries, describe how you would handle a disagreement about conflicting or duplicate reservations. which observable result would settle the tradeoff, and how would you communicate an unresolved risk?"
           },
           {
             "category": "design",
-            "text": "design a scalable service and discuss monitoring, failure recovery, cost and security using python, sql for synthetic employer's requirement \"python and sql required to manage train seat reservations and passenger itineraries. interview process: two rounds, technical and hr.\"."
+            "text": "design a scalable service and discuss production boundaries using python, sql to manage train seat reservations and passenger itineraries. show where you would detect conflicting or duplicate reservations, and how recovery, monitoring and access controls affect your design."
           }
         ],
         "category_coverage": 1,
@@ -2507,7 +2536,8 @@
         "source_state": "abstained_without_search_provider",
         "controlled_sources": {
           "source": "controlled search/source responses; no network",
-          "controlled_fetches": 13,
+          "response_adapter": "company_identity_html_body_v2",
+          "controlled_fetches": 12,
           "emitted_company_claims": 5,
           "supported_company_claims": 5,
           "unsupported_company_claims": 0,
@@ -2528,24 +2558,28 @@
         "id": "prep-06",
         "split": "dev",
         "question_skill_coverage": 1,
-        "jd_requirement_context_coverage": 1,
+        "jd_requirement_context_coverage": 0,
         "behavioral_requirement_context_coverage": 0,
         "question_texts": [
           {
             "category": "technical",
-            "text": "for synthetic employer's requirement \"python and sql required to recommend songs and organize listening playlists. interview process: two rounds, technical and hr.\", show a small python example and one test."
+            "text": "for synthetic employer's task to recommend songs and organize listening playlists, show a small python example. explain the main input/output contract and test a query whose useful result is missing."
           },
           {
             "category": "technical",
-            "text": "for synthetic employer's requirement \"python and sql required to recommend songs and organize listening playlists. interview process: two rounds, technical and hr.\", show a small sql example and one test."
+            "text": "for synthetic employer's task to recommend songs and organize listening playlists, show a small sql example. explain the data model and a query; include missing and repeated records."
           },
           {
             "category": "behavioral",
-            "text": "describe a course or personal project related to python, sql. how did feedback change your approach, and how does this prepare you for synthetic employer?"
+            "text": "the jd asks you to recommend songs and organize listening playlists. using your project \"music recommendation playlists tool\", explain how to handle feedback that a result is irrelevant. what evidence would you show a mentor, and what would make you revise your decision?"
+          },
+          {
+            "category": "behavioral",
+            "text": "while learning to recommend songs and organize listening playlists, suppose feedback points out irrelevant or missing results. what small experiment would you run, what help would you ask for, and how would you explain the result?"
           },
           {
             "category": "design",
-            "text": "sketch a small prototype and its data flow using python, sql for synthetic employer's requirement \"python and sql required to recommend songs and organize listening playlists. interview process: two rounds, technical and hr.\"."
+            "text": "sketch a small prototype and its data flow using python, sql to recommend songs and organize listening playlists. show where you would detect irrelevant or missing results, and one test before expanding it."
           }
         ],
         "category_coverage": 1,
@@ -2556,7 +2590,8 @@
         "source_state": "abstained_without_search_provider",
         "controlled_sources": {
           "source": "controlled search/source responses; no network",
-          "controlled_fetches": 13,
+          "response_adapter": "company_identity_html_body_v2",
+          "controlled_fetches": 11,
           "emitted_company_claims": 5,
           "supported_company_claims": 5,
           "unsupported_company_claims": 0,
@@ -2577,24 +2612,28 @@
         "id": "prep-07",
         "split": "dev",
         "question_skill_coverage": 1,
-        "jd_requirement_context_coverage": 1,
+        "jd_requirement_context_coverage": 0,
         "behavioral_requirement_context_coverage": 0,
         "question_texts": [
           {
             "category": "technical",
-            "text": "how would you apply python to synthetic employer's requirement \"python and sql required to optimize parcel delivery routes and dispatch schedules. interview process: two rounds, technical and hr.\" in production and investigate reliability or performance failures?"
+            "text": "for synthetic employer's task to optimize parcel delivery routes and dispatch schedules, describe a production python implementation. explain the main input/output contract and test an unavailable stop or delayed update. what would you measure before changing it?"
           },
           {
             "category": "technical",
-            "text": "how would you apply sql to synthetic employer's requirement \"python and sql required to optimize parcel delivery routes and dispatch schedules. interview process: two rounds, technical and hr.\" in production and investigate reliability or performance failures?"
+            "text": "for synthetic employer's task to optimize parcel delivery routes and dispatch schedules, describe a production sql implementation. explain the data model and a query; include missing and repeated records. what would you measure before changing it?"
           },
           {
             "category": "behavioral",
-            "text": "describe a production project related to python, sql. how did feedback change your approach, and how does this prepare you for synthetic employer?"
+            "text": "the jd asks you to optimize parcel delivery routes and dispatch schedules. using your project \"parcel delivery route planning tool\", explain when to communicate a delay rather than silently change a plan. what evidence would you show a stakeholder, and what would make you revise your decision?"
+          },
+          {
+            "category": "behavioral",
+            "text": "for work to optimize parcel delivery routes and dispatch schedules, describe how you would handle a disagreement about a disrupted route or delayed update. which observable result would settle the tradeoff, and how would you communicate an unresolved risk?"
           },
           {
             "category": "design",
-            "text": "design a scalable service and discuss monitoring, failure recovery, cost and security using python, sql for synthetic employer's requirement \"python and sql required to optimize parcel delivery routes and dispatch schedules. interview process: two rounds, technical and hr.\"."
+            "text": "design a scalable service and discuss production boundaries using python, sql to optimize parcel delivery routes and dispatch schedules. show where you would detect a disrupted route or delayed update, and how recovery, monitoring and access controls affect your design."
           }
         ],
         "category_coverage": 1,
@@ -2605,7 +2644,8 @@
         "source_state": "abstained_without_search_provider",
         "controlled_sources": {
           "source": "controlled search/source responses; no network",
-          "controlled_fetches": 14,
+          "response_adapter": "company_identity_html_body_v2",
+          "controlled_fetches": 12,
           "emitted_company_claims": 6,
           "supported_company_claims": 6,
           "unsupported_company_claims": 0,
@@ -2626,24 +2666,28 @@
         "id": "prep-08",
         "split": "dev",
         "question_skill_coverage": 1,
-        "jd_requirement_context_coverage": 1,
+        "jd_requirement_context_coverage": 0,
         "behavioral_requirement_context_coverage": 0,
         "question_texts": [
           {
             "category": "technical",
-            "text": "for synthetic employer's requirement \"python and sql required to detect unusual banking payment patterns and investigate fraud. interview process: two rounds, technical and hr.\", show a small python example and one test."
+            "text": "for synthetic employer's task to detect unusual banking payment patterns and investigate fraud, show a small python example. explain the main input/output contract and test a legitimate transaction that looks unusual."
           },
           {
             "category": "technical",
-            "text": "for synthetic employer's requirement \"python and sql required to detect unusual banking payment patterns and investigate fraud. interview process: two rounds, technical and hr.\", show a small sql example and one test."
+            "text": "for synthetic employer's task to detect unusual banking payment patterns and investigate fraud, show a small sql example. explain the data model and a query; include missing and repeated records."
           },
           {
             "category": "behavioral",
-            "text": "describe a course or personal project related to python, sql. how did feedback change your approach, and how does this prepare you for synthetic employer?"
+            "text": "the jd asks you to detect unusual banking payment patterns and investigate fraud. using your project \"bank payment fraud detection tool\", explain when to escalate a suspicious result instead of acting automatically. what evidence would you show a mentor, and what would make you revise your decision?"
+          },
+          {
+            "category": "behavioral",
+            "text": "while learning to detect unusual banking payment patterns and investigate fraud, suppose feedback points out false positives and sensitive records. what small experiment would you run, what help would you ask for, and how would you explain the result?"
           },
           {
             "category": "design",
-            "text": "sketch a small prototype and its data flow using python, sql for synthetic employer's requirement \"python and sql required to detect unusual banking payment patterns and investigate fraud. interview process: two rounds, technical and hr.\"."
+            "text": "sketch a small prototype and its data flow using python, sql to detect unusual banking payment patterns and investigate fraud. show where you would detect false positives and sensitive records, and one test before expanding it."
           }
         ],
         "category_coverage": 1,
@@ -2654,7 +2698,8 @@
         "source_state": "abstained_without_search_provider",
         "controlled_sources": {
           "source": "controlled search/source responses; no network",
-          "controlled_fetches": 12,
+          "response_adapter": "company_identity_html_body_v2",
+          "controlled_fetches": 11,
           "emitted_company_claims": 1,
           "supported_company_claims": 1,
           "unsupported_company_claims": 0,
@@ -2675,24 +2720,28 @@
         "id": "prep-09",
         "split": "dev",
         "question_skill_coverage": 1,
-        "jd_requirement_context_coverage": 1,
+        "jd_requirement_context_coverage": 0,
         "behavioral_requirement_context_coverage": 0,
         "question_texts": [
           {
             "category": "technical",
-            "text": "how would you apply python to synthetic employer's requirement \"python and sql required to process rainfall forecasts and local weather observations. interview process: two rounds, technical and hr.\" in production and investigate reliability or performance failures?"
+            "text": "for synthetic employer's task to process rainfall forecasts and local weather observations, describe a production python implementation. explain the main input/output contract and test a missing or implausible observation. what would you measure before changing it?"
           },
           {
             "category": "technical",
-            "text": "how would you apply sql to synthetic employer's requirement \"python and sql required to process rainfall forecasts and local weather observations. interview process: two rounds, technical and hr.\" in production and investigate reliability or performance failures?"
+            "text": "for synthetic employer's task to process rainfall forecasts and local weather observations, describe a production sql implementation. explain the data model and a query; include missing and repeated records. what would you measure before changing it?"
           },
           {
             "category": "behavioral",
-            "text": "describe a production project related to python, sql. how did feedback change your approach, and how does this prepare you for synthetic employer?"
+            "text": "the jd asks you to process rainfall forecasts and local weather observations. using your project \"weather forecast data tool\", explain how to communicate uncertainty before choosing a threshold. what evidence would you show a stakeholder, and what would make you revise your decision?"
+          },
+          {
+            "category": "behavioral",
+            "text": "for work to process rainfall forecasts and local weather observations, describe how you would handle a disagreement about missing or uncertain observations. which observable result would settle the tradeoff, and how would you communicate an unresolved risk?"
           },
           {
             "category": "design",
-            "text": "design a scalable service and discuss monitoring, failure recovery, cost and security using python, sql for synthetic employer's requirement \"python and sql required to process rainfall forecasts and local weather observations. interview process: two rounds, technical and hr.\"."
+            "text": "design a scalable service and discuss production boundaries using python, sql to process rainfall forecasts and local weather observations. show where you would detect missing or uncertain observations, and how recovery, monitoring and access controls affect your design."
           }
         ],
         "category_coverage": 1,
@@ -2703,7 +2752,8 @@
         "source_state": "abstained_without_search_provider",
         "controlled_sources": {
           "source": "controlled search/source responses; no network",
-          "controlled_fetches": 12,
+          "response_adapter": "company_identity_html_body_v2",
+          "controlled_fetches": 11,
           "emitted_company_claims": 4,
           "supported_company_claims": 4,
           "unsupported_company_claims": 0,
@@ -2724,24 +2774,28 @@
         "id": "prep-10",
         "split": "heldout",
         "question_skill_coverage": 1,
-        "jd_requirement_context_coverage": 1,
+        "jd_requirement_context_coverage": 0,
         "behavioral_requirement_context_coverage": 0,
         "question_texts": [
           {
             "category": "technical",
-            "text": "for synthetic employer's requirement \"python and sql required to transcribe speech for accessible meeting captions. interview process: two rounds, technical and hr.\", show a small python example and one test."
+            "text": "for synthetic employer's task to transcribe speech for accessible meeting captions, show a small python example. explain the main input/output contract and test an incomplete or incorrectly transcribed input."
           },
           {
             "category": "technical",
-            "text": "for synthetic employer's requirement \"python and sql required to transcribe speech for accessible meeting captions. interview process: two rounds, technical and hr.\", show a small sql example and one test."
+            "text": "for synthetic employer's task to transcribe speech for accessible meeting captions, show a small sql example. explain the data model and a query; include missing and repeated records."
           },
           {
             "category": "behavioral",
-            "text": "describe a course or personal project related to python, sql. how did feedback change your approach, and how does this prepare you for synthetic employer?"
+            "text": "the jd asks you to transcribe speech for accessible meeting captions. using your project \"speech accessibility tools tool\", explain how to respond when a user cannot rely on the output. what evidence would you show a mentor, and what would make you revise your decision?"
+          },
+          {
+            "category": "behavioral",
+            "text": "while learning to transcribe speech for accessible meeting captions, suppose feedback points out incorrect or inaccessible output. what small experiment would you run, what help would you ask for, and how would you explain the result?"
           },
           {
             "category": "design",
-            "text": "sketch a small prototype and its data flow using python, sql for synthetic employer's requirement \"python and sql required to transcribe speech for accessible meeting captions. interview process: two rounds, technical and hr.\"."
+            "text": "sketch a small prototype and its data flow using python, sql to transcribe speech for accessible meeting captions. show where you would detect incorrect or inaccessible output, and one test before expanding it."
           }
         ],
         "category_coverage": 1,
@@ -2752,7 +2806,8 @@
         "source_state": "abstained_without_search_provider",
         "controlled_sources": {
           "source": "controlled search/source responses; no network",
-          "controlled_fetches": 14,
+          "response_adapter": "company_identity_html_body_v2",
+          "controlled_fetches": 12,
           "emitted_company_claims": 6,
           "supported_company_claims": 6,
           "unsupported_company_claims": 0,
@@ -2773,24 +2828,28 @@
         "id": "prep-11",
         "split": "heldout",
         "question_skill_coverage": 1,
-        "jd_requirement_context_coverage": 1,
+        "jd_requirement_context_coverage": 0,
         "behavioral_requirement_context_coverage": 0,
         "question_texts": [
           {
             "category": "technical",
-            "text": "how would you apply python to synthetic employer's requirement \"python and sql required to create adaptive quizzes and track student learning progress. interview process: two rounds, technical and hr.\" in production and investigate reliability or performance failures?"
+            "text": "for synthetic employer's task to create adaptive quizzes and track student learning progress, describe a production python implementation. explain the main input/output contract and test an incomplete or repeated learner response. what would you measure before changing it?"
           },
           {
             "category": "technical",
-            "text": "how would you apply sql to synthetic employer's requirement \"python and sql required to create adaptive quizzes and track student learning progress. interview process: two rounds, technical and hr.\" in production and investigate reliability or performance failures?"
+            "text": "for synthetic employer's task to create adaptive quizzes and track student learning progress, describe a production sql implementation. explain the data model and a query; include missing and repeated records. what would you measure before changing it?"
           },
           {
             "category": "behavioral",
-            "text": "describe a production project related to python, sql. how did feedback change your approach, and how does this prepare you for synthetic employer?"
+            "text": "the jd asks you to create adaptive quizzes and track student learning progress. using your project \"adaptive study quizzes tool\", explain how to interpret feedback when a learner is struggling. what evidence would you show a stakeholder, and what would make you revise your decision?"
+          },
+          {
+            "category": "behavioral",
+            "text": "for work to create adaptive quizzes and track student learning progress, describe how you would handle a disagreement about misleading progress feedback. which observable result would settle the tradeoff, and how would you communicate an unresolved risk?"
           },
           {
             "category": "design",
-            "text": "design a scalable service and discuss monitoring, failure recovery, cost and security using python, sql for synthetic employer's requirement \"python and sql required to create adaptive quizzes and track student learning progress. interview process: two rounds, technical and hr.\"."
+            "text": "design a scalable service and discuss production boundaries using python, sql to create adaptive quizzes and track student learning progress. show where you would detect misleading progress feedback, and how recovery, monitoring and access controls affect your design."
           }
         ],
         "category_coverage": 1,
@@ -2801,7 +2860,8 @@
         "source_state": "abstained_without_search_provider",
         "controlled_sources": {
           "source": "controlled search/source responses; no network",
-          "controlled_fetches": 14,
+          "response_adapter": "company_identity_html_body_v2",
+          "controlled_fetches": 12,
           "emitted_company_claims": 6,
           "supported_company_claims": 6,
           "unsupported_company_claims": 0,
@@ -2822,24 +2882,28 @@
         "id": "prep-12",
         "split": "heldout",
         "question_skill_coverage": 1,
-        "jd_requirement_context_coverage": 1,
+        "jd_requirement_context_coverage": 0,
         "behavioral_requirement_context_coverage": 0,
         "question_texts": [
           {
             "category": "technical",
-            "text": "for synthetic employer's requirement \"python and sql required to investigate network security events and suspicious access logs. interview process: two rounds, technical and hr.\", show a small python example and one test."
+            "text": "for synthetic employer's task to investigate network security events and suspicious access logs, show a small python example. explain the main input/output contract and test an invalid or incomplete input."
           },
           {
             "category": "technical",
-            "text": "for synthetic employer's requirement \"python and sql required to investigate network security events and suspicious access logs. interview process: two rounds, technical and hr.\", show a small sql example and one test."
+            "text": "for synthetic employer's task to investigate network security events and suspicious access logs, show a small sql example. explain the data model and a query; include missing and repeated records."
           },
           {
             "category": "behavioral",
-            "text": "describe a course or personal project related to python, sql. how did feedback change your approach, and how does this prepare you for synthetic employer?"
+            "text": "the jd asks you to investigate network security events and suspicious access logs. using your project \"network security event logs tool\", explain which missing requirement to clarify before implementing. what evidence would you show a mentor, and what would make you revise your decision?"
+          },
+          {
+            "category": "behavioral",
+            "text": "while learning to investigate network security events and suspicious access logs, suppose feedback points out an invalid input or an unclear requirement. what small experiment would you run, what help would you ask for, and how would you explain the result?"
           },
           {
             "category": "design",
-            "text": "sketch a small prototype and its data flow using python, sql for synthetic employer's requirement \"python and sql required to investigate network security events and suspicious access logs. interview process: two rounds, technical and hr.\"."
+            "text": "sketch a small prototype and its data flow using python, sql to investigate network security events and suspicious access logs. show where you would detect an invalid input or an unclear requirement, and one test before expanding it."
           }
         ],
         "category_coverage": 1,
@@ -2850,7 +2914,8 @@
         "source_state": "abstained_without_search_provider",
         "controlled_sources": {
           "source": "controlled search/source responses; no network",
-          "controlled_fetches": 11,
+          "response_adapter": "company_identity_html_body_v2",
+          "controlled_fetches": 10,
           "emitted_company_claims": 0,
           "supported_company_claims": 0,
           "unsupported_company_claims": 0,
@@ -2871,24 +2936,28 @@
         "id": "prep-13",
         "split": "heldout",
         "question_skill_coverage": 1,
-        "jd_requirement_context_coverage": 1,
+        "jd_requirement_context_coverage": 0,
         "behavioral_requirement_context_coverage": 0,
         "question_texts": [
           {
             "category": "technical",
-            "text": "how would you apply python to synthetic employer's requirement \"python and sql required to analyze road traffic images and detect vehicles. interview process: two rounds, technical and hr.\" in production and investigate reliability or performance failures?"
+            "text": "for synthetic employer's task to analyze road traffic images and detect vehicles, describe a production python implementation. explain the main input/output contract and test an invalid or incomplete input. what would you measure before changing it?"
           },
           {
             "category": "technical",
-            "text": "how would you apply sql to synthetic employer's requirement \"python and sql required to analyze road traffic images and detect vehicles. interview process: two rounds, technical and hr.\" in production and investigate reliability or performance failures?"
+            "text": "for synthetic employer's task to analyze road traffic images and detect vehicles, describe a production sql implementation. explain the data model and a query; include missing and repeated records. what would you measure before changing it?"
           },
           {
             "category": "behavioral",
-            "text": "describe a production project related to python, sql. how did feedback change your approach, and how does this prepare you for synthetic employer?"
+            "text": "the jd asks you to analyze road traffic images and detect vehicles. using your project \"traffic image analysis tool\", explain which missing requirement to clarify before implementing. what evidence would you show a stakeholder, and what would make you revise your decision?"
+          },
+          {
+            "category": "behavioral",
+            "text": "for work to analyze road traffic images and detect vehicles, describe how you would handle a disagreement about an invalid input or an unclear requirement. which observable result would settle the tradeoff, and how would you communicate an unresolved risk?"
           },
           {
             "category": "design",
-            "text": "design a scalable service and discuss monitoring, failure recovery, cost and security using python, sql for synthetic employer's requirement \"python and sql required to analyze road traffic images and detect vehicles. interview process: two rounds, technical and hr.\"."
+            "text": "design a scalable service and discuss production boundaries using python, sql to analyze road traffic images and detect vehicles. show where you would detect an invalid input or an unclear requirement, and how recovery, monitoring and access controls affect your design."
           }
         ],
         "category_coverage": 1,
@@ -2899,7 +2968,8 @@
         "source_state": "abstained_without_search_provider",
         "controlled_sources": {
           "source": "controlled search/source responses; no network",
-          "controlled_fetches": 13,
+          "response_adapter": "company_identity_html_body_v2",
+          "controlled_fetches": 12,
           "emitted_company_claims": 5,
           "supported_company_claims": 5,
           "unsupported_company_claims": 0,
@@ -2920,24 +2990,28 @@
         "id": "prep-14",
         "split": "heldout",
         "question_skill_coverage": 1,
-        "jd_requirement_context_coverage": 1,
+        "jd_requirement_context_coverage": 0,
         "behavioral_requirement_context_coverage": 0,
         "question_texts": [
           {
             "category": "technical",
-            "text": "for synthetic employer's requirement \"python and sql required to index telescope observations and classify celestial objects. interview process: two rounds, technical and hr.\", show a small python example and one test."
+            "text": "for synthetic employer's task to index telescope observations and classify celestial objects, show a small python example. explain the main input/output contract and test a query whose useful result is missing."
           },
           {
             "category": "technical",
-            "text": "for synthetic employer's requirement \"python and sql required to index telescope observations and classify celestial objects. interview process: two rounds, technical and hr.\", show a small sql example and one test."
+            "text": "for synthetic employer's task to index telescope observations and classify celestial objects, show a small sql example. explain the data model and a query; include missing and repeated records."
           },
           {
             "category": "behavioral",
-            "text": "describe a course or personal project related to python, sql. how did feedback change your approach, and how does this prepare you for synthetic employer?"
+            "text": "the jd asks you to index telescope observations and classify celestial objects. using your project \"astronomical telescope observations tool\", explain how to handle feedback that a result is irrelevant. what evidence would you show a mentor, and what would make you revise your decision?"
+          },
+          {
+            "category": "behavioral",
+            "text": "while learning to index telescope observations and classify celestial objects, suppose feedback points out irrelevant or missing results. what small experiment would you run, what help would you ask for, and how would you explain the result?"
           },
           {
             "category": "design",
-            "text": "sketch a small prototype and its data flow using python, sql for synthetic employer's requirement \"python and sql required to index telescope observations and classify celestial objects. interview process: two rounds, technical and hr.\"."
+            "text": "sketch a small prototype and its data flow using python, sql to index telescope observations and classify celestial objects. show where you would detect irrelevant or missing results, and one test before expanding it."
           }
         ],
         "category_coverage": 1,
@@ -2948,7 +3022,8 @@
         "source_state": "abstained_without_search_provider",
         "controlled_sources": {
           "source": "controlled search/source responses; no network",
-          "controlled_fetches": 14,
+          "response_adapter": "company_identity_html_body_v2",
+          "controlled_fetches": 12,
           "emitted_company_claims": 6,
           "supported_company_claims": 6,
           "unsupported_company_claims": 0,
@@ -2969,24 +3044,28 @@
         "id": "prep-15",
         "split": "heldout",
         "question_skill_coverage": 1,
-        "jd_requirement_context_coverage": 1,
+        "jd_requirement_context_coverage": 0,
         "behavioral_requirement_context_coverage": 0,
         "question_texts": [
           {
             "category": "technical",
-            "text": "how would you apply python to synthetic employer's requirement \"python and sql required to route municipal service complaints and track civic issue resolution. interview process: two rounds, technical and hr.\" in production and investigate reliability or performance failures?"
+            "text": "for synthetic employer's task to route municipal service complaints and track civic issue resolution, describe a production python implementation. explain the main input/output contract and test an unavailable stop or delayed update. what would you measure before changing it?"
           },
           {
             "category": "technical",
-            "text": "how would you apply sql to synthetic employer's requirement \"python and sql required to route municipal service complaints and track civic issue resolution. interview process: two rounds, technical and hr.\" in production and investigate reliability or performance failures?"
+            "text": "for synthetic employer's task to route municipal service complaints and track civic issue resolution, describe a production sql implementation. explain the data model and a query; include missing and repeated records. what would you measure before changing it?"
           },
           {
             "category": "behavioral",
-            "text": "describe a production project related to python, sql. how did feedback change your approach, and how does this prepare you for synthetic employer?"
+            "text": "the jd asks you to route municipal service complaints and track civic issue resolution. using your project \"municipal complaint tracking tool\", explain when to communicate a delay rather than silently change a plan. what evidence would you show a stakeholder, and what would make you revise your decision?"
+          },
+          {
+            "category": "behavioral",
+            "text": "for work to route municipal service complaints and track civic issue resolution, describe how you would handle a disagreement about a disrupted route or delayed update. which observable result would settle the tradeoff, and how would you communicate an unresolved risk?"
           },
           {
             "category": "design",
-            "text": "design a scalable service and discuss monitoring, failure recovery, cost and security using python, sql for synthetic employer's requirement \"python and sql required to route municipal service complaints and track civic issue resolution. interview process: two rounds, technical and hr.\"."
+            "text": "design a scalable service and discuss production boundaries using python, sql to route municipal service complaints and track civic issue resolution. show where you would detect a disrupted route or delayed update, and how recovery, monitoring and access controls affect your design."
           }
         ],
         "category_coverage": 1,
@@ -2997,7 +3076,8 @@
         "source_state": "abstained_without_search_provider",
         "controlled_sources": {
           "source": "controlled search/source responses; no network",
-          "controlled_fetches": 13,
+          "response_adapter": "company_identity_html_body_v2",
+          "controlled_fetches": 11,
           "emitted_company_claims": 5,
           "supported_company_claims": 5,
           "unsupported_company_claims": 0,
@@ -3118,9 +3198,9 @@
   },
   "latency_ms": {
     "source": "Node wall clock for offline actual Worker functions; excludes precomputed embedding inference",
-    "p50": 0.13058300000000145,
-    "p95": 1.1777500000000032,
-    "p99": 5.358167000000009
+    "p50": 0.14504199999999656,
+    "p95": 1.9089159999999907,
+    "p99": 6.0597080000000005
   },
   "cost": {
     "offline_hosted_inference_requests": 0,

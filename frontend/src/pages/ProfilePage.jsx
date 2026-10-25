@@ -1,3 +1,4 @@
+import WorkspaceSettings from '../components/WorkspaceSettings';
 import { useEffect, useState } from 'react';
 import { ArrowRight, CheckCircle2, FileUp, Save, UserRound } from 'lucide-react';
 import { api, errorMessage, isCloudflare } from '../api/client';
@@ -100,6 +101,7 @@ export default function ProfilePage() {
       <section className="panel small-panel"><h3>Your private workspace</h3><p>Your profile is protected by a private browser session.</p>{profile ? <><p>You are signed in as {profile.email}.</p><button type="button" className="button button-secondary" disabled={busy || loading} onClick={signOut}>Sign out</button><p className="field-help">Save recovery keys in account security before signing out or moving to another device.</p></> : <><p>Upload your resume and save your profile to get started. Recover an existing workspace using a credential you previously saved.</p>{cloud&&previousWorkspace() && <a className="button button-secondary" href={previousWorkspace()}>Continue an existing workspace <ArrowRight size={16} /></a>}</>}</section>
     </aside></div>
     {profile&&typeof api.getAccountSecurity==='function'&&<AccountSecurity api={api} onSignedOut={()=>{clearProfile();setSuccess('Your sessions have been revoked.');}}/>}
+    {cloud&&profile&&typeof api.getSchedule==='function'&&<WorkspaceSettings onDeleted={()=>{clearProfile();setSuccess('Workspace deletion started.');}}/>}
     {cloud&&profile&&<OperationsStatus userId={userId} loadStatus={api.getOperations} runDiagnostics={api.runModelDiagnostics}/>}
   </>;
 }

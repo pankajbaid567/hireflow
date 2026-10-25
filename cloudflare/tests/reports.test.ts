@@ -2,6 +2,7 @@ import { applyTestMigrations } from './migrations';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Miniflare, convertV4MiniflareOptions } from 'miniflare';
 import { emailReport, generateReport, latestReport } from '../src/reports';
+import {processEmailDelivery} from '../src/email_delivery';
 import { type Env, weekStart } from '../src/types';
 
 let mf: Miniflare, env: Env, queries: { sql: string; bindings: unknown[] }[];
@@ -16,13 +17,14 @@ beforeEach(async () => {
     const entry = { sql, bindings: [] as unknown[] }; queries.push(entry);
     const statement = db.prepare(sql);
     return { bind(...values: any[]) { entry.bindings = values; return statement.bind(...values); } };
-  } }, FILES: files, EMAIL_PROVIDER: 'resend', RESEND_API_KEY: 'mock-provider-key', FROM_EMAIL: 'report@example.org', PUBLIC_BASE_URL: 'https://dashboard.example/api' } as unknown as Env;
+  } }, FILES: files, EMAIL_PROVIDER: 'resend', RESEND_API_KEY: 'mock-provider-key', FROM_EMAIL: 'report@hireflow.test', APPLICATION_QUEUE:{send:vi.fn(async()=>{})},PUBLIC_BASE_URL: 'https://dashboard.example/api' } as unknown as Env;
 }, 30000);
 afterEach(async () => { vi.unstubAllGlobals(); vi.restoreAllMocks(); await mf?.dispose(); }, 30000);
 
 async function application(id: number, options: { status?: string; score?: number; matched?: string[]; gaps?: string[]; cycle?: string; size?: number; company?: string } = {}) {
   await db.prepare('INSERT INTO jobs(id,title,company,url,description,listing_type) VALUES(?,?,?,?,?,?)').bind(id, 'Engineer', options.company || 'Example', `https://example.org/jobs/${id}`, 'Rust only. This deliberately differs from the cached skill evidence.', 'job').run();
   await db.prepare('INSERT INTO applications(id,user_id,job_id,status,match_score,matched_skills,skill_gaps,cycle_start,created_at,resume_path,resume_version,failure_reason,manual_action_url) VALUES(?,1,?,?,?,?,?,?,?,?,?,?,?)').bind(id, id, options.status || 'planned', options.score ?? 0.75, JSON.stringify(options.matched || []), JSON.stringify(options.gaps || []), options.cycle || weekStart(), '2000-01-01T00:00:00.000Z', options.size ? `resumes/1/${id}.pdf` : null, 1, options.status === 'needs_action' ? 'CAPTCHA detected' : null, options.status === 'needs_action' ? `https://example.org/jobs/${id}` : null).run();
+  if(options.size)await db.prepare('INSERT INTO resumes(application_id,version,object_key) VALUES(?,1,?)').bind(id,`resumes/1/${id}.pdf`).run();
   if (options.size) { const bytes = new Uint8Array(options.size); bytes.set(new TextEncoder().encode('%PDF-1.4\n')); await files.put(`resumes/1/${id}.pdf`, bytes); }
 }
 
@@ -60,7 +62,7 @@ describe('bounded weekly reports with real isolated D1 and R2', () => {
     await generateReport(env, 1); let sent: any;
     const fetch = vi.fn(async (url: string, init: RequestInit) => { expect(url).toBe('https://api.resend.com/emails'); sent = JSON.parse(String(init.body)); return new Response('{}', { status: 200 }); });
     vi.stubGlobal('fetch', fetch);
-    expect(await emailReport(env, 1)).toEqual({ status: 'sent', attachments: 2, linked_resumes: 1 });
+    const ticket=await emailReport(env,1);expect(fetch).not.toHaveBeenCalled();await processEmailDelivery(env,ticket.id);expect((await db.prepare('SELECT * FROM email_deliveries WHERE id=?').bind(ticket.id).first<any>())).toMatchObject({state:'accepted',attachment_count:2,linked_count:1,delivered_at:null});
     expect(sent.attachments.map((item: any) => item.filename)).toEqual(['1_resume_v1.pdf', '3_resume_v1.pdf']);
     expect(sent.attachments.reduce((total: number, item: any) => total + atob(item.content).length, 0)).toBe(110 * 1024);
     expect(sent.html).toContain('https://dashboard.example/api/resumes/1/2/download'); expect(sent.html).toContain('sign in to download');
@@ -72,7 +74,7 @@ describe('bounded weekly reports with real isolated D1 and R2', () => {
     for (let id = 1; id <= 11; id++) await application(id, { size: 4096 });
     await generateReport(env, 1); env.EMAIL_PROVIDER = 'sendgrid'; env.SENDGRID_API_KEY = 'mock-sendgrid-key'; let payload: any;
     vi.stubGlobal('fetch', vi.fn(async (url: string, init: RequestInit) => { expect(url).toBe('https://api.sendgrid.com/v3/mail/send'); payload = JSON.parse(String(init.body)); return new Response(null, { status: 202 }); }));
-    expect(await emailReport(env, 1)).toEqual({ status: 'sent', attachments: 10, linked_resumes: 0 });
+    const ticket=await emailReport(env,1);await processEmailDelivery(env,ticket.id);expect((await db.prepare('SELECT * FROM email_deliveries WHERE id=?').bind(ticket.id).first<any>())).toMatchObject({state:'accepted',attachment_count:10,linked_count:1});
     expect(payload.personalizations).toEqual([{ to: [{ email: 'owner@example.com' }] }]); expect(payload.content[0].type).toBe('text/html'); expect(payload.attachments).toHaveLength(10);
     expect(payload.attachments.every((item: any) => item.type === 'application/pdf' && item.disposition === 'attachment' && atob(item.content).startsWith('%PDF-'))).toBe(true);
   });
@@ -80,8 +82,8 @@ describe('bounded weekly reports with real isolated D1 and R2', () => {
   it('records a safe failure reason when email delivery is unconfirmed', async () => {
     await generateReport(env, 1);
     vi.stubGlobal('fetch', vi.fn(async () => new Response('mock-provider-key private error body', { status: 503 })));
-    await expect(emailReport(env, 1)).rejects.toThrow('Email provider did not confirm delivery');
-    const row = await db.prepare('SELECT email_sent_at,email_failure_reason FROM weekly_reports').first<any>();
-    expect(row!.email_sent_at).toBeNull(); expect(row!.email_failure_reason).toBe('Email provider did not confirm delivery'); expect(row!.email_failure_reason).not.toContain('mock-provider-key');
+    const ticket=await emailReport(env,1);await processEmailDelivery(env,ticket.id);
+    const row = await db.prepare('SELECT * FROM email_deliveries').first<any>();
+    expect(row!.accepted_at).toBeNull();expect(row!.state).toBe('retry_wait');expect(row!.failure_reason).toContain('temporarily unavailable');expect(row!.failure_reason).not.toMatch(/mock-provider-key|private error body/);
   });
 });

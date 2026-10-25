@@ -78,6 +78,17 @@ def test_company_facts_news_window_and_review_sources():
         ]
 
     search.search.side_effect = results
+    def read_page(url):
+        if "aibridge.example" in url:
+            text = "AIBridge is a Series A company with 120 employees. We build with Python, FastAPI and Docker."
+        elif "/recent" in url:
+            text = "AIBridge announced its fictional launch."
+        elif "/other" in url:
+            text = "OtherCompany had five rounds."
+        else:
+            text = "AIBridge candidates reported a Python coding round."
+        return {"url": url, "text": text, "body": ""}
+    search.read_page.side_effect = read_page
     intel = CompanyIntelAgent(search_client=search).research(
         "AIBridge", "https://aibridge.example"
     )
@@ -92,7 +103,9 @@ def test_company_facts_news_window_and_review_sources():
     }
     assert len(intel["interview_patterns"]) == 2
     assert all("reported" in pattern["note"] for pattern in intel["interview_patterns"])
-    assert len(intel["sources"]) == 1
+    assert any(source["url"] == "https://aibridge.example/about" for source in intel["sources"])
+    assert intel["claim_evidence"]["stage"][0]["kind"] == "public_page"
+    assert all(pattern["date_status"] == "unknown" for pattern in intel["interview_patterns"])
 
 
 def test_company_without_reviews_has_clear_fallback():
@@ -113,7 +126,8 @@ def test_company_search_outage_returns_clean_partial_result():
     assert intel["stage"] == "Unknown"
     assert intel["recent_news"] == []
     assert intel["interview_summary"] == "No interview reviews found"
-    assert intel["warnings"] == ["Search unavailable"]
+    assert "source unavailable" in intel["warnings"][0]
+    assert "Search unavailable" not in str(intel["warnings"])
 
 
 def test_company_intel_saved_in_existing_prep_guide(db_session):

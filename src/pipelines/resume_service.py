@@ -22,9 +22,13 @@ class ResumeService:
     def __init__(self, storage_path=None, llm_client=None):
         self.root = Path(storage_path or get_settings().local_storage_path) / "resumes"
         self.llm_client = llm_client
+        self.configuration_warnings = []
+        self.last_preparation = {"method": "source_fact_ordering", "warnings": []}
 
     def prepare(self, application, db):
+        self.last_preparation = {"method": "source_fact_ordering", "warnings": list(self.configuration_warnings)}
         if application.resume_path and Path(application.resume_path).is_file():
+            self.last_preparation["method"] = "existing_pdf"
             return application.resume_path
         profile = {
             **(application.user.master_profile or {}),
@@ -60,11 +64,16 @@ class ResumeService:
                     sentences = [part for part in re.split(r"(?<=[.!?])\s+|\n", candidate) if part.strip()]
                     if 0 < len(candidate) <= 3000 and sentences and all(normalized(part) in allowed for part in sentences):
                         content["summary"] = candidate
+                        self.last_preparation["method"] = "llm_source_sentence_selection"
                     else:
+                        self.last_preparation["warnings"].append("Unverified model summary rejected; retaining source facts.")
                         logger.warning("Unverified resume summary rejected; retaining source facts")
+                else:
+                    self.last_preparation["warnings"].append("Invalid model summary ignored; retaining source facts.")
             except Exception:
+                self.last_preparation["warnings"].append("Resume summary generation is unavailable; using source facts.")
                 logger.warning(
-                    "Resume summary unavailable; using profile facts", exc_info=True
+                    "Resume summary unavailable; using profile facts"
                 )
         directory = self.root / str(application.user_id)
         directory.mkdir(parents=True, exist_ok=True)

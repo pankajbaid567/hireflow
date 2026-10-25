@@ -94,6 +94,23 @@ async function discoverJobs(id, { signal } = {}) {
 }
 
 export const api = {
+  getEmailReadiness: id => client.get(`/report/${id}/email-readiness`).then(r=>r.data),
+  sendReportEmail: id => client.post(`/report/${id}/latest/email`).then(r=>r.data),
+  getEmailDelivery: (id,ticket) => client.get(`/report/${id}/email-deliveries/${ticket}`).then(r=>r.data),
+  getSchedule: () => client.get('/account/schedule').then(r=>r.data),
+  saveSchedule: data => client.put('/account/schedule',data).then(r=>r.data),
+  getReminders: () => client.get('/account/reminders').then(r=>r.data),
+  startBackup: () => client.post('/account/backups').then(r=>r.data),
+  getBackup: id => client.get(`/account/backups/${id}`).then(r=>r.data),
+  deletionPreview: () => client.post('/account/deletion-preview').then(r=>r.data),
+  deleteWorkspace: data => client.post('/account/delete',data).then(r=>r.data),
+  startDiscoveryCycle: (id,data) => client.post(`/jobs/${id}/discovery-cycles`,data).then(r=>r.data),
+  getDiscoveryCycle: (id,cycle='') => client.get(`/jobs/${id}/discovery-cycles${cycle?'/'+cycle:''}`).then(r=>r.data),
+  changeDiscoveryCycle: (id,cycle,action) => client.post(`/jobs/${id}/discovery-cycles/${cycle}/${action}`).then(r=>r.data),
+  refreshPrepGuide: id => client.post(`/applications/${id}/prep-guide/refresh`).then(r=>r.data),
+  getPrepExports: id => client.get(`/applications/${id}/prep-guide/exports`).then(r=>r.data),
+  startPrepExport: (id,data={}) => client.post(`/applications/${id}/prep-guide/exports`,data).then(r=>r.data),
+  getPrepExport: (id,exportId) => client.get(`/applications/${id}/prep-guide/exports/${exportId}`).then(r=>r.data),
   getProfile: id => client.get(`/profile/${id}`).then(r => r.data),
   saveProfile: (data, id) => (id ? client.patch(`/profile/${id}`, data) : client.post('/profile', data)).then(r => r.data),
   getSession: () => client.get('/session').then(r => r.data),

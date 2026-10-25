@@ -10,9 +10,11 @@ const mockFetch = (handler: (url: string, init: RequestInit) => Response | Promi
 };
 const pdf = new TextEncoder().encode('%PDF-1.4\nSynthetic test resume');
 const generatedQuestions = [
-  { category: 'technical', question: 'How would you test a Python service?' },
-  { category: 'behavioral', question: 'Describe a project and its feedback.' },
-  { category: 'design', question: 'Sketch a Python API and its data flow.' },
+  {category:'technical',question:'How would you validate a Python API input and observe an invalid request?'},
+  {category:'technical',question:'Which test would expose a repeated request to your Python API?'},
+  {category:'behavioral',question:'Describe how feedback changed a Python API decision and the test you used.'},
+  {category:'behavioral',question:'How would you clarify missing Python API requirements before implementation?'},
+  {category:'design',question:'Sketch a Python API data flow and one explicit service boundary.'},
 ];
 beforeEach(() => { vi.spyOn(console, 'warn').mockImplementation(() => {}); });
 afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); vi.restoreAllMocks(); });
@@ -370,6 +372,12 @@ describe('source-backed interview preparation', () => {
     expect(guide.company_intel.interview_review_status).toBe('No interview reviews found');
     expect(guide.warnings).toHaveLength(2); expect(fetch).not.toHaveBeenCalled();
   });
+  it('keeps explicitly mentioned custom skills and avoids promoting negated project experience', async () => {
+    const guide=await buildPrepGuide(env(),{skills:['MCP']},{title:'Tooling Intern',company:'Acme',listing_type:'internship',description:'MCP required to connect documented tools to a student course assistant.',required_skills:['MCP','Docker']});
+    expect(guide.topics.strong).toEqual(['MCP']);expect(guide.topics.gaps).not.toContain('Docker');expect(guide.questions.length).toBeGreaterThanOrEqual(5);
+    const unknown=await buildPrepGuide(env(),{projects:[{description:'I have not used Docker.'}]},{title:'Container Intern',listing_type:'internship',description:'Docker required to package a student project for reproducible execution.'});
+    expect(unknown.topics.gaps).toContain('Docker');
+  });
   it('uses lighter internship defaults and company-stage-sensitive full-time rounds', async () => {
     const intern = await buildPrepGuide(env(), {}, { title: 'Python Intern', listing_type: 'internship', company_stage: 'startup', description: 'Python' });
     const full = await buildPrepGuide(env(), {}, { title: 'Engineer', listing_type: 'job', company_stage: 'public company', description: 'Python' });
@@ -379,7 +387,7 @@ describe('source-backed interview preparation', () => {
   it('uses valid generated questions and distinguishes configured provider errors from missing credentials', async () => {
     mockFetch(() => reply({ choices: [{ message: { content: JSON.stringify(generatedQuestions) } }] }));
     const generated = await buildPrepGuide(env({ GROQ_API_KEY: 'test-key' }), {}, { title: 'Python Engineer', description: 'Python APIs', company: 'Acme' });
-    expect(generated.questions).toEqual(generatedQuestions);
+    expect(generated.questions.map(({category,question}:any)=>({category,question}))).toEqual(generatedQuestions); expect(generated.question_method).toBe('llm_jd_validated');
     mockFetch(() => reply({ message: 'test-key secret failure body' }, 503));
     const failed = await buildPrepGuide(env({ GROQ_API_KEY: 'test-key' }), {}, { title: 'Python Engineer', description: 'Python APIs' });
     expect(failed.warnings.join(' ')).toContain('Question generation unavailable: Groq request failed (HTTP 503)');
@@ -397,16 +405,16 @@ describe('source-backed interview preparation', () => {
       if (url === 'https://api.tavily.com/search') {
         const { query } = JSON.parse(String(init.body));
         if (query.includes('official documentation')) return reply({ results: [
-          { title: 'Broken', url: 'https://docs.example.com/broken' }, { title: 'Guide', url: 'https://docs.example.com/guide' },
-          { title: 'Tutorial', url: 'https://docs.example.com/tutorial' }, { title: 'Alternative', url: 'https://docs.example.com/alternative' },
+          { title: 'Broken', url: 'https://docs.example.com/broken' }, { title: 'Python Guide', url: 'https://docs.example.com/guide' },
+          { title: 'Python Tutorial', url: 'https://docs.example.com/tutorial' }, { title: 'Python Alternative tutorial', url: 'https://docs.example.com/alternative' },
         ] });
         if (query.includes('recent news')) return reply({ results: [
-          { title: 'Recent launch', url: 'https://news.example.com/recent', content: 'A source-backed launch', published_date: recent },
+          { title: 'Recent launch', url: 'https://news.example.com/recent', content: 'Acme announced a source-backed launch', published_date: recent },
           { title: 'Too old', url: 'https://news.example.com/old', published_date: old }, { title: 'Undated', url: 'https://news.example.com/undated' },
         ] });
         if (query.includes('Glassdoor')) return reply({ results: [
           { title: 'Blocked interview', url: 'https://www.glassdoor.com/Interview/acme.htm', content: 'Blocked reviews' },
-          { title: 'Candidate report', url: 'https://www.ambitionbox.com/interviews/acme-interview-questions', content: 'Candidate described two technical rounds.' },
+          { title: 'Candidate report', url: 'https://www.ambitionbox.com/interviews/acme-interview-questions', content: 'Acme candidate described two technical rounds.' },
         ] });
         return reply({ results: [{ title: 'About Acme', url: 'https://company.example.com/about', content: 'A seed company with 42 employees building Python services.' }] });
       }
@@ -415,7 +423,7 @@ describe('source-backed interview preparation', () => {
       return new Response(null, { status: 200 });
     });
     const guide = await buildPrepGuide(env({ TAVILY_API_KEY: 'test-key' }), {}, { title: 'Python Engineer', company: 'Acme', description: 'Python' });
-    expect(guide.resources.Python.map((r: any) => r.title)).toEqual(['Guide', 'Tutorial', 'Alternative']);
+    expect(guide.resources.Python.map((r: any) => r.title)).toEqual(['Python Guide', 'Python Tutorial', 'Python Alternative tutorial']);
     expect(guide.company_intel.stage).toBe('seed'); expect(guide.company_intel.team_size).toBe('42');
     expect(guide.company_intel.tech_stack).toEqual(['Python']); expect(guide.company_intel.recent_news).toHaveLength(1);
     expect(guide.company_intel.recent_news[0].url).toBe('https://news.example.com/recent');
@@ -424,7 +432,7 @@ describe('source-backed interview preparation', () => {
   it('caps research plus LLM calls at 25 even when source redirects consume the budget', async () => {
     const fetch = mockFetch((url) => {
       if (url.includes('api.groq.com')) return reply({ choices: [{ message: { content: JSON.stringify(generatedQuestions) } }] });
-      if (url.includes('api.tavily.com')) return reply({ results: Array.from({ length: 6 }, (_, i) => ({ title: `Result ${i}`, url: `https://docs.example.com/${i}` })) });
+      if (url.includes('api.tavily.com')) return reply({ results: Array.from({ length: 6 }, (_, i) => ({ title: `Python tutorial ${i}`, url: `https://docs.example.com/${i}` })) });
       return new Response(null, { status: 302, headers: { Location: '/redirect' } });
     });
     const guide = await buildPrepGuide(env({ GROQ_API_KEY: 'test-key', TAVILY_API_KEY: 'test-key' }), {}, { title: 'Engineer', description: 'Python Docker TypeScript RAG Rust AWS', company: 'Acme' });
