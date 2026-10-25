@@ -127,6 +127,7 @@ export async function regenerateResume(env: Env, userId: number, appId: number, 
     env.DB.prepare('UPDATE submission_reviews SET revoked_at=? WHERE application_id=? AND revoked_at IS NULL').bind(new Date(now).toISOString(), app.id),
   ]);
   if (!result[0].results.length) throw new ApiError(409, 'The plan changed. Refresh before regenerating.');
+  await run(env,"DELETE FROM resume_preparations WHERE application_id=? AND state='failed' AND object_key IS NULL",app.id);
   return { preparing: true, message: 'A new draft will be prepared when you refresh the plan. Review it before applying.' };
 }
 const commonQuestions = ['Why do you want to work here?', 'Why are you interested in this role?', 'Tell us about yourself', 'Describe your relevant experience', 'Cover letter'];

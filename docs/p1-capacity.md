@@ -243,6 +243,61 @@ stages remains: `waitUntil()` would keep
 the work charged to the same HTTP invocation. New orchestration and a complete
 candidate cycle must be measured before the release gate can pass.
 
+## Queued-discovery release: complete functional cycle, remaining CPU work
+
+Worker `2ef717f6-2ca8-4754-8ade-f141ade740e5` (source `c2e1647`, migration
+`0011`, Pages `85755cd9`) moved discovery and maintenance into owned Queue
+tasks. The full two-mode run `328d62554e26` **passed functional E2E**, including
+two confirmations, from **2026-10-25 10:10:25.824 to 10:16:18.375 UTC**.
+Capacity collection added **no health or sampler traffic** during that cycle.
+
+| Invocation type / outcome | Reported count | CPU P50 / P95 / P99 / max, ms | Wall P95, ms |
+| --- | --- | --- | --- |
+| fetch / ok | 110 | 4 / 18 / 22 / 24 | 2,972 |
+| queue / ok | 7 | 80 / 468 / 468 / 468 | 23,186 |
+
+Both invocation-log groups reported sample interval 1. No scheduled group was
+observed; a separate scheduled GraphQL query also returned no rows for this
+window. That is not a zero-cost Cron measurement. Native whole-Worker GraphQL
+contained **118 invocations, zero runtime errors**, mixed CPU P50/P95/P99
+**4.461/24.013/354.020 ms**, and isolate memory P99 **32,452,690 bytes**.
+The mixed CPU tail must not be used as the HTTP tail.
+
+The queued discovery entry now costs **5/6 ms** (P50/P95, two calls), while its
+poll endpoint costs **2/3 ms** (21 calls). Draft edit measured **6 ms**, and
+confirmation **8/10 ms**. The residual heavy fetch groups are weekly-plan GET
+**8/24 ms** (19 calls), signup **22 ms** (one), swap **19 ms** (two), manual
+job import **12/18 ms** (two), and report generation **12 ms** (one).
+
+This release reduced the observed HTTP P95 from **28 to 18 ms** and max from
+**108 to 24 ms**, with distinct finite cycles rather than a matched-load causal
+experiment. It still **fails the 10-ms HTTP P95 gate**. Plan/resume preparation
+and swap follow-up require further bounded orchestration; functional success
+and zero runtime errors do not certify sustained Free-tier CPU capacity.
+The first failed-cycle results above remain historical evidence.
+
+Private evidence: `cycle-corrected-328d62554e26.json`,
+`corrected-cycle-trigger-aggregates.json` and
+`corrected-cycle-route-aggregates.json` under `/tmp/hireflow-p1-capacity/`.
+
+### Profile intake experiment
+
+The 22-ms production signup tail was investigated separately using real
+`saveProfile` logic in isolated workerd: a synthetic 2,185-byte multipart PDF,
+external mocked Gemini response, private KV persistence, normal signup
+reservations and session creation. Forty measured signups plus ten warmups use
+exactly the unchanged 50/day local allowance; documented test IPs are distinct.
+No production counters, provider calls or billing are involved. This fixture
+exercises successful inline extraction, not live-provider fallback latency.
+
+An `INSERT/UPDATE ... RETURNING` experiment eliminated the final owner reread
+without batching sessions against a guessed inserted ID. Three paired repeats
+gave sampled active means **5.424/5.879/6.118 ms before**, versus
+**7.256/5.620/5.927 ms after** (medians **5.879/5.927 ms**). There was no
+conclusive CPU reduction, so the experiment was reverted. No profile/auth
+behavior change is retained from this investigation. Private proofs are
+`profile-signup-{before,after}-repeat-{1,2,3}.json` under the same directory.
+
 ## Reproduce and compare
 
 Use Node 22+, installed locked Cloudflare dependencies and Playwright tooling.
@@ -259,6 +314,8 @@ node scripts/profile_worker_operations.mjs --route pdf_devanagari \
   --requests 50 --output /tmp/pdf-hindi.json
 node scripts/profile_worker_operations.mjs --route discovery \
   --requests 100 --output /tmp/discovery-after.json
+node scripts/profile_worker_operations.mjs --route profile_signup \
+  --requests 40 --output /tmp/profile-signup.json
 # Keep a private pre-edit source snapshot for like-for-like before comparison:
 node scripts/profile_worker_operations.mjs --route discovery \
   --source-file /tmp/intelligence-before-discovery.ts --discovery-shape truncated_script \
@@ -288,11 +345,11 @@ is separate from browser/provider budgets, which must never be reset for QA.
 
 ## Release gate
 
-**The post-P1 read comparison is complete; the first full-cycle attempt failed
-the HTTP CPU objective.** Its actual scope is retained above. The first
-candidate and migrations through `0010` are deployed; discovery/plan corrections
-require a new coordinated release and complete controlled cycle before claiming
-a changed free-tier envelope for the entire workflow. The
+**The post-P1 read comparison and corrected functional E2E are complete; the
+10-ms HTTP P95 objective remains open at 18 ms.** The exact failed and successful
+cycle scopes are retained above. Further plan/preparation changes require a new
+coordinated release and complete controlled cycle before claiming a changed
+free-tier envelope for the entire workflow. The
 warm read matrix does not certify long Unicode resumes, uncached discovery,
 model calls or cold module startup. Record CPU/memory, invocation errors and
 the measured bundle/version, and retain any unmeasured boundaries. The published

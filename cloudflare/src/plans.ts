@@ -9,6 +9,7 @@ import { validatePublicUrl } from './automation';
 import { files } from './files';
 import { hasTailoringProvider, tailorResume } from './resume_tailoring';
 import { getValidSubmissionReview } from './reviews';
+import { enqueuePlanWork } from './plan_tasks';
 
 export function eligible(row: Row, user: Row, submitted = new Set<string>()) {
   const blocked = user.master_profile?.blacklist_companies || [];
@@ -43,6 +44,7 @@ export async function addJobs(env: Env, userId: number, incoming: Row[], verifie
     const validated={...raw,provenance:verifiedDiscovery?raw.provenance:{kind:'manual',url},title:raw.title.trim(),company:raw.company.trim(),url,description:raw.description,location:String(raw.location||'').slice(0,300),listing_type:listingType,posted_date:posted?.toISOString()||null};
     // Only the server-owned discovery path can reuse its already normalized
     // facts. Caller-supplied provenance never enables this fast path.
+    if(env.PLAN_WORK_IN_QUEUE==='true'&&!verifiedDiscovery)return {...validated,url:canonicalListingUrl(url),canonical_url:canonicalListingUrl(url),application_url:canonicalListingUrl(raw.application_url||url),source:sourceName(url),required_skills:[],required_experience:null,selection_process:[],compensation:null,company_key:companyKey(raw.company),quality_method:'pending',is_spam:false};
     return verifiedDiscovery&&raw.provenance?.schema_version===LISTING_SCHEMA_VERSION
       ? validated : enrichListing(validated,extractSkills);
   });
@@ -51,27 +53,22 @@ export async function addJobs(env: Env, userId: number, incoming: Row[], verifie
   // Known applications are refreshed lazily by getPlan's version gate. Scoring
   // them here would spend CPU/embeddings before INSERT ... DO NOTHING discards it.
   const rows = await all(env, 'SELECT j.* FROM jobs j LEFT JOIN applications a ON a.job_id=j.id AND a.user_id=? WHERE a.id IS NULL AND j.url IN (SELECT value FROM json_each(?))',userId,JSON.stringify(jobs.map(job=>job.url)));
-  const scored = await scoredJobs(env,user,rows.filter(job=>eligible(job,user,submitted)));
+  const deferred=env.PLAN_WORK_IN_QUEUE==='true'&&!verifiedDiscovery;
+  const eligibleRows=rows.filter(job=>eligible(job,user,submitted));
+  const scored:Row[] = deferred?eligibleRows.map(job=>({...job,score:0,gaps:'[]',matched:'[]',matching_method:'pending',lexical_score:null,semantic_score:null,embedding_model:null,matching_algorithm:'pending',matching_state:'queued'})):await scoredJobs(env,user,eligibleRows);
   if(!scored.length)return 0;
   const inserted=await env.DB.batch(scored.map(job=>env.DB.prepare(`INSERT INTO applications(user_id,job_id,match_score,skill_gaps,matched_skills,scored_profile_version,scored_job_version,matching_method,lexical_score,semantic_score,embedding_model,matching_algorithm,matching_state)
     SELECT ?,?,?,?,?,?,?,?,?,?,?,?,? WHERE EXISTS(SELECT 1 FROM users WHERE id=? AND profile_version=? AND mode=?)
       AND EXISTS(SELECT 1 FROM jobs WHERE id=? AND facts_version=?)
       AND (? IS NULL OR EXISTS(SELECT 1 FROM discovery_runs WHERE id=? AND user_id=? AND profile_version=? AND state='running' AND expires_at>strftime('%Y-%m-%dT%H:%M:%fZ','now')))
-    ON CONFLICT(user_id,job_id) DO NOTHING RETURNING id`).bind(userId,job.id,job.score,job.gaps,job.matched,user.profile_version,job.facts_version,job.matching_method,job.lexical_score,job.semantic_score,job.embedding_model,job.matching_algorithm,job.matching_state,userId,user.profile_version,user.mode,job.id,job.facts_version,discovery?.id??null,discovery?.id??null,userId,user.profile_version)));
+    ON CONFLICT(user_id,job_id) DO NOTHING RETURNING id`).bind(userId,job.id,job.score,job.gaps,job.matched,deferred?0:user.profile_version,deferred?0:job.facts_version,job.matching_method,job.lexical_score,job.semantic_score,job.embedding_model,job.matching_algorithm,job.matching_state,userId,user.profile_version,user.mode,job.id,job.facts_version,discovery?.id??null,discovery?.id??null,userId,user.profile_version)));
 
   return inserted.reduce((count,result)=>count+result.results.length,0);
 }
 
-// Plan selection and quota check happen inside single atomic D1 statements,
-// avoiding profile/confirmation races without holding locks across R2 calls.
-export async function getPlan(env: Env, userId: number) {
-  const user = await userById(env, userId); const start = weekStart(); const submitted=await submittedCompanies(env,userId,user.master_profile);
-  // One active-mode draft per poll bounds CPU. Other modes cannot enter this
-  // plan and are refreshed if the owner switches back to them.
-  const staleWhere="a.status IN ('pending','planned') AND j.listing_type=? AND (a.scored_profile_version<>? OR a.scored_job_version<>j.facts_version OR a.matching_algorithm IS NOT ?)";
-  const stale = await all(env,`${applicationQuery} WHERE a.user_id=? AND ${staleWhere} ORDER BY a.id LIMIT 1`,userId,user.mode,user.profile_version,MATCHING_ALGORITHM);
-  if(stale.length){
-    const needsFacts=(row:Row)=>row.scored_job_version!==row.facts_version||row.quality_method!=='evidence_rules_v1';
+// The same version guards protect synchronous fixtures and queued production work.
+export async function runPlanScoreWork(env:Env,user:Row,stale:Row[],lease?:string){
+  const needsFacts=(row:Row)=>row.scored_job_version!==row.facts_version||row.quality_method!=='evidence_rules_v1';
     const enriched=stale.map(row=>({...row,...(needsFacts(row)?enrichListing({...row,provenance:parsed(row.provenance,{})},extractSkills):Object.fromEntries([...jsonFields].map(key=>[key,parsed(row[key],null)]))),id:row.id,job_id:row.job_id,source_job_version:row.facts_version}));
     const material=['application_url','required_skills','required_experience','expires_at','selection_process','compensation'];
     const derived=enriched.filter((_,index)=>needsFacts(stale[index]));
@@ -82,10 +79,70 @@ export async function getPlan(env: Env, userId: number) {
       const values=factsValues(job),changed=updateIndex>=0&&material.some(key=>stale[index][key]!==values[factsColumns.indexOf(key as any)]);
       return [{...job,facts_version:stale[index].facts_version+(changed?1:0)}];
     });
+    if(lease&&current.length)await run(env,'UPDATE resume_preparations SET job_version=? WHERE application_id=? AND token=? AND state=\'running\'',current[0].facts_version,stale[0].id,lease);
     const scores=await scoredJobs(env,user,current.map(job=>({...job,id:job.job_id,application_id:job.id})));
     if(scores.length)await env.DB.batch(scores.map(job=>env.DB.prepare(`UPDATE applications SET match_score=?,skill_gaps=?,matched_skills=?,scored_profile_version=?,scored_job_version=?,matching_method=?,lexical_score=?,semantic_score=?,embedding_model=?,matching_algorithm=?,matching_state=?
       WHERE id=? AND user_id=? AND status IN ('pending','planned') AND (SELECT profile_version FROM users WHERE id=?)=?
-        AND EXISTS(SELECT 1 FROM jobs WHERE id=applications.job_id AND facts_version=?)`).bind(job.score,job.gaps,job.matched,user.profile_version,job.facts_version,job.matching_method,job.lexical_score,job.semantic_score,job.embedding_model,job.matching_algorithm,job.matching_state,job.application_id,userId,userId,user.profile_version,job.facts_version)));
+        AND EXISTS(SELECT 1 FROM jobs WHERE id=applications.job_id AND facts_version=?)
+        AND (? IS NULL OR EXISTS(SELECT 1 FROM resume_preparations WHERE application_id=applications.id AND token=? AND state='running' AND expires_at>strftime('%Y-%m-%dT%H:%M:%fZ','now')))`).bind(job.score,job.gaps,job.matched,user.profile_version,job.facts_version,job.matching_method,job.lexical_score,job.semantic_score,job.embedding_model,job.matching_algorithm,job.matching_state,job.application_id,user.id,user.id,user.profile_version,job.facts_version,lease??null,lease??null)));
+
+}
+
+export async function runPlanResumeWork(env:Env,user:Row,application:Row,token:string,queued=false){
+        const reserved = await first(env, `UPDATE applications SET resume_version=resume_version+1 WHERE id=? AND status='planned' AND resume_path IS NULL
+          AND (SELECT profile_version FROM users WHERE id=?)=? AND EXISTS(SELECT 1 FROM resume_preparations WHERE application_id=? AND token=?) RETURNING resume_version`,application.id,user.id,user.profile_version,application.id,token);
+        if(!reserved) return false;
+        const version = reserved.resume_version;
+        const key = `resumes/${user.id}/${application.job_id}_resume_v${version}.pdf`;
+        // Load a full JD only for this bounded generation, never all 200 cards.
+        const job = await first(env,'SELECT description,facts_version FROM jobs WHERE id=?',application.job_id);
+        if(!job||job.facts_version!==application.facts_version)return false;
+        if(queued)await run(env,"UPDATE resume_preparations SET object_key=? WHERE application_id=? AND token=? AND state='running'",key,application.id,token);
+        const tailored = await tailorResume(env,user.master_profile,{...application,description:job?.description || ''},parsed(application.matched_skills,[]));
+        const bytes = createResume(tailored.profile, application, parsed(application.matched_skills,[]));
+        await files(env).put(key, bytes, { httpMetadata: { contentType: 'application/pdf' } });
+        try {
+        const metadata=JSON.stringify({...tailored.metadata,profile_version:user.profile_version});
+        // A profile edit, swap, expired lease or competing version must not attach
+        // a stale summary/PDF. The reviewed immutable version carries provenance.
+        const saved=await env.DB.batch([
+          env.DB.prepare(`INSERT INTO resumes(application_id,version,object_key,tailoring_metadata,profile_snapshot)
+            SELECT ?,?,?,?,? WHERE EXISTS(SELECT 1 FROM applications a JOIN resume_preparations p ON p.application_id=a.id
+              WHERE a.id=? AND a.status='planned' AND a.resume_version=? AND a.resume_path IS NULL AND p.token=? AND p.expires_at>?
+                AND (SELECT profile_version FROM users WHERE id=?)=? AND EXISTS(SELECT 1 FROM jobs WHERE id=a.job_id AND facts_version=?)) ON CONFLICT(application_id,version) DO NOTHING RETURNING id`).bind(application.id,version,key,metadata,JSON.stringify(tailored.profile),application.id,version,token,new Date().toISOString(),user.id,user.profile_version,job.facts_version),
+          env.DB.prepare(`UPDATE applications SET resume_path=? WHERE id=? AND resume_version=? AND status='planned' AND resume_path IS NULL
+            AND (SELECT profile_version FROM users WHERE id=?)=? AND EXISTS(SELECT 1 FROM resumes WHERE application_id=? AND version=? AND object_key=?)
+            AND EXISTS(SELECT 1 FROM jobs WHERE id=applications.job_id AND facts_version=?) AND EXISTS(SELECT 1 FROM resume_preparations WHERE application_id=? AND token=? AND expires_at>strftime('%Y-%m-%dT%H:%M:%fZ','now')) RETURNING id`).bind(key,application.id,version,user.id,user.profile_version,application.id,version,key,job.facts_version,application.id,token),
+        ]);
+        if(!saved[1].results.length) await files(env).delete(key);
+        return Boolean(saved[1].results.length);
+        } catch(error){
+          const registered=await first(env,'SELECT id FROM resumes WHERE object_key=?',key);
+          if(!registered)await files(env).delete(key);
+          throw error;
+        }
+}
+
+// Plan selection and quota check happen inside single atomic D1 statements,
+// avoiding profile/confirmation races without holding locks across R2 calls.
+export async function getPlan(env: Env, userId: number) {
+  const user = await userById(env, userId); const start = weekStart(); const submitted=await submittedCompanies(env,userId,user.master_profile);
+  const consumed = await first(env, "SELECT count(*) AS n FROM applications WHERE user_id=? AND cycle_start=? AND status NOT IN ('pending','planned')", userId, start);
+  const remaining = Math.max(0, user.weekly_quota - consumed!.n);
+  if(!remaining){
+    await run(env,"UPDATE applications SET status='pending',cycle_start=NULL WHERE user_id=? AND status='planned'",userId);
+    return {user_id:userId,quota:user.weekly_quota,confirmation_mode:user.confirmation_mode,review_required:true,plan:[],alternatives:[],preparing:false,warnings:['Your weekly application quota has been reached. Existing submissions and their resumes remain available in the tracker.']};
+  }
+  // One active-mode draft per poll bounds CPU. Other modes cannot enter this
+  // plan and are refreshed if the owner switches back to them.
+  const staleWhere="a.status IN ('pending','planned') AND j.listing_type=? AND (a.scored_profile_version<>? OR a.scored_job_version<>j.facts_version OR a.matching_algorithm IS NOT ?)";
+  const stale = await all(env,`${applicationQuery} WHERE a.user_id=? AND ${staleWhere} ORDER BY a.id LIMIT 1`,userId,user.mode,user.profile_version,MATCHING_ALGORITHM);
+  if(stale.length&&env.PLAN_WORK_IN_QUEUE==='true'){
+    const work=await enqueuePlanWork(env,user,stale[0],'score');
+    return {user_id:userId,quota:user.weekly_quota,confirmation_mode:user.confirmation_mode,review_required:true,plan:[],alternatives:[],preparing:work.state!=='failed',warnings:[work.state==='failed'?work.reason:'Updating matches in the background. Your plan refreshes automatically.']};
+  }
+  if(stale.length){
+    await runPlanScoreWork(env,user,stale);
     const pending=await first(env,`SELECT count(*) AS n FROM applications a JOIN jobs j ON j.id=a.job_id WHERE a.user_id=? AND ${staleWhere}`,userId,user.mode,user.profile_version,MATCHING_ALGORITHM);
     if(pending!.n)return {user_id:userId,quota:user.weekly_quota,confirmation_mode:user.confirmation_mode,plan:[],alternatives:[],preparing:true,warnings:[`Updating matches for ${pending!.n} remaining listings. The plan refreshes automatically.`]};
   }
@@ -97,8 +154,6 @@ export async function getPlan(env: Env, userId: number) {
     FROM applications a JOIN jobs j ON j.id=a.job_id`;
   const rows = await all(env, `${planQuery} WHERE a.user_id=? AND a.status IN ('pending','planned') ORDER BY a.match_score DESC,a.id LIMIT 200`, userId);
   const candidates: Row[] = rows.filter(row => eligible(row, user, submitted));
-  const consumed = await first(env, "SELECT count(*) AS n FROM applications WHERE user_id=? AND cycle_start=? AND status NOT IN ('pending','planned')", userId, start);
-  const remaining = Math.max(0, user.weekly_quota - consumed!.n);
   // Preserve swaps, then fill vacant places by rank.
   const keep = [...candidates.filter(a => a.status === 'planned'), ...candidates.filter(a => a.status === 'pending')].slice(0, remaining);
   await env.DB.batch([
@@ -112,9 +167,16 @@ export async function getPlan(env: Env, userId: number) {
   // One provider-backed draft per invocation keeps requests within the proxy
   // deadline; offline runs still prepare three. Leases prevent duplicate model
   // calls while another poll is preparing the same profile/application.
+  const queued=env.PLAN_WORK_IN_QUEUE==='true';
+  const failedPreparations=queued?await all(env,"SELECT p.* FROM resume_preparations p JOIN applications a ON a.id=p.application_id JOIN jobs j ON j.id=a.job_id WHERE a.user_id=? AND p.profile_version=? AND p.job_version=j.facts_version AND p.kind='resume' AND p.state='failed'",userId,user.profile_version):[];
   const limit = hasTailoringProvider(env) ? 1 : 3; let generated = 0;
   for (const application of planned) {
     if (!application.resume_path && generated < limit) {
+      if(queued){
+        if(failedPreparations.some(row=>row.application_id===application.id))continue;
+        await enqueuePlanWork(env,user,application,'resume');
+        break;
+      }
       const token = crypto.randomUUID(), now = new Date().toISOString();
       const lease = await first(env, `INSERT INTO resume_preparations(application_id,profile_version,token,expires_at)
         SELECT id,?, ?,? FROM applications WHERE id=? AND status='planned' AND resume_path IS NULL
@@ -124,31 +186,7 @@ export async function getPlan(env: Env, userId: number) {
       user.profile_version,token,new Date(Date.now()+90000).toISOString(),application.id,userId,user.profile_version,now);
       if (!lease) continue;
       try {
-        const reserved = await first(env, `UPDATE applications SET resume_version=resume_version+1 WHERE id=? AND status='planned' AND resume_path IS NULL
-          AND (SELECT profile_version FROM users WHERE id=?)=? AND EXISTS(SELECT 1 FROM resume_preparations WHERE application_id=? AND token=?) RETURNING resume_version`,application.id,userId,user.profile_version,application.id,token);
-        if(!reserved) continue;
-        const version = reserved.resume_version;
-        const key = `resumes/${userId}/${application.job_id}_resume_v${version}.pdf`;
-        // Load a full JD only for this bounded generation, never all 200 cards.
-        const job = await first(env,'SELECT description,facts_version FROM jobs WHERE id=?',application.job_id);
-        if(!job||job.facts_version!==application.facts_version)continue;
-        const tailored = await tailorResume(env,user.master_profile,{...application,description:job?.description || ''},parsed(application.matched_skills,[]));
-        const bytes = createResume(tailored.profile, application, parsed(application.matched_skills,[]));
-        await files(env).put(key, bytes, { httpMetadata: { contentType: 'application/pdf' } });
-        const metadata=JSON.stringify({...tailored.metadata,profile_version:user.profile_version});
-        // A profile edit, swap, expired lease or competing version must not attach
-        // a stale summary/PDF. The reviewed immutable version carries provenance.
-        const saved=await env.DB.batch([
-          env.DB.prepare(`INSERT INTO resumes(application_id,version,object_key,tailoring_metadata,profile_snapshot)
-            SELECT ?,?,?,?,? WHERE EXISTS(SELECT 1 FROM applications a JOIN resume_preparations p ON p.application_id=a.id
-              WHERE a.id=? AND a.status='planned' AND a.resume_version=? AND a.resume_path IS NULL AND p.token=? AND p.expires_at>?
-                AND (SELECT profile_version FROM users WHERE id=?)=? AND EXISTS(SELECT 1 FROM jobs WHERE id=a.job_id AND facts_version=?)) ON CONFLICT(application_id,version) DO NOTHING RETURNING id`).bind(application.id,version,key,metadata,JSON.stringify(tailored.profile),application.id,version,token,new Date().toISOString(),userId,user.profile_version,job.facts_version),
-          env.DB.prepare(`UPDATE applications SET resume_path=? WHERE id=? AND resume_version=? AND status='planned' AND resume_path IS NULL
-            AND (SELECT profile_version FROM users WHERE id=?)=? AND EXISTS(SELECT 1 FROM resumes WHERE application_id=? AND version=? AND object_key=?)
-            AND EXISTS(SELECT 1 FROM jobs WHERE id=applications.job_id AND facts_version=?) AND EXISTS(SELECT 1 FROM resume_preparations WHERE application_id=? AND token=?) RETURNING id`).bind(key,application.id,version,userId,user.profile_version,application.id,version,key,job.facts_version,application.id,token),
-        ]);
-        if(!saved[1].results.length) await files(env).delete(key);
-        generated++;
+        if(await runPlanResumeWork(env,user,application,token))generated++;
       } catch (error) { if(error instanceof ResumeFormatError)throw new ApiError(422,error.message);throw new ApiError(503,'Resume preparation could not finish. Please refresh your plan and review your profile.'); }
       finally { await run(env,'DELETE FROM resume_preparations WHERE application_id=? AND token=?',application.id,token); }
     }
@@ -165,9 +203,12 @@ export async function getPlan(env: Env, userId: number) {
     resume_summary: a.resume_path ? metadata.summary || 'Review your resume before confirming.' : 'Refresh the plan to prepare this resume.',
     resume_tailoring:a.resume_path && metadata.method ? metadata : null });};
   const warnings=[...new Set(finalPlanned.flatMap(a=>parsed<Row>(a.tailoring_metadata,{}).warnings || []))];
-  if(finalPlanned.some(a=>!a.resume_path))warnings.push('Preparing the remaining resumes. The plan refreshes automatically.');
+  const failedIds=new Set(failedPreparations.map(row=>row.application_id));
+  const preparing=finalPlanned.some(a=>!a.resume_path&&!failedIds.has(a.id));
+  if(preparing)warnings.push('Preparing the remaining resumes. The plan refreshes automatically.');
+  warnings.push(...failedPreparations.filter(row=>finalPlanned.some(a=>a.id===row.application_id&&!a.resume_path)).map(row=>row.failure_reason));
   return { user_id: userId, quota: user.weekly_quota, confirmation_mode: user.confirmation_mode, review_required:true, plan: finalPlanned.map(item), alternatives: alternatives.map(item),
-    preparing:finalPlanned.some(a=>!a.resume_path),warnings };
+    preparing,warnings };
 }
 
 export async function swapPlan(env: Env, userId: number, remove: number, add: number) {
@@ -194,6 +235,7 @@ export async function refreshMatches(env:Env,userId:number){
   if(!allowed)throw new ApiError(429,'Matching was refreshed three times. Please wait ten minutes before requesting another refresh.');
   // The explicit user action can recover from an earlier model/budget outage.
   // Passive plan polling never keeps retrying expensive inference.
+  if(env.PLAN_WORK_IN_QUEUE==='true')await run(env,"DELETE FROM resume_preparations WHERE state='failed' AND object_key IS NULL AND application_id IN (SELECT id FROM applications WHERE user_id=?)",userId);
   await run(env,"UPDATE applications SET matching_algorithm='refresh_requested' WHERE user_id=? AND status IN ('pending','planned')",userId);
   return getPlan(env,userId);
 }

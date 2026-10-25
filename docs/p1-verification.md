@@ -18,11 +18,11 @@ all original milestones.
 | P1-06 | Both modes, exact PDF/answer review, controlled Browser Run, shared weekly quota, immutable history, preparation/report/library, mobile and logout. Failure/race cases have separate real D1/local Chromium coverage; see release result below. |
 | P1-07 | [Architecture](architecture.md), [clean setup](fresh-setup.md), isolated clean dependency/migration evidence, actual secret-free PostgreSQL/Docker application cycle and [demo](demo.md). A new physical laptop/account is not claimed. |
 | P1-08 | Source-fact extraction and visual/reader checks on 16 generated PDFs/19 pages, long/multicolumn/sparse/URL/Latin/Devanagari examples, actual three-PDF Gemini probes and bounded Unicode rendering. [PDF evidence](p1-pdf-quality.md). Text-based extraction is distinct from OCR. |
-| P1-09 | Profiling, private telemetry, batched account/editor reads, bounded active-mode score refresh, bounded source parsing, durable queued discovery and queued maintenance. Actual release CPU must be interpreted by fetch/queue/scheduled trigger, not combined indiscriminately. [Capacity evidence](p1-capacity.md). |
+| P1-09 | Profiling, private telemetry, batched account/editor/report reads, versioned queued score/PDF work, bounded source parsing, durable queued discovery and queued maintenance. Actual release CPU must be interpreted by fetch/queue/scheduled trigger, not combined indiscriminately. [Capacity evidence](p1-capacity.md). |
 
 ## Checks and evidence boundaries
 
-Corrected local gates: **458 Worker tests, 373 Python tests and 127 frontend tests
+Corrected local gates: **470 Worker tests, 373 Python tests and 127 frontend tests
 passed**; four Worker and three Python opt-in live tests were skipped. Typecheck,
 Worker dry run, Cloudflare frontend build, actual isolated React/Worker/D1/R2
 browser E2E and the 120-case evaluation passed. The separate Docker check used

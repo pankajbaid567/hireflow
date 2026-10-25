@@ -13,7 +13,7 @@ RUN pip install -r requirements-runtime.txt \
     && rm -rf /var/lib/apt/lists/*
 
 # Semantic embeddings are optional to the application workflow. Enable this
-# target when running the standalone embedding pipeline in the API container.
+# target plus SEMANTIC_MATCHING_ENABLED=true for BGE/FAISS plan matching.
 ARG INSTALL_EMBEDDINGS=false
 RUN if [ "$INSTALL_EMBEDDINGS" = "true" ]; then \
       pip install torch --index-url https://download.pytorch.org/whl/cpu \

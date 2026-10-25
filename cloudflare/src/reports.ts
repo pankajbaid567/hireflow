@@ -3,18 +3,25 @@ import { all, first, run, userById, historicalListing } from './storage';
 import { files, type FileObject } from './files';
 
 const escape = (s: unknown) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
+const reportData=(report:Row):Row=>({ ...report, week_start: report.week_start_date, content: parsed(report.content, {}), metrics: parsed(report.metrics, {}), html_url: `/report/${report.user_id}/latest/html` });
 export async function latestReport(env: Env, userId: number): Promise<Row> {
   const report = await first(env, 'SELECT * FROM weekly_reports WHERE user_id=? ORDER BY week_start_date DESC,id DESC LIMIT 1', userId);
   if (!report) throw new ApiError(404, 'No weekly report generated yet');
-  return { ...report, week_start: report.week_start_date, content: parsed(report.content, {}), metrics: parsed(report.metrics, {}), html_url: `/report/${userId}/latest/html` };
+  return reportData(report);
 }
 export async function generateReport(env: Env, userId: number) {
-  const user = await userById(env, userId); const start = weekStart();
+  const start = weekStart();
   const end = new Date(Date.parse(start) + 7 * 86400000).toISOString().slice(0, 10);
   // Matching already extracted JD skills. Reuse that cache rather than loading
   // and scanning every full description in a request with a 10 ms CPU budget.
-  const rows = (await all(env, `SELECT a.id,a.job_snapshot,a.status,a.match_score,a.skill_gaps,a.matched_skills,a.failure_reason,a.manual_action_url,a.resume_path,j.title,j.company,j.listing_type,j.source,j.url,j.canonical_url,j.application_url,j.required_skills,j.required_experience,j.posted_date,j.expires_at,j.selection_process,j.compensation,j.provenance
-    FROM applications a JOIN jobs j ON j.id=a.job_id WHERE a.user_id=? AND (a.cycle_start=? OR (a.applied_at>=? AND a.applied_at<?) OR (a.cycle_start IS NULL AND a.created_at>=? AND a.created_at<?)) ORDER BY a.match_score DESC,a.id`, userId, start, start, end, start, end)).map(historicalListing);
+  const snapshot=await env.DB.batch([
+    env.DB.prepare('SELECT id,name FROM users WHERE id=?').bind(userId),
+    env.DB.prepare(`SELECT a.id,a.job_snapshot,a.status,a.match_score,a.skill_gaps,a.matched_skills,a.failure_reason,a.manual_action_url,a.resume_path,j.title,j.company,j.listing_type,j.source,j.url,j.canonical_url,j.application_url,j.required_skills,j.required_experience,j.posted_date,j.expires_at,j.selection_process,j.compensation,j.provenance
+    FROM applications a JOIN jobs j ON j.id=a.job_id WHERE a.user_id=? AND (a.cycle_start=? OR (a.applied_at>=? AND a.applied_at<?) OR (a.cycle_start IS NULL AND a.created_at>=? AND a.created_at<?)) ORDER BY a.match_score DESC,a.id`).bind(userId,start,start,end,start,end),
+  ]);
+  const user=snapshot[0].results[0] as Row|undefined;
+  if(!user)throw new ApiError(404,'Profile not found');
+  const rows=(snapshot[1].results as Row[]).map(historicalListing);
   const guides = await all(env, 'SELECT application_id FROM prep_guides WHERE application_id IN (SELECT value FROM json_each(?))', JSON.stringify(rows.map(row => row.id)));
   const guideIds = new Set(guides.map(guide => guide.application_id));
   const applications = rows.map(a => ({id:a.id,listing_type:a.listing_type,source:a.source,canonical_url:a.canonical_url||a.url,application_url:a.application_url||a.url,required_skills:parsed(a.required_skills,[]),required_experience:parsed(a.required_experience,null),posted_date:a.posted_date,expires_at:a.expires_at,selection_process:parsed(a.selection_process,[]),compensation:parsed<Row|null>(a.compensation,null),provenance:parsed(a.provenance,{}), company:a.company, role:a.title, status:a.status, match_score:a.match_score, skill_gaps:parsed(a.skill_gaps, []), failure_reason:a.failure_reason, manual_action_url:a.manual_action_url,
@@ -42,10 +49,11 @@ export async function generateReport(env: Env, userId: number) {
   // KV caches immutable versions; the D1 row selects the latest report key.
   const key = `reports/${userId}/week_${start}_${crypto.randomUUID()}.html`;
   await files(env).put(key, html, {httpMetadata:{contentType:'text/html; charset=utf-8'}});
-  await run(env, `INSERT INTO weekly_reports(user_id,week_start_date,content,metrics,applied_count,avg_match_score,html_path) VALUES(?,?,?,?,?,?,?)
-    ON CONFLICT(user_id,week_start_date) DO UPDATE SET content=excluded.content,metrics=excluded.metrics,applied_count=excluded.applied_count,avg_match_score=excluded.avg_match_score,html_path=excluded.html_path`,
+  const saved=await first(env, `INSERT INTO weekly_reports(user_id,week_start_date,content,metrics,applied_count,avg_match_score,html_path) VALUES(?,?,?,?,?,?,?)
+    ON CONFLICT(user_id,week_start_date) DO UPDATE SET content=excluded.content,metrics=excluded.metrics,applied_count=excluded.applied_count,avg_match_score=excluded.avg_match_score,html_path=excluded.html_path RETURNING *`,
     userId,start,JSON.stringify(content),JSON.stringify(metrics),appliedCount,avgScore,key);
-  return latestReport(env,userId);
+  if(!saved)throw new ApiError(503,'Weekly report could not be saved');
+  return reportData(saved);
 }
 
 export async function emailReport(env: Env, userId: number) {

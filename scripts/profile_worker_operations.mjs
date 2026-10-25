@@ -23,13 +23,15 @@ assert.ok(Number.isInteger(count) && count >= 40 && count <= 2000, '--requests m
 const baseline = option('--baseline-ref', null);
 assert.ok(baseline === null || /^[a-f0-9]{7,40}$/.test(baseline), 'Use a commit hash for --baseline-ref.');
 const route = option('--route', 'operations');
-assert.ok(['operations', 'account_security', 'discovery', 'pdf_ascii', 'pdf_latin', 'pdf_devanagari'].includes(route), 'Use operations, account_security, discovery, pdf_ascii, pdf_latin or pdf_devanagari for --route.');
+assert.ok(['operations', 'account_security', 'profile_signup', 'discovery', 'pdf_ascii', 'pdf_latin', 'pdf_devanagari'].includes(route), 'Use operations, account_security, profile_signup, discovery, pdf_ascii, pdf_latin or pdf_devanagari for --route.');
 const pdf = route.startsWith('pdf_');
 const discovery = route === 'discovery';
+const signup = route === 'profile_signup';
+if (signup) assert.equal(count, 40, 'Use 40 signup reads plus ten warmups within the unchanged isolated 50/day allowance.');
 const discoveryShape = option('--discovery-shape', 'ordinary');
 assert.ok(['ordinary', 'truncated_script'].includes(discoveryShape), 'Use ordinary or truncated_script for --discovery-shape.');
 const output = option('--output', `/tmp/hireflow-p1-capacity/${route}-${baseline || 'current'}.json`);
-const sourceName = pdf ? 'pdf' : discovery ? 'intelligence' : route === 'operations' ? 'telemetry' : 'account_security';
+const sourceName = pdf ? 'pdf' : signup ? 'profile' : discovery ? 'intelligence' : route === 'operations' ? 'telemetry' : 'account_security';
 const sourcePath = `${root}cloudflare/src/${sourceName}.ts`;
 let source = readFileSync(sourcePath, 'utf8');
 const sourceFile = option('--source-file', null);
@@ -49,6 +51,7 @@ if (route === 'pdf_devanagari') { fixture.name = 'किरण शर्मा';
 const bundle = (await build({
   stdin: { contents: route === 'operations'
     ? `import {getOperationsStatus} from ${JSON.stringify(sourcePath)}; export default {async fetch(request,env){return Response.json(await getOperationsStatus(env,1));}}`
+    : signup ? `import {saveProfile} from ${JSON.stringify(sourcePath)}; export default {fetch(request,env){return saveProfile(request,env);}}`
     : discovery ? `import {discoverJobs} from ${JSON.stringify(sourcePath)}; export default {async fetch(request,env){return Response.json(await discoverJobs(env,{mode:'internship',skills:['Python','SQL'],target_roles:['AI Engineer']}));}}`
     : pdf ? `import {createResume} from ${JSON.stringify(sourcePath)}; const profile=${JSON.stringify(fixture)};export default {fetch(){return new Response(createResume(profile,{listing_type:'internship'},['Python']),{headers:{'Content-Type':'application/pdf'}});}}`
     : `import {accountSecurity} from ${JSON.stringify(sourcePath)}; export default {async fetch(request,env){return accountSecurity(request,env);}}`, resolveDir: root },
@@ -65,9 +68,16 @@ const htmlPayload = discoveryShape === 'truncated_script'
   : `<html><head><script>${'/* irrelevant application JavaScript */'.repeat(2800)}</script>${postingScript}</head><body><h1>AI Engineer Intern</h1><article>${discoveryDescription}</article></body></html>`;
 const atsPayload = JSON.stringify({ title: 'AI Engineer Intern', text: 'AI Engineer Intern', content: `<p>${discoveryDescription}</p>`, descriptionPlain: discoveryDescription, categories: { commitment: 'Internship' }, location: { name: 'Remote' } });
 let discoverySearchCalls = 0, discoveryDetailCalls = 0, discoveryResponseBytes = 0;
+let signupReads = 0;
+const syntheticPdf = Buffer.from('%PDF-1.4\n' + 'synthetic profile capacity fixture\n'.repeat(62) + '\n%%EOF');
 const mf = new Miniflare(convertV4MiniflareOptions({
   modules: true, script: bundle, inspectorPort: 0, compatibilityDate: '2026-10-21', compatibilityFlags: ['nodejs_compat'],
-  d1Databases: ['DB'], bindings: { BROWSER_ENABLED: 'true', ...(discovery ? { TAVILY_API_KEY: 'synthetic-local-search-only' } : {}) },
+  d1Databases: ['DB'], ...(signup ? { kvNamespaces: ['FILES_KV'] } : {}), bindings: { BROWSER_ENABLED: 'true', ...(signup ? { ACCESS_CODE: 'synthetic-local-bootstrap-access-code', GEMINI_API_KEY: 'synthetic-local-extraction-key', GEMINI_MODEL: 'synthetic-profile-model' } : {}), ...(discovery ? { TAVILY_API_KEY: 'synthetic-local-search-only' } : {}) },
+  ...(signup ? { outboundService: request => {
+    assert.equal(new URL(request.url).hostname, 'generativelanguage.googleapis.com');
+    assert.equal(new URL(request.url).pathname, '/v1beta/models/synthetic-profile-model:generateContent');
+    return Response.json({ candidates: [{ content: { parts: [{ text: JSON.stringify({ ...fixture, email: `capacity-signup-${signupReads}@example.com`, mode: 'internship', weekly_quota: 1 }) }] } }] });
+  } } : {}),
   ...(discovery ? { outboundService: async request => {
     const url = new URL(request.url); let body;
     if (url.hostname === 'api.tavily.com') {
@@ -96,6 +106,13 @@ try {
   const plan=(await db.prepare("EXPLAIN QUERY PLAN SELECT latency_ms FROM operation_events WHERE user_id=1 AND operation='request' AND created_at>='2000-01-01' ORDER BY created_at DESC LIMIT 1000").all()).results.map(row=>row.detail);
   let pdfBytes = null,pdfHash=null;
   const read = async () => {
+    if (signup) {
+      signupReads++; const body = new FormData(); body.set('resume', new File([syntheticPdf], 'synthetic.pdf', { type: 'application/pdf' }));
+      const encoded = new Request('https://local.test/profile', { method: 'POST', headers: { 'X-HireFlow-Access-Code': 'synthetic-local-bootstrap-access-code', 'CF-Connecting-IP': `192.0.2.${signupReads}` }, body });
+      const response = await mf.dispatchFetch(encoded.url, { method: 'POST', headers: encoded.headers, body: await encoded.arrayBuffer() });
+      assert.equal(response.status, 201, response.status === 201 ? undefined : await response.text()); const value = await response.json();
+      assert.equal(value.email, `capacity-signup-${signupReads}@example.com`); assert.equal(value.profile_version, 1); assert.ok(response.headers.get('set-cookie')?.includes('HttpOnly')); return value;
+    }
     const response = await mf.dispatchFetch(`https://local.test/${route === 'operations' ? 'operations' : 'account/security'}`, { headers: { Cookie: `hireflow_session=${token}` } }); assert.equal(response.status, 200);
     if (pdf) { const bytes = new Uint8Array(await response.arrayBuffer()); assert.equal(new TextDecoder().decode(bytes.subarray(0,5)), '%PDF-'); assert.ok(bytes.length < 2*1024*1024); pdfBytes = bytes.length;if(pdfHash===null)pdfHash=createHash('sha256').update(bytes).digest('hex'); return; }
     const result = await response.json(); if (route === 'operations') assert.equal(result.telemetry.request_sample_count, 1000); else if (discovery) { assert.equal(result.length,8); assert.ok(result.every(job=>job.description===discoveryDescription)); } else assert.equal(result.sessions.length, 1); return result;
@@ -139,6 +156,7 @@ try {
     requests: count, concurrency: 1, fixture_owner_request_events: pdf ? null : 1000, warmup_reads: 10, first_dispatch_after_runtime_ready_wall_ms: firstDispatchWall, pdf_bytes: pdfBytes,pdf_sha256:pdfHash,
     wall_time_ms: { p50: percentile(.5), p95: percentile(.95), p99: percentile(.99) },
     ...(discovery ? { discovery_fixture: { shape: discoveryShape, sources: discoveryDomains.length, search_results_per_source: 4, verified_jobs_per_read: 8, jd_characters: discoveryDescription.length, html_bytes: Buffer.byteLength(htmlPayload), average_search_calls_per_read: discoverySearchCalls/(count+10), average_detail_calls_per_read: discoveryDetailCalls/(count+10), average_provider_bytes_per_read: discoveryResponseBytes/(count+10), includes_provider_json_decode_and_html_verification: true, outbound_service: 'All responses generated outside the profiled Worker; no external network requests.' } } : {}),
+    ...(signup ? { signup_fixture: { pdf_bytes: syntheticPdf.length, generated_profiles: signupReads, unique_documented_test_ips: signupReads, global_daily_quota_unchanged: 50, provider: 'External synthetic Gemini responses; no actual provider calls, billing or production storage.', includes: 'PDF multipart intake, extraction JSON, private KV persistence, owner creation, session hashing and insert.' } } : {}),
     local_v8_sampling: { samples: profile.samples.length, active_ms: activeMicroseconds / 1000, idle_ms: idleMicroseconds / 1000, average_active_ms_per_request: activeMicroseconds / 1000 / count,
       top_self_frames: [...frames].sort((a, b) => b[1] - a[1]).slice(0, 20).map(([name, microseconds]) => ({ name, sampled_ms: microseconds / 1000 })) },
     note: 'Local V8 sampling identifies CPU hotspots. Active samples include V8/runtime work and do not equal Cloudflare billed CPU quantiles. Wall time is reported separately. D1 and all records are isolated; no providers, production profiles or external application forms are accessed.',

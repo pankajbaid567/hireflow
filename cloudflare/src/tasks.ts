@@ -1,5 +1,6 @@
 import { fillApplication } from './automation';
 import {processDiscovery,recoverDiscovery} from './discovery_tasks';
+import {processPlanTask,recoverPlanWork} from './plan_tasks';
 import {cleanupAccountSecurity} from './account_security';
 import {pruneOperations} from './telemetry';
 import {pruneSemanticCache} from './semantic_matching';
@@ -14,7 +15,8 @@ import { browserDailyBudgetSeconds, submissionDelayMs, newOperationContext, reco
 
 export async function processTask(env: Env, message: Message<Task>) {
   const task = message.body;
-  if(task?.kind==='maintenance'){await scheduledRecovery(env);await cleanupAccountSecurity(env);await pruneOperations(env);await pruneSemanticCache(env);await recoverDiscovery(env);message.ack();return;}
+  if(task?.kind==='plan'){if(Number.isSafeInteger(task.application_id)&&task.application_id>0&&typeof task.token==='string')await processPlanTask(env,task.application_id,task.token);message.ack();return;}
+  if(task?.kind==='maintenance'){await scheduledRecovery(env);await cleanupAccountSecurity(env);await pruneOperations(env);await pruneSemanticCache(env);await recoverDiscovery(env);await recoverPlanWork(env);message.ack();return;}
   if(task?.kind==='discover'){if(/^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/.test(task.discovery_id))await processDiscovery(env,task.discovery_id);message.ack();return;}
   if (!task || !Number.isSafeInteger(task.application_id) || !['apply','prep'].includes(task.kind)) { message.ack(); return; }
   const application = await first(env, `${applicationQuery} WHERE a.id=?`, task.application_id);

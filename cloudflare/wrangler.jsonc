@@ -73,6 +73,7 @@
     "SEMANTIC_DAILY_TEXT_BUDGET": "100",
     "BROWSER_ENABLED": "true",
     "EMAIL_PROVIDER": "resend",
-    "FROM_EMAIL": "hireflow@example.com"
+    "FROM_EMAIL": "hireflow@example.com",
+    "PLAN_WORK_IN_QUEUE": "true"
   }
 }

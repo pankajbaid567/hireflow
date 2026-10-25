@@ -1,7 +1,7 @@
 import { applyTestMigrations } from './migrations';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Miniflare, convertV4MiniflareOptions } from 'miniflare';
-import { emailReport, generateReport } from '../src/reports';
+import { emailReport, generateReport, latestReport } from '../src/reports';
 import { type Env, weekStart } from '../src/types';
 
 let mf: Miniflare, env: Env, queries: { sql: string; bindings: unknown[] }[];
@@ -12,7 +12,7 @@ beforeEach(async () => {
   db = await mf.getD1Database('DB'); files = await mf.getR2Bucket('FILES'); queries = [];
   await applyTestMigrations(db);
   await db.prepare('INSERT INTO users(name,email,mode,master_profile) VALUES(?,?,?,?)').bind('Test <Owner>', 'owner@example.com', 'job', '{}').run();
-  env = { DB: { prepare(sql: string) {
+  env = { DB: { batch(statements: D1PreparedStatement[]) { return db.batch(statements); }, prepare(sql: string) {
     const entry = { sql, bindings: [] as unknown[] }; queries.push(entry);
     const statement = db.prepare(sql);
     return { bind(...values: any[]) { entry.bindings = values; return statement.bind(...values); } };
@@ -49,6 +49,7 @@ describe('bounded weekly reports with real isolated D1 and R2', () => {
 
   it('returns finite empty-week metrics and safely upserts a regenerated report', async () => {
     const first = await generateReport(env, 1); const second = await generateReport(env, 1);
+    expect(second).toEqual(await latestReport(env,1));
     expect(second.id).toBe(first.id); expect(second.avg_match_score).toBe(0); expect(second.applied_count).toBe(0);
     expect(second.content.applications).toEqual([]); expect(second.metrics.top_skills).toEqual([]); expect(second.metrics.study_plan).toEqual([]);
     expect((await db.prepare('SELECT count(*) AS n FROM weekly_reports').first<any>())!.n).toBe(1);
