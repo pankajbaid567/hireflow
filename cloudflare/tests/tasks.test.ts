@@ -67,7 +67,12 @@ beforeAll(async () => {
     plugins: [{
       name: 'synthetic-external-work',
       setup(builder) {
-        builder.onResolve({ filter: /^\.\/(automation|intelligence)$/ }, args => ({ path: args.path, namespace: 'task-fixtures' }));
+        builder.onResolve({ filter: /^\.\/(automation|intelligence)$/ }, args => {
+          // Replace this application's external prep call only. Discovery and
+          // plan modules now share the queue and keep their real exports.
+          if(args.path==='./intelligence'&&!args.importer.endsWith('/tasks.ts'))return;
+          return {path:args.path,namespace:'task-fixtures'};
+        });
         builder.onLoad({ filter: /.*/, namespace: 'task-fixtures' }, args => ({ loader: 'js', contents: args.path === './automation' ? `
           export function validatePublicUrl(url) { return new URL(url).toString(); }
           export async function fillApplication(input, env) {

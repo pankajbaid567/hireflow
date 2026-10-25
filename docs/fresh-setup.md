@@ -160,6 +160,34 @@ cookies, private resumes or production user data.
 
 
 A later [current-source SQLite recheck](evidence/p1-final-sqlite.json) also passed
-upgrade → downgrade base → upgrade → schema check with migration005 including
+upgrade → downgrade base → upgrade → schema check with migration 005 including
 `applications.job_snapshot`. It used another disposable database and did not
 alter the earlier fresh-install proof or any production data.
+
+
+## Separate isolated Docker full-cycle proof
+
+The [Docker/PostgreSQL proof](evidence/p1-docker-cycle.json) was verified on
+**25 October 2026** against code `bd6fff2`. It used the isolated Compose project
+`hireflow-p1-check` on ports 18000/13000, with Postgres 16, migration 005 and the
+nonroot application user. All 75 checked backend source/font files matched the
+current commit; the images were built on 23 October and remained healthy.
+
+API-driven signup/confirmation through the actual nginx proxy created only a
+synthetic workspace. The normal plan generated a private PDF whose Latin-accented
+name and Devanagari project survived logical extraction and visual inspection.
+In-container Chromium filled/uploaded/submitted the owned local fixture, reached
+`applied` once, retained the confirmed job snapshot and status history, and
+produced a two-round/four-question fallback guide and private HTML report/library.
+A real host browser then restored that synthetic cookie, rendered the React
+tracker/mobile navigation without document overflow or runtime errors, and signed
+out through the UI; API and PDF reads subsequently returned 401.
+
+No provider key was configured, semantic matching was deliberately disabled in
+this minimal Docker image, and no employer request or email was sent. The separate
+[real Python BGE/FAISS API proof](../evals/results/python-plan-real-model.json)
+covers the optional semantic path; do not infer that it ran inside this image.
+All three test containers and only this project's two named volumes were removed
+after evidence was retained. No global Docker prune or production mutation was
+performed. Private screenshots/PDF/proof remain under
+`/tmp/hireflow-p1-docker-cycle-f33817de4c/`.

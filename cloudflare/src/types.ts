@@ -17,7 +17,7 @@ export interface Env extends Omit<CloudflareBindings, 'APPLICATION_QUEUE' | 'SUB
   OPERATIONS_RETENTION_DAYS?: string;
   OPERATION_CONTEXT?: {correlation_id: string; user_id?: number; cycle_id?: string};
 }
-export interface Task { application_id: number; kind: 'apply' | 'prep'; review_id?: string; }
+export type Task = { application_id: number; kind: 'apply' | 'prep'; review_id?: string; } | {kind:'discover';discovery_id:string} | {kind:'maintenance'};
 export type Row = Record<string, any>;
 export class ApiError extends Error {
   constructor(public status: number, message: string) { super(message); }

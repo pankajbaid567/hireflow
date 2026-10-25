@@ -1,0 +1,84 @@
+{
+  "status": "passed",
+  "scope": "Isolated Docker/PostgreSQL/nginx/FastAPI cycle; API-driven setup/confirmation; actual in-container Chromium owned local form plus read-only React/mobile/logout",
+  "project": "hireflow-p1-check",
+  "api_origin": "http://127.0.0.1:18000",
+  "frontend_origin": "http://127.0.0.1:13000",
+  "provider_requests": 0,
+  "employer_submissions": 0,
+  "email_sends": 0,
+  "source_sha": "bd6fff2249bc4fdbfc046c7071df371b1b841cdd",
+  "synthetic_records_retained": false,
+  "stage": "complete",
+  "container_inventory": {
+    "dialect": "postgresql",
+    "migration": "005",
+    "provider_configured": false,
+    "uid": 10001
+  },
+  "user_id": 1,
+  "cookie_http_only": true,
+  "job_id": 1,
+  "application_id": 1,
+  "pdf": {
+    "bytes": 24929,
+    "sha256": "a982e7e6165e6902b13ca70b98af4ab750755868e80fb009f16b2ddfc9523b55",
+    "latin_name_preserved": true,
+    "devanagari_project_preserved": true
+  },
+  "matching_method": "lexical",
+  "application_status": "applied",
+  "attempts": 1,
+  "history": [
+    "planned",
+    "confirmed",
+    "applying",
+    "applied"
+  ],
+  "confirmed_job_snapshot_retained": true,
+  "prep": {
+    "round_count": 2,
+    "questions": 4,
+    "source_warnings_present": false
+  },
+  "report": {
+    "applied_count": 1,
+    "email_sent": false,
+    "private_html": true
+  },
+  "library_status": true,
+  "react": {
+    "restored_cookie_profile": true,
+    "tracker_applied": true,
+    "mobile_no_overflow": true,
+    "runtime_errors": [],
+    "outbound_hosts_blocked": [],
+    "ui_logout_verified": true
+  },
+  "logout_revoked_private_api_and_pdf": true,
+  "verified_at": "2026-10-25",
+  "source_files_hash_checked": 75,
+  "source_mismatches": 0,
+  "visual_review": {
+    "pdf_legible_no_clipping_or_replacement_boxes": true,
+    "unicode_name_and_project_legible": true,
+    "mobile_navigation_and_applied_tracker_rendered": true
+  },
+  "cleanup": {
+    "completed": true,
+    "project": "hireflow-p1-check",
+    "containers_removed": 3,
+    "volumes_removed": [
+      "hireflow-p1-check_p1_db",
+      "hireflow-p1-check_p1_data"
+    ],
+    "project_container_and_volume_inventory_empty": true,
+    "global_prune_used": false
+  },
+  "images": {
+    "api": "sha256:20d3ac07708373b9fd3d377ff8fd7fe81ec3b86fed5046de5f9a4e917296be95",
+    "frontend": "sha256:e2d60b73bdf9031ca0d2c92fa20afece2ed07f55d9f7d31ca9ee3136b6e9c5cc",
+    "built_at": "2026-10-23; full cycle replayed2026-10-25"
+  },
+  "private_proof_directory": "/tmp/hireflow-p1-docker-cycle-f33817de4c/"
+}

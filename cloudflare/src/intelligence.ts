@@ -340,7 +340,10 @@ function searchReady(env: Env): boolean { return Boolean(key(env.TAVILY_API_KEY)
 async function searchRaw(env: Env, query: string, budget: Budget, news = false, jobs = false, domains?: string[], jobLimit = 8): Promise<SearchResult[]> {
   let response: Response;
   if (key(env.TAVILY_API_KEY)) {
-    response = await budget.fetch('https://api.tavily.com/search', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ api_key: key(env.TAVILY_API_KEY), query: text(query, 500), max_results: jobs ? jobLimit : 6, topic: news ? 'news' : 'general', ...(news ? { time_range: 'year' } : jobs ? { time_range: 'month', include_published_date: true, include_raw_content: 'text', ...(domains ? { include_domains: domains } : {}) } : {}) }) });
+    // Search locates candidate URLs; only the independently fetched source
+    // page/API can supply a verified JD. Asking Tavily for all raw pages here
+    // duplicates those downloads and JSON decoding without adding evidence.
+    response = await budget.fetch('https://api.tavily.com/search', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ api_key: key(env.TAVILY_API_KEY), query: text(query, 500), max_results: jobs ? jobLimit : 6, topic: news ? 'news' : 'general', ...(news ? { time_range: 'year' } : jobs ? { time_range: 'month', include_published_date: true, include_raw_content: false, ...(domains ? { include_domains: domains } : {}) } : {}) }) });
   } else if (key(env.SERPAPI_API_KEY)) {
     const url = new URL('https://serpapi.com/search.json');
     url.search = new URLSearchParams({ api_key: key(env.SERPAPI_API_KEY), q: `${text(query, 500)}${jobs && domains ? ` (${domains.map(domain => `site:${domain}`).join(' OR ')})` : ''}`, engine: 'google', num: jobs ? String(jobLimit) : '6', ...(news ? { tbm: 'nws', tbs: 'qdr:m3' } : jobs ? { tbs: 'qdr:m' } : {}) }).toString();
@@ -350,7 +353,7 @@ async function searchRaw(env: Env, query: string, budget: Budget, news = false, 
   if (data.error) throw new IntelligenceError('Search provider could not complete the query');
   const values = data.results || (news ? data.news_results : data.organic_results) || [];
   if (!Array.isArray(values)) throw new IntelligenceError('Search provider returned invalid results');
-  return values.filter(r => r && typeof r === 'object' && !Array.isArray(r)).slice(0, jobs ? jobLimit : 6).map((r: Data) => ({ title: text(r.title, 300), url: text(r.url || r.link, 2048), content: text(jobs ? r.raw_content || r.content || r.snippet : r.content || r.snippet, jobs ? 30000 : 2000), published_date: text(r.published_date || r.published_at || r.date, 100), company: text(r.company, 200), location: text(r.location, 200) }));
+  return values.filter(r => r && typeof r === 'object' && !Array.isArray(r)).slice(0, jobs ? jobLimit : 6).map((r: Data) => ({ title: text(r.title, 300), url: text(r.url || r.link, 2048), content: text(r.content || r.snippet, 2000), published_date: text(r.published_date || r.published_at || r.date, 100), company: text(r.company, 200), location: text(r.location, 200) }));
 }
 async function search(env: Env, query: string, budget: Budget, news = false, jobs = false, domains?: string[], jobLimit = 8): Promise<SearchResult[]> {
   const provider:ProviderName=key(env.TAVILY_API_KEY)?'tavily':'serpapi',started=Date.now();
@@ -478,15 +481,58 @@ function listingUrl(raw: unknown): string | null {
 function listingIdentity(url: string): string {
   const parsed = new URL(url); parsed.pathname = parsed.pathname.replace(/\/apply\/?$/, '').replace(/\/$/, ''); return parsed.toString();
 }
+const namedHtmlEntities: Record<string,string> = { '&amp;': '&', '&lt;': '<', '&gt;': '>', '&quot;': '"', '&apos;': "'", '&nbsp;': ' ' };
+const hiddenHtmlElements = new Set(['script', 'style', 'nav', 'footer', 'header']);
+const hiddenHtmlClosers = Object.fromEntries([...hiddenHtmlElements].map(name => [name, new RegExp(`</${name}(?=[\\s>])`, 'gi')]));
+/** Bounded linear scan: a truncated/unclosed tag must not make a broad HTML
+ * regex retry against each '<' in a large script payload. Invisible content
+ * is skipped before entity decoding; an unclosed hidden element stays hidden.
+ */
+function visibleHtml(raw: string): string {
+  if (!raw.includes('<')) return raw;
+  const parts: string[] = []; let cursor = 0;
+  while (cursor < raw.length) {
+    const opening = raw.indexOf('<', cursor);
+    if (opening < 0) { parts.push(raw.slice(cursor)); break; }
+    parts.push(raw.slice(cursor, opening));
+    if (raw.startsWith('<!--', opening)) {
+      const end = raw.indexOf('-->', opening + 4);
+      if (end < 0) break;
+      cursor = end + 3; parts.push(' '); continue;
+    }
+    const end = raw.indexOf('>', opening + 1);
+    if (end < 0) break;
+    const name = raw.slice(opening + 1, Math.min(end, opening + 16)).match(/^([a-z][\w:-]*)\b/i)?.[1]?.toLowerCase();
+    if (name && hiddenHtmlElements.has(name)) {
+      // Match against original text: lowercasing a whole Unicode page can
+      // expand characters (for example İ) and corrupt source offsets.
+      const closer = hiddenHtmlClosers[name]; closer.lastIndex = end + 1;
+      const closing = closer.exec(raw)?.index ?? -1;
+      // The source may be truncated by the bounded reader. Never turn a
+      // dangling script/navigation body into a job description or banner.
+      if (closing < 0) break;
+      const closingEnd = raw.indexOf('>', closing + name.length + 2);
+      if (closingEnd < 0) break;
+      cursor = closingEnd + 1; parts.push(' '); continue;
+    }
+    cursor = end + 1; parts.push('\n');
+  }
+  return parts.join('');
+}
 function htmlText(raw: string): string {
-  let value = raw.slice(0, 180000);
-  for (let pass = 0; pass < 2; pass++) value = value.replace(/&(?:amp|lt|gt|quot|apos|nbsp);|&#(?:x[\da-f]+|\d+);/gi, entity => {
-    const named: Record<string,string> = { '&amp;': '&', '&lt;': '<', '&gt;': '>', '&quot;': '"', '&apos;': "'", '&nbsp;': ' ' };
-    if (named[entity.toLowerCase()]) return named[entity.toLowerCase()];
+  // Remove actual script/navigation payloads before decoding their entities.
+  // Recheck after decoding too: Greenhouse can send escaped HTML markup.
+  let value = visibleHtml(raw.slice(0, 180000));
+  let decoded = false;
+  for (let pass = 0; pass < 2 && value.includes('&'); pass++) value = value.replace(/&(?:amp|lt|gt|quot|apos|nbsp);|&#(?:x[\da-f]+|\d+);/gi, entity => {
+    decoded = true;
+    const named = namedHtmlEntities[entity.toLowerCase()];
+    if (named) return named;
     const point = entity[2]?.toLowerCase() === 'x' ? parseInt(entity.slice(3, -1), 16) : Number(entity.slice(2, -1));
     return point > 0 && point <= 0x10ffff ? String.fromCodePoint(point) : ' ';
   });
-  return value.replace(/<(script|style|nav|footer|header)\b[^>]*>[\s\S]*?<\/\1>/gi, ' ').replace(/<[^>]*>/g, '\n').replace(/[ \t]+/g, ' ').replace(/\n\s*\n/g, '\n').trim().slice(0, 30000);
+  if (decoded && value.includes('<')) value = visibleHtml(value);
+  return value.replace(/[ \t]+/g, ' ').replace(/\n\s*\n/g, '\n').trim().slice(0, 30000);
 }
 function jobPosting(html: string): Data | null {
   for (const match of html.matchAll(/<script\b[^>]*type\s*=\s*["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)) {
@@ -520,7 +566,10 @@ async function detailBody(raw: string, budget: Budget): Promise<{ url: string; b
         const bytes = part.value.subarray(0, 180000 - length); chunks.push(bytes); length += bytes.length;
       }
       if (length >= 180000) await reader.cancel();
-      const bytes = new Uint8Array(length); let offset = 0; for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.length; }
+      // Typical ATS JSON fits one chunk; avoid copying the entire document
+      // before decoding it. Multiple chunks still preserve split UTF-8 safely.
+      let bytes = chunks[0] || new Uint8Array();
+      if (chunks.length > 1) { bytes = new Uint8Array(length); let offset = 0; for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.length; } }
       return { url, body: new TextDecoder().decode(bytes) };
     } finally { clearTimeout(timer); responseControllers.delete(response); }
   }

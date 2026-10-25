@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Miniflare, convertV4MiniflareOptions } from 'miniflare';
 import { applyTestMigrations } from './migrations';
 import type { Env } from '../src/types';
-import { addJobs, confirmPlan, getPlan } from '../src/plans';
+import { addJobs, confirmPlan, getPlan, swapPlan } from '../src/plans';
 import { applicationQuery, dispatchOutbox, userById } from '../src/storage';
 import { cancelQueuedApplication, createSubmissionReview, editResume, getValidSubmissionReview, regenerateResume, rejectResume, resumeDraft, reviewQuestions, validateSubmissionReview } from '../src/reviews';
 
@@ -38,6 +38,7 @@ describe('reviewed immutable versions and final authorization',()=>{
     const original=await app(),old=await (await bucket.get(original.resume_path))!.arrayBuffer(),draft=await resumeDraft(env,1,1),review=await approve();
     const changed=await editResume(env,1,1,{base_version:1,profile_version:1,draft:{...draft.draft,summary:'Built and documented a Python task planner.'}});
     expect(changed).toMatchObject({resume_version:2,draft:{summary:'Built and documented a Python task planner.'}});
+    expect(changed).toEqual(await resumeDraft(env,1,1));
     expect(changed.versions).toHaveLength(2);expect(changed.previous_draft?.summary).toBe(draft.draft.summary);
     expect(await (await bucket.get(original.resume_path))!.arrayBuffer()).toEqual(old);
     expect((await userById(env,1)).master_profile).toEqual(profile);
@@ -50,6 +51,24 @@ describe('reviewed immutable versions and final authorization',()=>{
     expect(result.filter(item=>item.status==='fulfilled')).toHaveLength(1);
     expect((await db.prepare('SELECT * FROM resumes').all()).results).toHaveLength(2);
     expect((await bucket.list()).objects).toHaveLength(2);
+  });
+  it.each(['profile','swap'] as const)('rejects a concurrent %s change after upload and removes only the losing PDF',async change=>{
+    if(change==='swap'){
+      await db.prepare('UPDATE users SET weekly_quota=1 WHERE id=1').run();
+      await addJobs(env,1,[{title:'Python Tools Intern',company:'Other Review Co',url:'https://example.com/jobs/other-review',description:'Python tools internship.',listing_type:'internship'}]);
+    }
+    const original=await app(),draft=await resumeDraft(env,1,1),oldBytes=await (await bucket.get(original.resume_path))!.arrayBuffer();
+    let uploadedKey:string|undefined;
+    const editingEnv={...env,FILES:{
+      async put(...args:Parameters<typeof bucket.put>){const uploaded=await bucket.put(...args);uploadedKey=args[0];if(change==='profile')await db.prepare('UPDATE users SET profile_version=profile_version+1 WHERE id=1').run();else await swapPlan(env,1,1,2);return uploaded;},
+      get:(key:string)=>bucket.get(key),delete:(key:string)=>bucket.delete(key),
+    }} as unknown as Env;
+    await expect(editResume(editingEnv,1,1,{base_version:1,profile_version:1,draft:{...draft.draft,summary:'Built a reviewed Python planning project.'}})).rejects.toMatchObject({status:409});
+    expect(uploadedKey).toBeTruthy();expect(await bucket.get(uploadedKey!)).toBeNull();
+    expect(await (await bucket.get(original.resume_path))!.arrayBuffer()).toEqual(oldBytes);
+    expect((await db.prepare('SELECT version FROM resumes WHERE application_id=1 ORDER BY version').all()).results).toEqual([{version:1}]);
+    expect((await app()).resume_version).toBe(1);
+    expect(change==='profile'?(await app()).resume_path:(await app()).status).toBe(change==='profile'?null:'pending');
   });
   it('blocks rejected PDFs, retains history and permits a new explicitly edited version',async()=>{
     await rejectResume(env,1,1,{resume_version:1});expect((await resumeDraft(env,1,1)).rejected).toBe(true);
@@ -118,7 +137,10 @@ describe('reviewed immutable versions and final authorization',()=>{
     await expect(confirmPlan(env,1,[1],[review.review_id])).rejects.toMatchObject({status:409});
   });
   it('checks ownership and rejects oversized or invalid answer catalogs',async()=>{
+    await db.prepare("INSERT INTO users(name,email,mode) VALUES('Other Candidate','other-review@example.com','internship')").run();
     await expect(resumeDraft(env,2,1)).rejects.toMatchObject({status:404});await expect(cancelQueuedApplication(env,2,1)).rejects.toMatchObject({status:404});
+    await expect(editResume(env,2,1,{base_version:1,profile_version:1,draft:{summary:'A cross-owner edit'}})).rejects.toMatchObject({status:404});
+    expect((await bucket.list()).objects).toHaveLength(1);
     await expect(createSubmissionReview(env,1,1,{resume_version:1,profile_version:1,reviewed:true,answers:{question:'x'.repeat(3001)}})).rejects.toMatchObject({status:422});
     await expect(createSubmissionReview(env,1,1,{resume_version:1,profile_version:1,reviewed:false,answers:{}})).rejects.toMatchObject({status:422});
   });

@@ -1,7 +1,7 @@
 import { ApiError, type Env, type Row, parsed, weekStart } from './types';
 import { all, first, run, userById, applicationQuery, dispatchOutbox, listingSnapshot } from './storage';
 import { scoreMatch, extractSkills } from './intelligence';
-import { canonicalListingUrl, companyAliases, companyKey, enrichListing, sourceName } from './listing_details';
+import { LISTING_SCHEMA_VERSION, canonicalListingUrl, companyAliases, companyKey, enrichListing, sourceName } from './listing_details';
 import { companyWasSubmitted, submittedCompanies } from './company_policy';
 import { MATCHING_ALGORITHM, rankWithSemantic } from './semantic_matching';
 import { createResume, ResumeFormatError } from './pdf';
@@ -26,8 +26,9 @@ async function scoredJobs(env:Env,user:Row,rows:Row[]):Promise<Row[]>{
   const semantic=await rankWithSemantic(env,user.id,user.profile_version,profile,jobs);
   return jobs.map(job=>({...job,matching_state:semantic.state,...(semantic.items.find(item=>item.job_id===job.id)||{matching_method:'lexical',lexical_score:job.lexical_score,semantic_score:null,embedding_model:null,matching_algorithm:MATCHING_ALGORITHM}),score:semantic.items.find(item=>item.job_id===job.id)?.score??job.lexical_score}));
 }
-export async function addJobs(env: Env, userId: number, incoming: Row[], verifiedDiscovery=false) {
+export async function addJobs(env: Env, userId: number, incoming: Row[], verifiedDiscovery=false, discovery?:{id:string;profileVersion:number}) {
   const user = await userById(env, userId);const submitted=await submittedCompanies(env,userId,user.master_profile);
+  if(discovery&&user.profile_version!==discovery.profileVersion)throw new ApiError(409,'Your profile changed during job search.');
   const jobs = incoming.slice(0, 20).map(raw => {
     for (const key of ['title', 'company', 'url', 'description']) if (typeof raw[key] !== 'string' || !raw[key].trim()) throw new ApiError(422, `Job ${key} is required`);
     if (raw.description.length > 30000 || raw.title.length > 300 || raw.company.length > 300 || raw.url.length > 2000) throw new ApiError(422, 'Job data is too large');
@@ -39,15 +40,24 @@ export async function addJobs(env: Env, userId: number, incoming: Row[], verifie
     const posted = raw.posted_date ? new Date(raw.posted_date) : null;
     if (posted && !Number.isFinite(posted.getTime())) throw new ApiError(422, 'Invalid posting date');
     if(raw.expires_at&&!Number.isFinite(Date.parse(raw.expires_at)))throw new ApiError(422,'Invalid expiry date');
-    return enrichListing({...raw,provenance:verifiedDiscovery?raw.provenance:{kind:'manual',url},title:raw.title.trim(),company:raw.company.trim(),url,description:raw.description,location:String(raw.location||'').slice(0,300),listing_type:listingType,posted_date:posted?.toISOString()||null},extractSkills);
+    const validated={...raw,provenance:verifiedDiscovery?raw.provenance:{kind:'manual',url},title:raw.title.trim(),company:raw.company.trim(),url,description:raw.description,location:String(raw.location||'').slice(0,300),listing_type:listingType,posted_date:posted?.toISOString()||null};
+    // Only the server-owned discovery path can reuse its already normalized
+    // facts. Caller-supplied provenance never enables this fast path.
+    return verifiedDiscovery&&raw.provenance?.schema_version===LISTING_SCHEMA_VERSION
+      ? validated : enrichListing(validated,extractSkills);
   });
   if (!jobs.length) return 0;
   await env.DB.batch(jobs.map(job=>env.DB.prepare(`INSERT INTO jobs(title,company,url,description,location,listing_type,posted_date,${factsColumns.join(',')}) VALUES(${Array(7+factsColumns.length).fill('?').join(',')}) ON CONFLICT(url) ${verifiedDiscovery?`DO UPDATE SET title=excluded.title,company=excluded.company,description=excluded.description,location=excluded.location,listing_type=excluded.listing_type,posted_date=excluded.posted_date,${factsColumns.map(key=>`${key}=excluded.${key}`).join(',')}`:'DO NOTHING'}`).bind(job.title,job.company,job.url,job.description,job.location,job.listing_type,job.posted_date,...factsValues(job))));
-  const rows = await all(env, 'SELECT * FROM jobs WHERE url IN (SELECT json_extract(value,\'$.url\') FROM json_each(?))', JSON.stringify(jobs));
+  // Known applications are refreshed lazily by getPlan's version gate. Scoring
+  // them here would spend CPU/embeddings before INSERT ... DO NOTHING discards it.
+  const rows = await all(env, 'SELECT j.* FROM jobs j LEFT JOIN applications a ON a.job_id=j.id AND a.user_id=? WHERE a.id IS NULL AND j.url IN (SELECT value FROM json_each(?))',userId,JSON.stringify(jobs.map(job=>job.url)));
   const scored = await scoredJobs(env,user,rows.filter(job=>eligible(job,user,submitted)));
   if(!scored.length)return 0;
   const inserted=await env.DB.batch(scored.map(job=>env.DB.prepare(`INSERT INTO applications(user_id,job_id,match_score,skill_gaps,matched_skills,scored_profile_version,scored_job_version,matching_method,lexical_score,semantic_score,embedding_model,matching_algorithm,matching_state)
-    VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(user_id,job_id) DO NOTHING RETURNING id`).bind(userId,job.id,job.score,job.gaps,job.matched,user.profile_version,job.facts_version,job.matching_method,job.lexical_score,job.semantic_score,job.embedding_model,job.matching_algorithm,job.matching_state)));
+    SELECT ?,?,?,?,?,?,?,?,?,?,?,?,? WHERE EXISTS(SELECT 1 FROM users WHERE id=? AND profile_version=? AND mode=?)
+      AND EXISTS(SELECT 1 FROM jobs WHERE id=? AND facts_version=?)
+      AND (? IS NULL OR EXISTS(SELECT 1 FROM discovery_runs WHERE id=? AND user_id=? AND profile_version=? AND state='running' AND expires_at>strftime('%Y-%m-%dT%H:%M:%fZ','now')))
+    ON CONFLICT(user_id,job_id) DO NOTHING RETURNING id`).bind(userId,job.id,job.score,job.gaps,job.matched,user.profile_version,job.facts_version,job.matching_method,job.lexical_score,job.semantic_score,job.embedding_model,job.matching_algorithm,job.matching_state,userId,user.profile_version,user.mode,job.id,job.facts_version,discovery?.id??null,discovery?.id??null,userId,user.profile_version)));
 
   return inserted.reduce((count,result)=>count+result.results.length,0);
 }
@@ -56,24 +66,27 @@ export async function addJobs(env: Env, userId: number, incoming: Row[], verifie
 // avoiding profile/confirmation races without holding locks across R2 calls.
 export async function getPlan(env: Env, userId: number) {
   const user = await userById(env, userId); const start = weekStart(); const submitted=await submittedCompanies(env,userId,user.master_profile);
-  // Re-score five drafts at a time after profile edits. Never scan hundreds of
-  // full JDs in a request with the Workers Free 10 ms CPU allowance.
-  const staleWhere="a.status IN ('pending','planned') AND (a.scored_profile_version<>? OR a.scored_job_version<>j.facts_version OR a.matching_algorithm IS NOT ?)";
-  const stale = await all(env,`${applicationQuery} WHERE a.user_id=? AND ${staleWhere} ORDER BY a.id LIMIT 5`,userId,user.profile_version,MATCHING_ALGORITHM);
+  // One active-mode draft per poll bounds CPU. Other modes cannot enter this
+  // plan and are refreshed if the owner switches back to them.
+  const staleWhere="a.status IN ('pending','planned') AND j.listing_type=? AND (a.scored_profile_version<>? OR a.scored_job_version<>j.facts_version OR a.matching_algorithm IS NOT ?)";
+  const stale = await all(env,`${applicationQuery} WHERE a.user_id=? AND ${staleWhere} ORDER BY a.id LIMIT 1`,userId,user.mode,user.profile_version,MATCHING_ALGORITHM);
   if(stale.length){
-    const enriched=stale.map(row=>({...row,...enrichListing({...row,provenance:parsed(row.provenance,{})},extractSkills),id:row.id,job_id:row.job_id,source_job_version:row.facts_version}));
+    const needsFacts=(row:Row)=>row.scored_job_version!==row.facts_version||row.quality_method!=='evidence_rules_v1';
+    const enriched=stale.map(row=>({...row,...(needsFacts(row)?enrichListing({...row,provenance:parsed(row.provenance,{})},extractSkills):Object.fromEntries([...jsonFields].map(key=>[key,parsed(row[key],null)]))),id:row.id,job_id:row.job_id,source_job_version:row.facts_version}));
     const material=['application_url','required_skills','required_experience','expires_at','selection_process','compensation'];
-    const updates=await env.DB.batch(enriched.map((job,index)=>env.DB.prepare(`UPDATE jobs SET ${factsColumns.map(key=>`${key}=?`).join(',')} WHERE id=? AND facts_version=?`).bind(...factsValues(job),job.job_id,stale[index].facts_version)));
+    const derived=enriched.filter((_,index)=>needsFacts(stale[index]));
+    const updates=derived.length?await env.DB.batch(derived.map(job=>env.DB.prepare(`UPDATE jobs SET ${factsColumns.map(key=>`${key}=?`).join(',')} WHERE id=? AND facts_version=?`).bind(...factsValues(job),job.job_id,job.source_job_version))):[];
     const current=enriched.flatMap((job,index)=>{
-      if(!updates[index].meta.changes)return [];
-      const values=factsValues(job),changed=material.some(key=>stale[index][key]!==values[factsColumns.indexOf(key as any)]);
+      const updateIndex=derived.indexOf(job);
+      if(updateIndex>=0&&!updates[updateIndex].meta.changes)return [];
+      const values=factsValues(job),changed=updateIndex>=0&&material.some(key=>stale[index][key]!==values[factsColumns.indexOf(key as any)]);
       return [{...job,facts_version:stale[index].facts_version+(changed?1:0)}];
     });
     const scores=await scoredJobs(env,user,current.map(job=>({...job,id:job.job_id,application_id:job.id})));
     if(scores.length)await env.DB.batch(scores.map(job=>env.DB.prepare(`UPDATE applications SET match_score=?,skill_gaps=?,matched_skills=?,scored_profile_version=?,scored_job_version=?,matching_method=?,lexical_score=?,semantic_score=?,embedding_model=?,matching_algorithm=?,matching_state=?
       WHERE id=? AND user_id=? AND status IN ('pending','planned') AND (SELECT profile_version FROM users WHERE id=?)=?
         AND EXISTS(SELECT 1 FROM jobs WHERE id=applications.job_id AND facts_version=?)`).bind(job.score,job.gaps,job.matched,user.profile_version,job.facts_version,job.matching_method,job.lexical_score,job.semantic_score,job.embedding_model,job.matching_algorithm,job.matching_state,job.application_id,userId,userId,user.profile_version,job.facts_version)));
-    const pending=await first(env,`SELECT count(*) AS n FROM applications a JOIN jobs j ON j.id=a.job_id WHERE a.user_id=? AND ${staleWhere}`,userId,user.profile_version,MATCHING_ALGORITHM);
+    const pending=await first(env,`SELECT count(*) AS n FROM applications a JOIN jobs j ON j.id=a.job_id WHERE a.user_id=? AND ${staleWhere}`,userId,user.mode,user.profile_version,MATCHING_ALGORITHM);
     if(pending!.n)return {user_id:userId,quota:user.weekly_quota,confirmation_mode:user.confirmation_mode,plan:[],alternatives:[],preparing:true,warnings:[`Updating matches for ${pending!.n} remaining listings. The plan refreshes automatically.`]};
   }
   const planQuery=`SELECT a.*,j.title,j.company,j.url,j.location,j.listing_type,j.is_spam,j.posted_date,j.expires_at,j.source,j.canonical_url,j.application_url,j.required_skills,j.required_experience,j.compensation,j.selection_process,j.provenance,j.spam_confidence,j.quality_reason,j.quality_method,j.company_key,j.facts_version,

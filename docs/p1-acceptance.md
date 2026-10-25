@@ -1,7 +1,8 @@
 # Both-mode production acceptance
 
-This document describes the explicit P1-05/P1-06 production check. **Candidate
-execution is pending** until a real deployment and proof are recorded below.
+This document describes the explicit P1-05/P1-06 production check. **The first
+candidate run stopped before the remaining acceptance checks**; its observed
+results and limits are recorded below.
 A local fixture or a collection of passing unit tests does not establish the
 full production workflow.
 
@@ -10,7 +11,7 @@ full production workflow.
 Use Node 22+, installed full Playwright Chromium, the project Python virtualenv,
 Poppler (`pdftotext`), FFmpeg/ffprobe and authenticated local Wrangler access
 for scoped read-only D1 inventory. The current deployed Worker must include
-migrations 0008–0010, the Workers AI binding and the matching/review changes.
+migrations 0008–0011, the Workers AI binding and the matching/review changes.
 Run only on an authorized release:
 
 ```bash
@@ -24,6 +25,11 @@ application. It creates **one synthetic PDF-only owner**, runs both modes and
 makes exactly two application confirmations, each bound to an explicitly
 reviewed HireFlow-owned QA form. No employer application or email is sent.
 Real-source discovery consumes the configured search/AI allowance.
+Current discovery returns a private `202` ticket; provider search, public-page
+parsing and import run in the Queue. The check polls that owner's ticket until
+`completed`, then verifies the final source rows rendered by the UI. `queued`
+or `running` alone is not successful discovery. Failed/expired tickets stop the
+run with their recorded reason, without another search or any confirmation.
 
 ## Workflow and safety boundaries
 
@@ -33,7 +39,7 @@ Real-source discovery consumes the configured search/AI allowance.
 | Internship discovery | Five separate source searches: Internshala, Wellfound, Greenhouse, Lever and LinkedIn. Source rows show actual verified/empty/restricted/unavailable outcomes. At least one active full JD must be persisted. |
 | Job discovery | Four separate source searches: Naukri, LinkedIn, Greenhouse and Lever, with the same honest per-source evidence. A restricted Naukri result is not relabelled a Naukri success. |
 | Matching and review | Normal plan output must actually report the BGE CLS embedding model and hybrid matching. The controlled opportunity is explicitly swapped into the plan; its private PDF and answers are reviewed. The internship PDF is edited to an immutable new version and compared before approval. |
-| Submission | A browser request guard rejects confirmation unless its single job ID belongs to the exact owned-QA URL allowlist. Each controlled form must reach `applied` in one attempt with a full status trail. Real discovered listings remain unsubmitted. |
+| Submission | A browser request guard rejects confirmation unless its single job ID belongs to the exact owned-QA URL allowlist. Each controlled form must reach `applied` within one to three attempts, with exactly one `applied` event and exactly one `applying` event per attempt. Every retry must have a reasoned `applying → confirmed → applying` trail. Actual attempt counts remain visible; real discovered listings remain unsubmitted. |
 | Preparation | Each controlled application opens its saved guide, predicted rounds, expandable questions and real external resource links. This does not certify every resource or company-intel claim. |
 | Mixed week | The same owner explicitly changes from quota one/Internship to quota two/Job. The first application continues to consume a slot. The final report contains both mode groups and two applied applications; switching mode back does not restore another slot. The submitted internship PDF stays byte-identical. |
 | Privacy and mobile | The tracker/library/report render without 390px overflow. Logout returns private profile and PDF requests to 401. All identities and artifacts are synthetic. |
@@ -60,6 +66,12 @@ Proof and screenshots are written under
 `/tmp/hireflow-p1-acceptance-live/<run-id>/` with private directory permissions.
 The proof contains stage results, source diagnostics, fake owner/application/job
 IDs and artifact keys, never session cookies, provider keys or recovery keys.
+New runs also record stage timestamps and complete controlled-application
+status timestamps/retry reasons, so edited video pacing cannot be mistaken for
+actual cycle latency.
+The owned-browser wait allows 330 seconds for the existing bounded attempts
+and 40/80-second retry delays; the script still sends only one confirmation
+per controlled opportunity.
 Only the sanitized main-page WebM is suitable for publication after visual
 review; raw recordings and proof directories remain private.
 
@@ -78,7 +90,64 @@ sampler's separate owner must not be deleted before its before/after check ends.
 
 ## Results
 
-Production run, deployment IDs, artifact link and scoped cleanup proof will be
-added only after actual execution. The recording preflight verified local
-Chromium WebM generation and ffprobe decoding with zero network requests; it
-is not a production acceptance result.
+The authorized run `bd0e4e7807ac` started on **2026-10-23 at
+09:21:05.372 UTC**, against Worker
+`d9634e84-a645-4833-8da3-b091492f0e73` and Pages `cdc2de6a`, using one
+synthetic PDF-only owner. Extraction used the configured Gemini fallback
+`gemini-3.5-flash-lite`; zero professional years, education and the Atlas Note
+Assistant project were preserved. The normal plan used
+`@cf/baai/bge-small-en-v1.5:cls:profile-jd-v1` hybrid matching.
+
+Actual discovery made one Tavily search per source (nine source searches in
+total) and persisted five verified full descriptions in each mode:
+
+| Mode | Source | Verified | Observed status |
+| --- | --- | ---: | --- |
+| Internship | Internshala | 1 | ok |
+| Internship | Wellfound | 3 | ok |
+| Internship | Greenhouse | 1 | ok |
+| Internship | Lever | 0 | empty |
+| Internship | LinkedIn | 0 | restricted (4 results) |
+| Job | Naukri | 0 | empty (4 searched) |
+| Job | LinkedIn | 0 | restricted (4 results) |
+| Job | Greenhouse | 4 | ok |
+| Job | Lever | 1 | ok (1 additional restricted result) |
+
+Owner-scoped D1 verification recorded descriptions of 2,677–10,378 characters,
+with `json_ld` or `ats_api` provenance. Unknown expiry remained unknown; the
+one explicit expiry was later than the run date. No public listing was
+confirmed or submitted.
+
+The controlled internship reached `applied` in one browser attempt at
+**09:23:18.852 UTC**, after an immutable PDF-v2 edit and exact PDF/answer
+approval. Its saved preparation guide contained two rounds, four questions
+and six resource links. The controlled Job application reached `applied` at
+**09:26:42.167 UTC**, using two attempts: the first returned to `confirmed`
+with the recorded reason “Temporary browser or network failure”, a 40-second
+retry was scheduled, and the second succeeded. The durable checkpoint for
+each application records `submitted`. This supports a bounded pre-submit
+recovery; the original low-level exception was not retained, so its precise
+cause cannot be established from the sanitized records.
+
+The harness then failed its stricter `attempts === 1` assertion. **This is not
+a complete acceptance pass.** The remaining Job-guide view, mixed-week report,
+quota-back-switch, mobile/logout checks and final sanitized demo were not
+completed in this run. The failed proof remains unchanged under the private
+run directory, with a separate read-only diagnostic inventory. Exactly two
+guarded confirmations and zero out-of-scope browser requests, employer
+submissions or email sends were recorded. Synthetic records remain retained
+pending the owner's scoped cleanup. No retry or replacement submission was
+manually triggered during diagnosis.
+
+The harness now accepts bounded recovery only with the full ordered status
+invariants above. Offline validation accepted both recorded successful
+histories and rejected six invalid histories, including missing retry reasons,
+duplicate `applied` events, attempt-count mismatches and an uncertain outcome.
+This corrects the harness requirement; it does not retroactively convert the
+failed run into a complete pass. A fresh end-to-end run remains gated on the
+next deployed candidate and must complete the remaining checks without an
+operator-created test login.
+
+The earlier local recording preflight verified Chromium WebM generation and
+ffprobe decoding with zero network requests; it is not production acceptance
+evidence or a finished demonstration.

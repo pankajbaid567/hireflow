@@ -1,4 +1,8 @@
 import { fillApplication } from './automation';
+import {processDiscovery,recoverDiscovery} from './discovery_tasks';
+import {cleanupAccountSecurity} from './account_security';
+import {pruneOperations} from './telemetry';
+import {pruneSemanticCache} from './semantic_matching';
 import { buildPrepGuide } from './intelligence';
 import { all, first, run, applicationQuery, transition, userById, dispatchOutbox, historicalListing } from './storage';
 import { submittedCompanies, companyWasSubmitted } from './company_policy';
@@ -10,6 +14,8 @@ import { browserDailyBudgetSeconds, submissionDelayMs, newOperationContext, reco
 
 export async function processTask(env: Env, message: Message<Task>) {
   const task = message.body;
+  if(task?.kind==='maintenance'){await scheduledRecovery(env);await cleanupAccountSecurity(env);await pruneOperations(env);await pruneSemanticCache(env);await recoverDiscovery(env);message.ack();return;}
+  if(task?.kind==='discover'){if(/^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/.test(task.discovery_id))await processDiscovery(env,task.discovery_id);message.ack();return;}
   if (!task || !Number.isSafeInteger(task.application_id) || !['apply','prep'].includes(task.kind)) { message.ack(); return; }
   const application = await first(env, `${applicationQuery} WHERE a.id=?`, task.application_id);
   if (!application) { message.ack(); return; }

@@ -1,5 +1,5 @@
 import { ApiError, type Env, type Row, parsed } from './types';
-import { all, applicationQuery, first, run, userById } from './storage';
+import { applicationQuery, first, run, userById } from './storage';
 import { digest } from './auth';
 import { files } from './files';
 import { createResume, ResumeFormatError } from './pdf';
@@ -27,9 +27,20 @@ export async function ownedApplication(env: Env, userId: number, appId: number) 
 function requireEditable(app: Row) {
   if (app.status !== 'planned') throw new ApiError(409, 'Cancel queued work before editing. An application that may have started cannot be changed here.');
 }
-export async function resumeDraft(env: Env, userId: number, appId: number) {
-  const app = await ownedApplication(env, userId, appId), user = await userById(env, userId);
-  const versions = await all(env, 'SELECT version,created_at,tailoring_metadata,profile_snapshot FROM resumes WHERE application_id=? ORDER BY version DESC LIMIT 10', app.id);
+async function draftSnapshot(env: Env, userId: number, appId: number): Promise<{ app: Row; user: Row; versions: Row[] }> {
+  // One request-local, owner-scoped transaction supplies a consistent editor
+  // snapshot. Never retain profiles or version rows between requests.
+  const [applications, users, resumes] = await env.DB.batch<Row>([
+    env.DB.prepare(`${applicationQuery} WHERE a.id=? AND a.user_id=?`).bind(appId, userId),
+    env.DB.prepare('SELECT * FROM users WHERE id=? AND EXISTS(SELECT 1 FROM applications WHERE id=? AND user_id=users.id)').bind(userId, appId),
+    env.DB.prepare('SELECT version,created_at,tailoring_metadata,profile_snapshot FROM resumes WHERE application_id=? AND EXISTS(SELECT 1 FROM applications WHERE id=resumes.application_id AND user_id=?) ORDER BY version DESC LIMIT 10').bind(appId, userId),
+  ]);
+  const app = applications.results[0], user = users.results[0];
+  if (!app) throw new ApiError(404, 'Application not found');
+  if (!user) throw new ApiError(404, 'Profile not found');
+  return { app, user: { ...user, master_profile: parsed<Row>(user.master_profile, {}) }, versions: resumes.results };
+}
+function formatDraft(userId: number, app: Row, user: Row, versions: Row[]) {
   const current = versions.find(row => row.version === app.resume_version);
   if (!current || !app.resume_path) throw new ApiError(409, 'Prepare a resume in the weekly plan first.');
   const metadata = parsed<Row>(current.tailoring_metadata, {});
@@ -42,6 +53,10 @@ export async function resumeDraft(env: Env, userId: number, appId: number) {
     versions: versions.map(row => ({ version: row.version, created_at: row.created_at, method: parsed<Row>(row.tailoring_metadata, {}).method || 'legacy',
       summary: parsed<Row>(row.profile_snapshot, {}).summary || parsed<Row>(row.tailoring_metadata, {}).summary || '',
       download_url: `/resumes/${userId}/${app.id}/download?version=${row.version}` })) };
+}
+export async function resumeDraft(env: Env, userId: number, appId: number) {
+  const { app, user, versions } = await draftSnapshot(env, userId, appId);
+  return formatDraft(userId, app, user, versions);
 }
 function validateDraft(input: unknown, previous: Row): Row {
   if (!input || Array.isArray(input) || typeof input !== 'object') throw new ApiError(422, 'Provide the resume fields to edit.');
@@ -62,9 +77,9 @@ function validateDraft(input: unknown, previous: Row): Row {
   return profile;
 }
 export async function editResume(env: Env, userId: number, appId: number, data: Row) {
-  const app = await ownedApplication(env, userId, appId); requireEditable(app);
+  const { app, user, versions } = await draftSnapshot(env, userId, appId); requireEditable(app);
   if (data.base_version !== app.resume_version || !app.resume_path) throw new ApiError(409, 'The resume changed. Reload the editor before saving.');
-  const previous = await resumeDraft(env, userId, appId), user = await userById(env, userId);
+  const previous = formatDraft(userId, app, user, versions);
   if (data.profile_version !== user.profile_version) throw new ApiError(409, 'Your profile changed. Prepare and review the current resume first.');
   const draft = validateDraft(data.draft, previous.draft), version = app.resume_version + 1;
   const key = `resumes/${userId}/${app.job_id}_resume_v${version}_${crypto.randomUUID()}.pdf`;
@@ -73,18 +88,20 @@ export async function editResume(env: Env, userId: number, appId: number, data: 
   catch (error) { throw new ApiError(422, error instanceof ResumeFormatError?error.message:'This resume could not be formatted. Shorten overly long fields and try again.'); }
   await files(env).put(key, bytes, { httpMetadata: { contentType: 'application/pdf' } });
   const now = new Date().toISOString();
+  let saved: Row;
   try {
-    const result = await env.DB.batch([
+    const result = await env.DB.batch<Row>([
       env.DB.prepare(`INSERT INTO resumes(application_id,version,object_key,profile_snapshot,tailoring_metadata)
         SELECT ?,?,?,?,? WHERE EXISTS(SELECT 1 FROM applications WHERE id=? AND user_id=? AND status='planned' AND resume_version=? AND resume_path=? AND (SELECT profile_version FROM users WHERE id=?)=? AND EXISTS(SELECT 1 FROM jobs WHERE id=applications.job_id AND facts_version=?))
-        ON CONFLICT(application_id,version) DO NOTHING RETURNING id`).bind(app.id, version, key, JSON.stringify(draft), JSON.stringify({ method: 'user_edited', summary: draft.summary || '', profile_version: user.profile_version, previous_version: app.resume_version, warnings: [] }), app.id, userId, app.resume_version, app.resume_path, userId, user.profile_version,app.facts_version),
+        ON CONFLICT(application_id,version) DO NOTHING RETURNING version,created_at,tailoring_metadata,profile_snapshot`).bind(app.id, version, key, JSON.stringify(draft), JSON.stringify({ method: 'user_edited', summary: draft.summary || '', profile_version: user.profile_version, previous_version: app.resume_version, warnings: [] }), app.id, userId, app.resume_version, app.resume_path, userId, user.profile_version,app.facts_version),
       env.DB.prepare(`UPDATE applications SET resume_version=?,resume_path=?,resume_rejected_version=0,confirmed_review_id=NULL,updated_at=? WHERE id=? AND user_id=? AND status='planned' AND resume_version=?
         AND EXISTS(SELECT 1 FROM jobs WHERE id=applications.job_id AND facts_version=?) AND EXISTS(SELECT 1 FROM resumes WHERE application_id=? AND version=? AND object_key=?) RETURNING id`).bind(version, key, now, app.id, userId, app.resume_version, app.facts_version, app.id, version, key),
       env.DB.prepare('UPDATE submission_reviews SET revoked_at=? WHERE application_id=? AND revoked_at IS NULL AND EXISTS(SELECT 1 FROM applications WHERE id=? AND resume_version=?)').bind(now, app.id, app.id, version),
     ]);
     if (!result[1].results.length) { await files(env).delete(key); throw new ApiError(409, 'The plan changed. Reload before editing this resume.'); }
+    saved = result[0].results[0];
   } catch (error) { await files(env).delete(key); throw error; }
-  return resumeDraft(env, userId, appId);
+  return formatDraft(userId, { ...app, resume_version: version, resume_path: key, resume_rejected_version: 0 }, user, [saved, ...versions].slice(0, 10));
 }
 export async function rejectResume(env: Env, userId: number, appId: number, data: Row) {
   const app = await ownedApplication(env, userId, appId); requireEditable(app);

@@ -23,12 +23,18 @@ assert.ok(Number.isInteger(count) && count >= 40 && count <= 2000, '--requests m
 const baseline = option('--baseline-ref', null);
 assert.ok(baseline === null || /^[a-f0-9]{7,40}$/.test(baseline), 'Use a commit hash for --baseline-ref.');
 const route = option('--route', 'operations');
-assert.ok(['operations', 'account_security', 'pdf_ascii', 'pdf_latin', 'pdf_devanagari'].includes(route), 'Use operations, account_security, pdf_ascii, pdf_latin or pdf_devanagari for --route.');
+assert.ok(['operations', 'account_security', 'discovery', 'pdf_ascii', 'pdf_latin', 'pdf_devanagari'].includes(route), 'Use operations, account_security, discovery, pdf_ascii, pdf_latin or pdf_devanagari for --route.');
 const pdf = route.startsWith('pdf_');
+const discovery = route === 'discovery';
+const discoveryShape = option('--discovery-shape', 'ordinary');
+assert.ok(['ordinary', 'truncated_script'].includes(discoveryShape), 'Use ordinary or truncated_script for --discovery-shape.');
 const output = option('--output', `/tmp/hireflow-p1-capacity/${route}-${baseline || 'current'}.json`);
-const sourceName = pdf ? 'pdf' : route === 'operations' ? 'telemetry' : 'account_security';
+const sourceName = pdf ? 'pdf' : discovery ? 'intelligence' : route === 'operations' ? 'telemetry' : 'account_security';
 const sourcePath = `${root}cloudflare/src/${sourceName}.ts`;
 let source = readFileSync(sourcePath, 'utf8');
+const sourceFile = option('--source-file', null);
+assert.ok(!(sourceFile && baseline), 'Use --source-file or --baseline-ref, not both.');
+if (sourceFile) source = readFileSync(sourceFile, 'utf8');
 if (baseline) {
   const result = spawnSync('git', ['show', `${baseline}:cloudflare/src/${sourceName}.ts`], { cwd: root, encoding: 'utf8', timeout: 10000 });
   assert.equal(result.status, 0, 'The requested baseline source could not be read.');
@@ -43,14 +49,35 @@ if (route === 'pdf_devanagari') { fixture.name = 'किरण शर्मा';
 const bundle = (await build({
   stdin: { contents: route === 'operations'
     ? `import {getOperationsStatus} from ${JSON.stringify(sourcePath)}; export default {async fetch(request,env){return Response.json(await getOperationsStatus(env,1));}}`
+    : discovery ? `import {discoverJobs} from ${JSON.stringify(sourcePath)}; export default {async fetch(request,env){return Response.json(await discoverJobs(env,{mode:'internship',skills:['Python','SQL'],target_roles:['AI Engineer']}));}}`
     : pdf ? `import {createResume} from ${JSON.stringify(sourcePath)}; const profile=${JSON.stringify(fixture)};export default {fetch(){return new Response(createResume(profile,{listing_type:'internship'},['Python']),{headers:{'Content-Type':'application/pdf'}});}}`
     : `import {accountSecurity} from ${JSON.stringify(sourcePath)}; export default {async fetch(request,env){return accountSecurity(request,env);}}`, resolveDir: root },
   plugins: [{ name: 'selected-route-source', setup(build) { build.onLoad({ filter: new RegExp(`[/\\\\]src[/\\\\]${sourceName}\\.ts$`) }, () => ({ contents: source, loader: 'ts', resolveDir: `${root}cloudflare/src` })); } }],
   bundle: true, format: 'esm', platform: 'browser', target: 'es2022', external: ['node:*', 'cloudflare:*'], write: false, logLevel: 'silent',
 })).outputFiles[0].text;
+const discoveryDescription = 'Build Python and SQL APIs with mentoring. Implement carefully tested endpoints, review code, maintain documentation, and deliver a paid student internship project. '.repeat(50).trim();
+const discoveryDomains = ['internshala.com', 'wellfound.com', 'job-boards.greenhouse.io', 'jobs.lever.co', 'linkedin.com'];
+const fixtureUrl = (domain, index) => domain === 'internshala.com' ? `https://${domain}/internship/detail/ai-intern-${index}` : domain.includes('greenhouse') ? `https://${domain}/example/jobs/${100 + index}` : domain.includes('lever') ? `https://${domain}/example/id-${index}` : domain === 'linkedin.com' ? `https://www.${domain}/jobs/view/ai-intern-${index}` : `https://${domain}/jobs/ai-intern-${index}`;
+const searchPayloads = new Map(discoveryDomains.flatMap(domain => [true, false].map(raw => [domain + raw, JSON.stringify({ results: Array.from({ length: 4 }, (_, index) => ({ title: 'AI Engineer Intern at Example Employer', url: fixtureUrl(domain, index), content: 'A synthetic search snippet, never an authoritative job description.', ...(raw ? { raw_content: discoveryDescription.repeat(4) } : {}) })) })])));
+const postingScript = `<script type="application/ld+json">${JSON.stringify({ '@type': 'JobPosting', title: 'AI Engineer Intern', hiringOrganization: { name: 'Example Employer' }, description: `<p>${discoveryDescription}</p>`, employmentType: 'INTERN', datePosted: new Date().toISOString() })}</script>`;
+const htmlPayload = discoveryShape === 'truncated_script'
+  ? `<html><head>${postingScript}</head><body><article>${discoveryDescription}</article><script>${'<bad '.repeat(700)}${'x'.repeat(105000)}`
+  : `<html><head><script>${'/* irrelevant application JavaScript */'.repeat(2800)}</script>${postingScript}</head><body><h1>AI Engineer Intern</h1><article>${discoveryDescription}</article></body></html>`;
+const atsPayload = JSON.stringify({ title: 'AI Engineer Intern', text: 'AI Engineer Intern', content: `<p>${discoveryDescription}</p>`, descriptionPlain: discoveryDescription, categories: { commitment: 'Internship' }, location: { name: 'Remote' } });
+let discoverySearchCalls = 0, discoveryDetailCalls = 0, discoveryResponseBytes = 0;
 const mf = new Miniflare(convertV4MiniflareOptions({
   modules: true, script: bundle, inspectorPort: 0, compatibilityDate: '2026-10-21', compatibilityFlags: ['nodejs_compat'],
-  d1Databases: ['DB'], bindings: { BROWSER_ENABLED: 'true' },
+  d1Databases: ['DB'], bindings: { BROWSER_ENABLED: 'true', ...(discovery ? { TAVILY_API_KEY: 'synthetic-local-search-only' } : {}) },
+  ...(discovery ? { outboundService: async request => {
+    const url = new URL(request.url); let body;
+    if (url.hostname === 'api.tavily.com') {
+      const query = await request.json(); discoverySearchCalls++;
+      assert.ok(discoveryDomains.includes(query.include_domains?.[0]), 'The local discovery fixture must keep every source domain.');
+      body = searchPayloads.get(query.include_domains[0] + Boolean(query.include_raw_content));
+    } else { assert.ok(discoveryDomains.some(domain => url.hostname.endsWith(domain)) || ['api.lever.co', 'boards-api.greenhouse.io'].includes(url.hostname), 'Unexpected external target in isolated benchmark.'); discoveryDetailCalls++; body = /api\.lever|boards-api\.greenhouse/.test(url.hostname) ? atsPayload : htmlPayload; }
+    assert.ok(body); discoveryResponseBytes += Buffer.byteLength(body);
+    return new Response(body, { headers: { 'Content-Type': 'application/json' } });
+  } } : {}),
 }));
 let ws;
 try {
@@ -71,7 +98,7 @@ try {
   const read = async () => {
     const response = await mf.dispatchFetch(`https://local.test/${route === 'operations' ? 'operations' : 'account/security'}`, { headers: { Cookie: `hireflow_session=${token}` } }); assert.equal(response.status, 200);
     if (pdf) { const bytes = new Uint8Array(await response.arrayBuffer()); assert.equal(new TextDecoder().decode(bytes.subarray(0,5)), '%PDF-'); assert.ok(bytes.length < 2*1024*1024); pdfBytes = bytes.length;if(pdfHash===null)pdfHash=createHash('sha256').update(bytes).digest('hex'); return; }
-    const result = await response.json(); if (route === 'operations') assert.equal(result.telemetry.request_sample_count, 1000); else assert.equal(result.sessions.length, 1); return result;
+    const result = await response.json(); if (route === 'operations') assert.equal(result.telemetry.request_sample_count, 1000); else if (discovery) { assert.equal(result.length,8); assert.ok(result.every(job=>job.description===discoveryDescription)); } else assert.equal(result.sessions.length, 1); return result;
   };
   const coldStarted = performance.now(); await read(); const firstDispatchWall = performance.now() - coldStarted;
   for (let i = 1; i < 10; i++) await read();
@@ -107,10 +134,11 @@ try {
   }
   wall.sort((a, b) => a - b); const percentile = fraction => wall[Math.max(0, Math.ceil(wall.length * fraction) - 1)];
   const result = {
-    created_at: new Date().toISOString(), scope: `isolated-workerd-${route}-route`, baseline_ref: baseline, source_sha256: createHash('sha256').update(source).digest('hex'), bundle_sha256:createHash('sha256').update(bundle).digest('hex'),
+    created_at: new Date().toISOString(), scope: `isolated-workerd-${route}-route`, baseline_ref: baseline, source_file: sourceFile, source_sha256: createHash('sha256').update(source).digest('hex'), bundle_sha256:createHash('sha256').update(bundle).digest('hex'),
     request_index_disabled:args.includes('--without-request-index'),latest_request_query_plan:plan,
     requests: count, concurrency: 1, fixture_owner_request_events: pdf ? null : 1000, warmup_reads: 10, first_dispatch_after_runtime_ready_wall_ms: firstDispatchWall, pdf_bytes: pdfBytes,pdf_sha256:pdfHash,
     wall_time_ms: { p50: percentile(.5), p95: percentile(.95), p99: percentile(.99) },
+    ...(discovery ? { discovery_fixture: { shape: discoveryShape, sources: discoveryDomains.length, search_results_per_source: 4, verified_jobs_per_read: 8, jd_characters: discoveryDescription.length, html_bytes: Buffer.byteLength(htmlPayload), average_search_calls_per_read: discoverySearchCalls/(count+10), average_detail_calls_per_read: discoveryDetailCalls/(count+10), average_provider_bytes_per_read: discoveryResponseBytes/(count+10), includes_provider_json_decode_and_html_verification: true, outbound_service: 'All responses generated outside the profiled Worker; no external network requests.' } } : {}),
     local_v8_sampling: { samples: profile.samples.length, active_ms: activeMicroseconds / 1000, idle_ms: idleMicroseconds / 1000, average_active_ms_per_request: activeMicroseconds / 1000 / count,
       top_self_frames: [...frames].sort((a, b) => b[1] - a[1]).slice(0, 20).map(([name, microseconds]) => ({ name, sampled_ms: microseconds / 1000 })) },
     note: 'Local V8 sampling identifies CPU hotspots. Active samples include V8/runtime work and do not equal Cloudflare billed CPU quantiles. Wall time is reported separately. D1 and all records are isolated; no providers, production profiles or external application forms are accessed.',

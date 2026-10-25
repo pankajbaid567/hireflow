@@ -27,11 +27,12 @@ export async function checkAccessCode(request: Request, env: Env, supplied?: str
   const ip = request.headers.get('cf-connecting-ip') || 'local';
   const key = await digest(ip);
   const now = Date.now();
-  await run(env, `INSERT INTO login_attempts(key,attempts,window_start) VALUES(?,0,?)
-    ON CONFLICT(key) DO UPDATE SET attempts=CASE WHEN window_start<? THEN 0 ELSE attempts END,
-    window_start=CASE WHEN window_start<? THEN excluded.window_start ELSE window_start END`, key, now, now - 600000, now - 600000);
-  // Atomic increment avoids concurrent requests bypassing the attempt cap.
-  const attempt = await first(env, 'UPDATE login_attempts SET attempts=attempts+1 WHERE key=? AND attempts<10 RETURNING attempts', key);
+  // Reserve the attempt in one statement, preserving the fixed-window cap
+  // even when concurrent sign-ins arrive at a new or expired window.
+  const attempt = await first(env, `INSERT INTO login_attempts(key,attempts,window_start) VALUES(?,1,?)
+    ON CONFLICT(key) DO UPDATE SET attempts=CASE WHEN window_start<? THEN 1 ELSE attempts+1 END,
+    window_start=CASE WHEN window_start<? THEN excluded.window_start ELSE window_start END
+    WHERE window_start<? OR attempts<10 RETURNING attempts`,key,now,now-600000,now-600000,now-600000);
   if (!attempt) throw new ApiError(429, 'Too many sign-in attempts. Try again in 10 minutes.');
   const a = await digest(supplied || request.headers.get('x-hireflow-access-code') || '');
   const b = await digest(env.ACCESS_CODE);

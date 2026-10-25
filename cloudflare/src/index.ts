@@ -3,17 +3,16 @@ import { all, first, run, userById, applicationQuery, historicalListing } from '
 import { checkAccessCode, logout, requireUser, sessionUser, startSession } from './auth';
 import { readJson, saveProfile } from './profile';
 import { addJobs, confirmPlan, getPlan, swapPlan, refreshMatches } from './plans';
-import { discoverJobs, scoreMatch } from './intelligence';
+import { scoreMatch } from './intelligence';
 import { emailReport, generateReport, latestReport } from './reports';
-import { processTask, scheduledRecovery } from './tasks';
-import { validatePublicUrl } from './automation';
+import { processTask } from './tasks';
+import { discoveryStatus, startDiscovery } from './discovery_tasks';
 import { files } from './files';
 import { createTransfer, consumeTransfer } from './session_transfer';
-import { accountSecurity, cleanupAccountSecurity } from './account_security';
+import { accountSecurity } from './account_security';
 import { cancelQueuedApplication, createSubmissionReview, editResume, regenerateResume, rejectResume, resumeDraft, reviewQuestions } from './reviews';
-import { getOperationsStatus, newOperationContext, pruneOperations, recordOperation } from './telemetry';
+import { getOperationsStatus, newOperationContext, recordOperation } from './telemetry';
 import { runModelDiagnostics, safeProviderHealth } from './provider_health';
-import {pruneSemanticCache} from './semantic_matching';
 
 function number(value: string | null, fallback?: number, max = Number.MAX_SAFE_INTEGER) {
   const n = value === null && fallback !== undefined ? fallback : Number(value);
@@ -63,31 +62,12 @@ async function route(request: Request, env: Env): Promise<Response> {
     if(method==='GET') return json(await userById(env,id));
     if(method==='PATCH') return saveProfile(request,env,id);
   }
+  if((match=path.match(/^\/jobs\/(\d+)\/discover\/([a-f0-9-]{36})$/)) && method==='GET'){
+    const id=number(match[1]);await requireUser(request,env,id);return json(await discoveryStatus(env,id,match[2]));
+  }
   if ((match=path.match(/^\/jobs\/(\d+)(\/discover)?$/)) && method==='POST') {
     const id=number(match[1]); await requireUser(request,env,id);
-    if(match[2]) {
-      const user=await userById(env,id);
-      let jobs: Row[]; const warnings:string[]=[],sources:Row[]=[];
-      try { jobs=await discoverJobs(env,user.master_profile,{warn:message=>warnings.push(message),report:rows=>sources.push(...rows),trace:data=>console.log(JSON.stringify({event:'job_discovery',...data}))}); }
-      catch(error) {
-        const status=typeof (error as {status?:unknown})?.status==='number'?(error as {status:number}).status:null;
-        console.warn(JSON.stringify({event:'job_discovery_unavailable',status}));
-        return json({detail:'Job search could not finish. Please try again, or paste a current job-detail URL and its full description below.',sources,warnings},503);
-      }
-      // Search results are untrusted; discard malformed URLs/listings individually.
-      const valid=jobs.slice(0,10).filter(job=>{
-        try {validatePublicUrl(job.url);} catch{return false;}
-        return ['title','company','description'].every(k=>typeof job[k]==='string'&&job[k].trim())&&job.title.length<=300&&job.company.length<=300&&job.description.length<=30000&&job.url.length<=2000&&(!job.posted_date||Number.isFinite(Date.parse(job.posted_date)));
-      });
-      const known=await all(env,'SELECT j.url FROM applications a JOIN jobs j ON j.id=a.job_id WHERE a.user_id=?',id);
-      const identity=(url:string)=>url.replace(/\/apply\/?(?=\?|$)/,'').replace(/\/$/,'');
-      const existing=new Set(known.map(job=>identity(job.url))), fresh=valid.filter(job=>!existing.has(identity(job.url)));
-      const imported=await addJobs(env,id,valid,true);
-      const message=imported?`${imported} active opportunities added. Refresh your plan to review the job details and resumes.`:
-        valid.length&&!fresh.length?'These active listings are already in your opportunities. Review your weekly plan or broaden your target role.':
-        valid.length?'Verified listings were already available or ineligible under your current company/mode preferences. Review your plan or broaden the search.':'No new active listings could be verified. Try a broader target role or location, or paste a current job-detail URL and its full description below.';
-      return json({imported,discovered:valid.length,already_known:valid.length-fresh.length,not_imported:Math.max(0,fresh.length-imported),sources,warnings,message});
-    }
+    if(match[2]) return json(await startDiscovery(env,id),202);
     const count=await addJobs(env,id,[await readJson(request)]); return json({imported:count,message:count?'Opportunity added. Refresh your plan.':'This listing is not eligible for the current profile.'},201);
   }
   if((match=path.match(/^\/weekly-plan\/(\d+)(?:\/(swap|confirm|refresh-matches))?$/))) {
@@ -217,8 +197,8 @@ export default {
   async queue(batch: MessageBatch<Task>, env: Env) {
     for(const message of batch.messages){
       try { await processTask(env,message); }
-      catch { console.error(JSON.stringify({event:'queue_processing_failed',application_id:message.body?.application_id})); message.retry({delaySeconds:120}); }
+      catch { console.error(JSON.stringify({event:'queue_processing_failed',application_id:message.body&&'application_id' in message.body?message.body.application_id:undefined})); message.retry({delaySeconds:120}); }
     }
   },
-  async scheduled(_event: ScheduledController, env: Env) { await scheduledRecovery(env); await cleanupAccountSecurity(env);await pruneOperations(env);await pruneSemanticCache(env); },
+  async scheduled(_event: ScheduledController, env: Env) { await env.APPLICATION_QUEUE.send({kind:'maintenance'}); },
 } satisfies ExportedHandler<Env,Task>;

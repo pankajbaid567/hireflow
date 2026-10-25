@@ -60,15 +60,31 @@ describe('Cloudflare plan regressions',()=>{
     expect((await request(`/weekly-plan/${id}/confirm`,'POST',await reviewedPayload(ready.plan))).status).toBe(200);
     const stored=await db.prepare("SELECT count(*) AS n FROM applications WHERE status='confirmed'").first<any>();expect(stored!.n).toBe(5);
   });
-  it('invalidates reviewed drafts after a profile edit, refreshes five scores at a time, and preserves historical PDFs',async()=>{
+  it('invalidates reviewed drafts, bounds each refresh, and preserves source facts and historical PDFs',async()=>{
     await addJobs(6);await plan();const old=await plan();const selected=old.plan[0];
+    const factsBefore=(await db.prepare('SELECT id,facts_version,required_skills,compensation FROM jobs ORDER BY id').all()).results;
     const changed=await request(`/profile/${id}`,'PATCH',{skills:['Python','TypeScript','Docker']});expect(changed.status).toBe(200);
     expect((await request(`/weekly-plan/${id}/confirm`,'POST',{confirmed_job_ids:[selected.job_id]})).status).toBe(400);
-    const updating=await plan();expect(updating).toMatchObject({preparing:true,plan:[]});expect(updating.warnings[0]).toContain('1 remaining');
-    const next=await plan();expect(next.preparing).toBe(true);const final=await plan();expect(final.preparing).toBe(false);
+    const updating=await plan();expect(updating).toMatchObject({preparing:true,plan:[]});expect(updating.warnings[0]).toContain('5 remaining');
+    let final=updating;
+    for(let polls=0;final.preparing&&polls<10;polls++)final=await plan();
+    expect(final.preparing).toBe(false);
+    expect((await db.prepare('SELECT id,facts_version,required_skills,compensation FROM jobs ORDER BY id').all()).results).toEqual(factsBefore);
     const refreshed=final.plan.find((a:any)=>a.application_id===selected.application_id);expect(refreshed.resume_version).toBe(2);
     const historical=await request(`${selected.resume_url}?version=1`);expect(historical.status).toBe(200);expect((await historical.text()).startsWith('%PDF-')).toBe(true);
     const stale=await db.prepare('SELECT count(*) AS n FROM applications a JOIN users u ON u.id=a.user_id WHERE a.scored_profile_version<>u.profile_version').first<any>();expect(stale!.n).toBe(0);
+  });
+  it('does not spend active-mode polling on stale listings from the other mode',async()=>{
+    await addJobs(3);
+    expect((await request(`/profile/${id}`,'PATCH',{mode:'job'})).status).toBe(200);
+    expect((await request(`/jobs/${id}`,'POST',{title:'Python Engineer',company:'Job Mode Co',description:'Python and SQL engineering role. Freshers welcome.',url:'https://example.com/jobs/fulltime',listing_type:'job'})).status).toBe(201);
+    expect((await request(`/profile/${id}`,'PATCH',{skills:['Python','SQL']})).status).toBe(200);
+    const current=await plan();expect(current.preparing).toBe(false);expect(current.plan.map((item:any)=>item.company_name)).toEqual(['Job Mode Co']);
+    const stale=await db.prepare('SELECT COUNT(*) AS n FROM applications a JOIN jobs j ON j.id=a.job_id JOIN users u ON u.id=a.user_id WHERE j.listing_type=\'internship\' AND a.scored_profile_version<>u.profile_version').first<any>();expect(stale!.n).toBe(3);
+    expect((await request(`/profile/${id}`,'PATCH',{mode:'internship'})).status).toBe(200);
+    const changingBack=await plan();expect(changingBack).toMatchObject({preparing:true,plan:[]});
+    let restored=changingBack;for(let polls=0;restored.preparing&&polls<6;polls++)restored=await plan();
+    expect(restored.preparing).toBe(false);expect(restored.plan).toHaveLength(3);expect(restored.plan.every((item:any)=>item.listing_type==='internship')).toBe(true);
   });
   it('enforces a reduced quota and preserves submitted PDFs across later profile edits',async()=>{
     await addJobs(2);const old=await plan();const first=old.plan[0];

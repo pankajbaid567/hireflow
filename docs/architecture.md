@@ -16,7 +16,11 @@ flowchart LR
   W --> K[(Private KV: uploads, PDF versions, reports)]
   W --> A[Workers AI: bounded BGE embeddings]
   W --> G[Groq / Gemini: extraction and grounded selection]
-  W --> T[Tavily / SerpAPI: source-specific discovery]
+  W --> S[Private search ticket: profile and mode bound]
+  S --> Q
+  C --> T[Tavily / SerpAPI: source-specific discovery]
+  W -->|Owner-only search status polling| D
+  CR[Five-minute Cron] -->|Maintenance task| Q
   W --> O[Atomic confirmation and outbox]
   O --> Q[Application Queue]
   Q --> C[Worker consumer: exact review claim]
@@ -34,7 +38,7 @@ Queue/outbox state and browser checkpoints provide the real orchestration.
 | --- | --- |
 | API/authentication | `cloudflare/src/index.ts`, `auth.ts`, `account_security.ts`: matched routes, ownership cookie, passkey assertions, one-use keys and session revocation. |
 | Intake/profile | `profile.ts`, `intelligence.ts`: bounded PDF extraction, validated facts/preferences and profile versions. |
-| Discovery/listing evidence | `intelligence.ts`, `listing_details.ts`: mode-specific fan-out, canonical URLs, active full JDs, structured compensation/experience and evidence-labelled quality rules. |
+| Discovery/listing evidence | `discovery_tasks.ts`, `intelligence.ts`, `listing_details.ts`: durable owner-bound tickets, queue claims, mode-specific fan-out, canonical URLs, active full JDs, structured compensation/experience and evidence-labelled quality rules. |
 | Ranking/plan | `plans.ts`, `semantic_matching.ts`, `company_policy.ts`: six-factor lexical/hybrid ranking, private versioned embeddings, quota, prior-employer exclusion and plan selection. |
 | Draft/review | `resume_tailoring.ts`, `pdf.ts`, `reviews.ts`, `review_contract.ts`: copied facts, readable PDFs, immutable edits/versions, exact answer/PDF approval and atomic queued cancellation. |
 | Execution | `tasks.ts`, `automation.ts`, `automation_checkpoints.ts`: review-bound claims, budget/spacing, native supported steps, encrypted recovery and no blind repeat after uncertain writes. |
@@ -50,10 +54,7 @@ Queue/outbox state and browser checkpoints provide the real orchestration.
 2. Resume extraction preserves source facts. Users edit structured experience,
    projects, education and preferences before searching. The saved profile
    version participates in draft, embedding and approval freshness.
-3. Discovery performs five source searches in Internship mode or four in Job
-   mode. It verifies bounded public full-JD candidates and exposes restricted,
-   unavailable and empty sources. It is not an authenticated feed or a 100+
-   listing background cycle.
+3. Discovery starts with an owner-scoped HTTP 202 ticket. A Queue consumer performs five source searches in Internship mode or four in Job mode, verifies bounded public full JDs and imports source facts. The UI polls private status and exposes restricted, unavailable and empty sources. Claims are idempotent; profile/mode changes and expired tickets cannot attach stale applications. Each search remains bounded to eight verified results, not a demonstrated 100+ pool or authenticated portal feed. Maintenance also runs in the Queue; the five-minute Cron only dispatches its task.
 4. The plan uses the documented six-factor score. Genuine BGE embeddings can
    blend only 20% of the existing technical factor; explicit skill gaps remain
    exact. The model/source/profile cache is private and bounded. The

@@ -8,8 +8,14 @@ const root = fileURLToPath(new URL('../', import.meta.url));
 const access = 'discovery-test-private-owner-access-code';
 const description = 'Work on Python and LangChain APIs in a supervised engineering internship. Write unit tests, investigate data issues, document the interface, and complete one scoped delivery project.';
 let bundle: string, mf: Miniflare, cookie: string, userId: number, providerStatus: number;
-beforeAll(() => { bundle = buildSync({ entryPoints: [`${root}src/index.ts`], bundle: true, format: 'esm', platform: 'browser', target: 'es2022', external: ['node:*', 'cloudflare:*'], write: false, logLevel: 'silent' }).outputFiles[0].text; });
-async function request(path: string) { return mf.dispatchFetch(`https://worker.example${path}`, { method: 'POST', headers: { Cookie: cookie } }); }
+beforeAll(() => { bundle = buildSync({ entryPoints: [`${root}tests/runtime.ts`], bundle: true, format: 'esm', platform: 'browser', target: 'es2022', external: ['node:*', 'cloudflare:*'], write: false, logLevel: 'silent' }).outputFiles[0].text; });
+async function request(path: string) {
+  const start=await mf.dispatchFetch(`https://worker.example${path}`, {method:'POST',headers:{Cookie:cookie}});
+  expect(start.status).toBe(202);const ticket=await start.json() as any;
+  const delivered=await mf.dispatchFetch('https://worker.example/__test/queue',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:'discover',discovery_id:ticket.discovery_id})});
+  expect((await delivered.json() as any).acknowledged).toBe(true);
+  return mf.dispatchFetch(`https://worker.example${ticket.poll_url}`,{headers:{Cookie:cookie}});
+}
 beforeEach(async () => {
   providerStatus = 200;
   mf = new Miniflare(convertV4MiniflareOptions({ modules: true, script: bundle, compatibilityDate: '2026-10-21', compatibilityFlags: ['nodejs_compat'], d1Databases: ['DB'], kvNamespaces: ['FILES_KV'], queueProducers: { APPLICATION_QUEUE: 'discovery' }, bindings: { ACCESS_CODE: access, TAVILY_API_KEY: 'mock-provider-key', BROWSER_ENABLED: 'false' }, outboundService: request => {
@@ -44,9 +50,9 @@ describe('discovery API import truthfulness', () => {
     const updated=await db.prepare('SELECT title,company,description,provenance FROM jobs').first<any>();expect(updated).toMatchObject({title:'AI Engineer Intern',company:'Actual Co',description});expect(JSON.parse(updated!.provenance).kind).toBe('json_ld');
   });
   it('returns an actionable sanitized provider failure without adding listings or exposing credentials', async () => {
-    providerStatus = 401; const response = await request(`/jobs/${userId}/discover`); expect(response.status).toBe(503); const body = await response.text();
+    providerStatus = 401; const response = await request(`/jobs/${userId}/discover`); expect(response.status).toBe(200); const body = await response.text();
     expect(body).toContain('paste a current job-detail URL'); expect(body).not.toContain('mock-provider-key'); expect(body).not.toContain('private error detail');
-    const failure=JSON.parse(body);expect(failure.sources).toHaveLength(5);expect(failure.sources.every((source:any)=>source.status==='unavailable'&&source.verified===0&&source.search_calls===1)).toBe(true);
+    const failure=JSON.parse(body);expect(failure.state).toBe('failed');expect(failure.sources).toHaveLength(5);expect(failure.sources.every((source:any)=>source.status==='unavailable'&&source.verified===0&&source.search_calls===1)).toBe(true);
     const db = await mf.getD1Database('DB'); expect((await db.prepare('SELECT count(*) AS n FROM jobs').first<any>())!.n).toBe(0);
   });
 });

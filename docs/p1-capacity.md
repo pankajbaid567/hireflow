@@ -124,8 +124,9 @@ errors**, CPU P50/P95/P99 **3.222/5.989/8.336 ms**. The observed P95 was about
 19% lower than the P0 read window; P99 was essentially unchanged. Isolate
 memory P99 increased from **20,288,820 to 29,551,534 bytes** with the larger
 Unicode-capable bundle, below the 128-MiB isolate allowance in this sample.
-These whole-Worker time windows overlap other controlled E2E traffic; they
-cannot establish an exclusive causal effect of one optimization.
+These whole-Worker time windows can include other callers/background work;
+they cannot establish an exclusive causal effect of one optimization. The
+controlled application cycle below started after this read matrix ended.
 
 | Traffic window | P0 CPU P50/P95/P99, ms | P1 CPU P50/P95/P99, ms | P1 client wall P95, ms |
 | --- | --- | --- | --- |
@@ -149,6 +150,99 @@ was removed. Its owner-scoped database cleanup is tracked by the release
 runner. No browser/provider allowance was reset. Deployment output did not
 provide startup CPU, so no production cold-start CPU result is claimed.
 
+## First P1 controlled-cycle findings
+
+The 23 October run `bd0e4e7807ac` on the same candidate is **a failed E2E run**,
+not a completed acceptance proof. It reached both modes and two confirmations,
+then stopped at the job review stage on an assertion (`2 !== 1`). The retained
+measurement window starts at its recorded `started_at`, **09:21:05.372 UTC**,
+and ends at the final proof-file write, **09:27:02.365 UTC**. The proof did not
+record an instrumented finish time, so the latter is an artifact boundary.
+
+Native GraphQL analytics retained **72 sampled invocations, zero runtime
+errors**, CPU P50/P95/P99 **7.108/108.545/546.309 ms**, and memory P99
+**38,473,588 bytes**. That dataset's inspected schema has no event-type/trigger
+dimension. It cannot label this aggregate as HTTP-only, and a successful
+runtime outcome is separate from the E2E assertion result.
+
+The official Workers Observability aggregate API provides verified keys
+`$workers.eventType`, `$workers.outcome`, `$workers.cpuTimeMs` and
+`$workers.wallTimeMs`. A read-only, `dry:true` query scoped to the exact Worker,
+candidate version and window separates the workloads without retrieving raw
+log events, headers, query strings, prompts or response bodies:
+
+| Invocation type / outcome | Reported invocation count | CPU P50 / P95 / P99 / max, ms | Wall P95, ms |
+| --- | --- | --- | --- |
+| fetch / ok | 71 | 6 / 28 / 108 / 108 | 4,291 |
+| scheduled / ok | 1 | 10 / 10 / 10 / 10 | 3,157 |
+| queue / ok | 5 | 309 / 546 / 546 / 546 | 26,550 |
+
+Invocation-log CPU values have millisecond precision. The fetch aggregate's
+sample interval was about 1.145, while queue/scheduled groups reported 1;
+weighted counts, ingestion and differing datasets explain why counts are not
+identical to GraphQL. Missing groups are unobserved, not zero-cost work.
+The published [Workers limits](https://developers.cloudflare.com/workers/platform/limits/#cpu-time)
+list **10 ms for Free HTTP and Free Cron CPU**. The separate
+[Queues limits](https://developers.cloudflare.com/queues/platform/limits/#increasing-queue-consumer-worker-cpu-limits)
+describe a 30-second default consumer CPU limit and a 15-minute wall limit.
+Queue time must not be compared to the HTTP CPU allowance.
+
+The **28-ms HTTP P95 fails the 10-ms objective** for this candidate, despite the
+safe read matrix passing. Aggregate route investigation identified discovery
+at **70/108 ms** (two requests, P50/P95), weekly-plan GET at **8/40 ms** (12),
+signup at **22 ms** (one), swap at **18/22 ms** (two), draft edit at **15 ms**
+(one), and confirmation at **9/13 ms** (two). Paths are normalized before proof
+output; separate raw-path groups are not merged into invented percentiles.
+
+Private retained artifacts: `cycle-interrupted.json`,
+`cycle-interrupted-trigger-aggregates.json` and
+`cycle-interrupted-route-aggregates.json` under `/tmp/hireflow-p1-capacity/`.
+The CLI's existing OAuth could read GraphQL but received 403/code 10000 for
+Workers Logs; the connected Cloudflare MCP supplied the authorized aggregate
+read. This did not change credentials, logging sampling, plans or quotas.
+
+## Discovery CPU correction — 25 October
+
+An isolated workerd fixture runs the actual discovery logic with **five
+independent source searches, four results per source and eight verified full
+8,199-character JDs**. Provider responses are generated outside the profiled
+Worker, so fixture construction is excluded from its CPU capture. Ordinary
+HTML is 125,934 bytes, with real JSON-LD plus irrelevant JavaScript. No live
+provider call or employer submission occurs.
+
+Profiling confirmed duplicate payload cost: search requested raw page text for
+all candidates, although only fetched source HTML/ATS JSON can supply a
+verified JD. Discovery now explicitly requests Tavily `include_raw_content:
+false`; snippets never become authoritative descriptions. It also skips
+invisible script/navigation text before entity decoding, reuses a static entity
+table, avoids an extra byte copy for a single response chunk, and uses a linear
+tag scan that keeps unclosed scripts hidden. Escaped HTML and UTF-8 split across
+chunks retain their source facts; visible expired banners remain rejected.
+
+| Local workload | Before | Corrected |
+| --- | --- | --- |
+| Ordinary HTML, first sampled active runs | 14.210 ms/read (40 reads) | 10.844 ms/read (100 reads) |
+| Ordinary HTML, later 100-read repeat | 11.360 ms/read | 17.865 ms/read |
+| Ordinary HTML, provider response bytes | 1,339,379/read | 683,119/read |
+| Truncated script, sampled active mean | 23.529 ms/read | 13.244 ms/read (40 reads each) |
+| Truncated script, wall P95 | 45.916 ms | 17.556 ms |
+| Truncated script, tag/text self samples | 439.718 ms total | 50.699 ms total (text plus scanner) |
+
+The ordinary repeats vary materially and do **not** establish a stable total
+local CPU speedup; the last repeat's native fetch/read frames also increased.
+The smaller provider payload is deterministic, while shared-host scheduling,
+JIT and runtime overhead affect sampling. The malformed fixture preserves the
+same verified JDs but ends in a 125-KB
+unclosed script containing repeated `<` tokens. It exposes the old broad tag
+regex's repeated scanning. These local results support the changes; they are
+**not billed CPU P95 values** and do not establish a 10-ms HTTP discovery bound.
+The scanner also avoids lowercasing a whole Unicode page: characters such as
+`İ` can expand and invalidate offsets. Mixed-case tags and unchanged multilingual
+source facts have an explicit regression. The measured need for bounded queue
+stages remains: `waitUntil()` would keep
+the work charged to the same HTTP invocation. New orchestration and a complete
+candidate cycle must be measured before the release gate can pass.
+
 ## Reproduce and compare
 
 Use Node 22+, installed locked Cloudflare dependencies and Playwright tooling.
@@ -163,6 +257,12 @@ node scripts/profile_worker_operations.mjs --route account_security \
   --requests 1000 --output /tmp/account-after.json
 node scripts/profile_worker_operations.mjs --route pdf_devanagari \
   --requests 50 --output /tmp/pdf-hindi.json
+node scripts/profile_worker_operations.mjs --route discovery \
+  --requests 100 --output /tmp/discovery-after.json
+# Keep a private pre-edit source snapshot for like-for-like before comparison:
+node scripts/profile_worker_operations.mjs --route discovery \
+  --source-file /tmp/intelligence-before-discovery.ts --discovery-shape truncated_script \
+  --requests 40 --output /tmp/discovery-before.json
 
 # Exactly one synthetic owner, reused across release measurements:
 node scripts/profile_cloudflare_routes.mjs --run-live --create-fixture \
@@ -174,6 +274,11 @@ node scripts/profile_cloudflare_routes.mjs --run-live \
 node scripts/profile_cloudflare_routes.mjs --run-live --refresh-proof /tmp/routes-after.json
 # Revoke the synthetic session and remove its private state file:
 node scripts/profile_cloudflare_routes.mjs --run-live --logout-only
+
+# Read only already-executed cycle analytics; no new application/provider traffic.
+node scripts/profile_cloudflare_cycle.mjs --run-live \
+  --from ACTUAL_START_UTC --to ACTUAL_END_UTC --version DEPLOYED_VERSION_UUID \
+  --output /tmp/cycle-capacity.json
 ```
 
 The private state file defaults to `/tmp/hireflow-p1-capacity/private-session.json`
@@ -183,10 +288,11 @@ is separate from browser/provider budgets, which must never be reset for QA.
 
 ## Release gate
 
-**The post-P1 read comparison is complete; the full-cycle comparison is pending.**
-The candidate and migrations through `0010` are deployed. Capture the
-representative controlled application cycle and refresh platform analytics
-before claiming a changed free-tier envelope for the entire workflow. The
+**The post-P1 read comparison is complete; the first full-cycle attempt failed
+the HTTP CPU objective.** Its actual scope is retained above. The first
+candidate and migrations through `0010` are deployed; discovery/plan corrections
+require a new coordinated release and complete controlled cycle before claiming
+a changed free-tier envelope for the entire workflow. The
 warm read matrix does not certify long Unicode resumes, uncached discovery,
 model calls or cold module startup. Record CPU/memory, invocation errors and
 the measured bundle/version, and retain any unmeasured boundaries. The published

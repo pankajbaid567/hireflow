@@ -34,7 +34,7 @@ describe('active individual job discovery', () => {
     const fetch = mock((url, init) => {
       expect(url).toBe('https://api.tavily.com/search'); expect(init.redirect).toBe('manual');
       const query = JSON.parse(String(init.body));
-      expect(query).toMatchObject({ time_range: 'month', include_raw_content: 'text', include_published_date: true, max_results: 4 });
+      expect(query).toMatchObject({ time_range: 'month', include_raw_content: false, include_published_date: true, max_results: 4 });
       expect(query.include_domains.length).toBeGreaterThan(0); expect(query.query).toContain('AI Engineer internship Python'); expect(query.query).not.toContain('India'); expect(query.query).not.toContain('React');
       return response({ results: [] });
     });

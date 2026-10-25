@@ -24,6 +24,7 @@ transfer rerun passed migration, replay rejection and logout on both origins.
 | Private uploads, versioned resume PDFs, HTML reports | Workers KV namespace `hireflow-files`; R2 adapter optional |
 | Confirmed application work | Queue `hireflow-applications` and Browser Run |
 | PDF extraction / text generation | Gemini / configured Groq or Gemini provider |
+| Semantic matching | Workers AI BGE CLS, private versioned D1 vectors; Python FAISS is separate |
 
 [Deployment and resource details](docs/cloudflare.md) include the actual bindings, secrets, quotas, commands, and verification status. No provider secret belongs in browser code.
 
@@ -35,7 +36,7 @@ transfer rerun passed migration, replay rejection and logout on both origins.
 4. Review the ranked plan and skill gaps. Edit, compare, reject or regenerate each opportunity’s PDF, then review its answers and approve that exact version. Swap listings or change the selection; confirm only the approved opportunities you authorize.
 5. Track the result and any manual instructions. Open private resume versions, interview guides, and the weekly HTML report.
 
-The deployed Worker uses **weighted lexical matching**, with aliases and cached scores. Its resume tailoring asks Groq to select verified profile facts and two or three relevant projects for each JD, then composes a mode-specific summary without accepting invented accomplishments. Provider failures use a visible deterministic fallback. Immutable PDF versions retain the method, model and profile version. It does not run FAISS/sentence-transformers; the separate Python embedding helpers are not part of that deployed path.
+The Worker uses **six-factor hybrid matching**: genuine Workers AI BGE embeddings contribute only 20% of the technical factor, with private versioned D1 vectors and a visible lexical fallback. The separate Python plan path supports real BGE/FAISS when explicitly enabled. On the frozen synthetic heldout benchmark, hybrid nDCG@3 was **0.9511 versus 0.6991** for lexical matching; these are authored relevance labels, not hiring outcomes. [Evaluation and limitations](docs/ai-evaluation.md) include factuality, source support, error analysis and actual-model provenance. Groq selects existing facts/projects for resume tailoring; immutable PDFs retain method, model and profile version.
 
 Automatic submission supports suitable public native forms with up to eight recognizable steps and encrypted completed-step checkpoints. Unknown controls, login walls and uncertain submissions require manual action; arbitrary employer portals are not certified. See the [compatibility matrix](docs/portal-compatibility.md). There is no blanket guarantee that a listing can be applied to automatically. **Production email is not configured:** SendGrid/Resend integration exists, but a provider key and verified sender are still needed, and no real delivery is claimed.
 
@@ -64,7 +65,7 @@ docker compose up --build -d --wait
 
 Open <http://localhost:3000>; FastAPI docs are at <http://localhost:8000/docs>.
 Python private routes now require the owner's HttpOnly session cookie; numeric
-IDs are not credentials. Apply Alembic migration `004` before starting the new
+IDs are not credentials. Apply Alembic migrations through `005` before starting the new
 API. Existing local owners can create recovery keys using the private offline
 bootstrap described in [account security](docs/account-security.md).
 [Container setup and persistence](docs/deployment.md) remain separate from
@@ -77,7 +78,7 @@ For Worker/Pages development, use **Node 22 or newer** and follow [the Cloudflar
 ```bash
 npm ci --prefix frontend
 npm test --prefix frontend
-npm run build --prefix frontend
+npm run build:cloudflare --prefix frontend
 npm ci --prefix cloudflare
 npm run check --prefix cloudflare
 # With the configured Python virtualenv and Chromium installed:
@@ -104,6 +105,9 @@ Default tests use isolated data and controlled forms. Live provider/browser veri
 | `docs/cloudflare.md` | Pages/Worker deployment, resources, sessions, limits, provider setup |
 | `docs/deployment.md` | Deployment status, local Docker operations, persistence and migration notes |
 | `docs/milestone-audit.md` | Requirement-by-requirement audit and remaining work |
+| `docs/architecture.md`, `docs/fresh-setup.md` | Runtime boundaries, data flow and verified clean setup |
+| `docs/ai-evaluation.md`, `docs/p1-pdf-quality.md` | Measured AI and PDF quality, with limitations |
+| `docs/demo.md` | Synthetic walkthrough and actual recording evidence |
 | `future.md` | Prioritized remaining work, AI improvements and optional future additions |
 
 NST Engineering — HireFlow

@@ -30,6 +30,69 @@ export function artifactUrl(path) {
   return `${API_BASE}${path}`;
 }
 
+const DISCOVERY_WAIT_MS = 180000;
+const DISCOVERY_POLL_MS = 1500;
+const discoveryTimeout = () => new Error('Opportunity search took too long. Please try again shortly.');
+const discoveryCancelled = () => Object.assign(new Error('Stopped waiting for opportunity search.'), { name: 'AbortError' });
+const invalidDiscovery = () => new Error('The search response could not be read. Please try again.');
+function discoveryFailure(data) {
+  const message = typeof data?.detail === 'string' && data.detail.trim() ? data.detail.trim().slice(0, 500) : 'Opportunity search could not be completed. Please try again.';
+  return Object.assign(new Error(message), { response: { status: 503, data: { detail: message, sources: Array.isArray(data?.sources) ? data.sources : [], warnings: Array.isArray(data?.warnings) ? data.warnings : [] } } });
+}
+function discoveryPause(signal) {
+  return new Promise((resolve, reject) => {
+    const abort = () => { clearTimeout(timer); signal.removeEventListener('abort', abort); reject(discoveryCancelled()); };
+    const timer = setTimeout(() => { signal.removeEventListener('abort', abort); resolve(); }, DISCOVERY_POLL_MS);
+    if (signal.aborted) abort(); else signal.addEventListener('abort', abort, { once: true });
+  });
+}
+
+/** One durable search, then private reads. Polling never launches another job. */
+async function discoverJobs(id, { signal } = {}) {
+  const userId = Number(id);
+  if (!Number.isSafeInteger(userId) || userId < 1) throw new Error('Open your profile before searching for opportunities.');
+  if (signal?.aborted) throw discoveryCancelled();
+  const controller = new AbortController(), deadline = Date.now() + DISCOVERY_WAIT_MS;
+  let timedOut = false, rejectStopped;
+  const stopped = new Promise((_, reject) => { rejectStopped = reject; });
+  const stop = () => rejectStopped(timedOut ? discoveryTimeout() : discoveryCancelled());
+  controller.signal.addEventListener('abort', stop, { once: true });
+  const parentAbort = () => controller.abort();
+  signal?.addEventListener('abort', parentAbort, { once: true });
+  const timer = setTimeout(() => { timedOut = true; controller.abort(); }, DISCOVERY_WAIT_MS);
+  const work = async () => {
+    const first = await client.post(`/jobs/${userId}/discover`, undefined, { signal: controller.signal, timeout: Math.min(120000, DISCOVERY_WAIT_MS) });
+    let data = first.data;
+    if (!data || typeof data !== 'object' || Array.isArray(data)) throw invalidDiscovery();
+    if (data.state === 'failed') throw discoveryFailure(data);
+    // Older synchronous backends return the complete result without a state.
+    if (first.status !== 202 && (!data.state || data.state === 'completed')) return data;
+    const discoveryId = data.discovery_id;
+    if (typeof discoveryId !== 'string' || !/^[a-f\d]{8}-(?:[a-f\d]{4}-){3}[a-f\d]{12}$/i.test(discoveryId)) throw invalidDiscovery();
+    const pollPath = `/jobs/${userId}/discover/${discoveryId}`;
+    for (;;) {
+      if (!data || typeof data !== 'object' || Array.isArray(data) || data.discovery_id !== discoveryId || data.poll_url !== undefined && data.poll_url !== pollPath) throw invalidDiscovery();
+      if (data.state === 'failed') throw discoveryFailure(data);
+      if (data.state === 'completed') return data;
+      if (!['queued', 'running'].includes(data.state)) throw invalidDiscovery();
+      if (Date.now() >= deadline) throw discoveryTimeout();
+      await discoveryPause(controller.signal);
+      const remaining = deadline - Date.now();
+      if (remaining <= 0) throw discoveryTimeout();
+      data = (await client.get(pollPath, { signal: controller.signal, timeout: Math.min(15000, remaining) })).data;
+    }
+  };
+  try { return await Promise.race([work(), stopped]); }
+  catch (error) {
+    if (timedOut) throw discoveryTimeout();
+    if (signal?.aborted) throw discoveryCancelled();
+    if (error?.code === 'ECONNABORTED') throw discoveryTimeout();
+    throw error;
+  } finally {
+    clearTimeout(timer); signal?.removeEventListener('abort', parentAbort); controller.signal.removeEventListener('abort', stop);
+  }
+}
+
 export const api = {
   getProfile: id => client.get(`/profile/${id}`).then(r => r.data),
   saveProfile: (data, id) => (id ? client.patch(`/profile/${id}`, data) : client.post('/profile', data)).then(r => r.data),
@@ -48,7 +111,7 @@ export const api = {
   recoverWorkspace: data => client.post('/account/recover', data).then(r => r.data),
   getOperations: id => client.get(`/operations/${id}`).then(r => r.data),
   runModelDiagnostics: id => client.post(`/operations/${id}/diagnostics`, {}).then(r => r.data),
-  discoverJobs: id => client.post(`/jobs/${id}/discover`).then(r => r.data),
+  discoverJobs,
   addJob: (id, data) => client.post(`/jobs/${id}`, data).then(r => r.data),
   getPlan: id => client.get(`/weekly-plan/${id}`).then(r => r.data),
   refreshMatching: id => client.post(`/weekly-plan/${id}/refresh-matches`, {}).then(r => r.data),
