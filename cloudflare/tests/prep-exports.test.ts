@@ -57,6 +57,10 @@ describe('private versioned standalone prep exports',()=>{
   const pending=deliver(ticket.id,true);await gate.entered;expect((await deliver(ticket.id)).acknowledged).toBe(true);gate.release();await pending;
   const again=await request(path,'POST',{});expect(again.status).toBe(200);expect((await again.json() as any).id).toBe(ticket.id);expect((await bucket.list()).objects).toHaveLength(2);expect((await db.prepare('SELECT count(*) AS n FROM prep_guide_exports').first<{n:number}>())!.n).toBe(1);
  });
+ it('exports real documentation chevrons without dropping evidence or citation links',async()=>{
+  const saved={...guide(),resources:{...guide().resources,SQL:[{title:'SQL tutorial',url:'https://www.w3schools.com/sql/',description:'SQL_REFERENCE_START ❮ and ❯ SQL_REFERENCE_END'}]}};await db.prepare('UPDATE prep_guides SET structured_data=? WHERE application_id=1').bind(JSON.stringify(saved)).run();
+  const ready=await complete(),bytes=await pdf(ready),reader=readPdf(bytes);expect(reader.text).toContain('SQL_REFERENCE_START < and > SQL_REFERENCE_END');expect(reader.links).toContain('https://www.w3schools.com/sql/');const html=await(await request(ready.html_url)).text();expect(html).toContain('SQL_REFERENCE_START ❮ and ❯ SQL_REFERENCE_END');
+ });
  it('keeps immutable older downloads, labels stale snapshots and creates a new guide revision',async()=>{
   const original=await complete(),before=await pdf(original);const next=guide();next.questions.push({category:'technical',question:'Explain NEW_REVISION_TOKEN in your Python project.'});await db.prepare('UPDATE prep_guides SET structured_data=? WHERE application_id=1').bind(JSON.stringify(next)).run();
   expect((await json(`${path}/${original.id}`)).stale).toBe(true);expect(await pdf(original)).toEqual(before);

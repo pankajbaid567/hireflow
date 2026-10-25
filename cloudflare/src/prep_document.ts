@@ -10,6 +10,10 @@ const PREP_REGULAR_WIDTHS = [278,278,355,556,556,889,667,191,333,333,389,584,278
 const PREP_BOLD_WIDTHS = [278,333,474,556,556,889,722,238,333,333,389,584,278,333,278,278,556,556,556,556,556,556,556,556,556,556,333,333,584,584,584,611,975,722,722,722,722,667,611,778,722,278,556,722,611,833,722,778,667,778,722,667,611,722,667,944,667,667,611,333,278,333,584,556,333,556,611,556,611,556,333,611,611,278,278,556,278,889,611,611,611,611,389,556,333,611,556,778,556,556,500,389,280,389,584];
 const pdfLiteral=(s:string)=>s.replace(/([\\()])/g,'\\$1');
 const clean=(value:unknown)=>String(value??'').normalize('NFC').replace(/[–—]/g,'-').replace(/[‘’]/g,"'").replace(/[“”]/g,'"').replace(/\r\n?/g,'\n').replace(/[\t\u00a0]/g,' ').replace(/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f\u202a-\u202e\u2066-\u2069]/g,'');
+// Public documentation excerpts can include decorative previous/next chevrons.
+// Use their supported angle forms in PDF typography; HTML retains the source
+// glyphs, and neither path drops the surrounding evidence or citation.
+const pdfText=(value:unknown)=>clean(value).replace(/\u276e/g,'<').replace(/\u276f/g,'>');
 function show(value:unknown,depth=0):string {if(depth>6)throw new ResumeFormatError('The guide evidence is too deeply nested to export safely. Simplify the saved guide; no content was discarded.');return Array.isArray(value)?value.map(v=>show(v,depth+1)).join('; '):value&&typeof value==='object'?Object.entries(value).map(([k,v])=>`${k.replaceAll('_',' ')}: ${show(v,depth+1)}`).join('; '):clean(value);}
 const array=(value:unknown):any[]=>Array.isArray(value)?value:[];
 export function safePrepLink(value:unknown):string|undefined {try{return typeof value==='string'?validatePublicUrl(value):undefined;}catch{return undefined;}}
@@ -68,7 +72,7 @@ export function prepPdf(document:PrepDocument):Uint8Array {
   const draw=(s:string,x:number,baseline:number,size:number,bold=false,muted=false)=>{let cursor=x;return fonts.split(s).map(part=>{const out=/^[\x20-\x7e]*$/.test(part)?`BT /${bold?'F2':'F1'} ${size} Tf ${muted?'0.32 0.36 0.40':'0.10 0.13 0.17'} rg 1 0 0 1 ${Number(cursor.toFixed(2))} ${Number(baseline.toFixed(2))} Tm (${pdfLiteral(part)}) Tj ET`:fonts.draw(part,cursor,baseline,size,bold,muted);cursor+=width(part,size,bold);return out;}).join('\n');};
   const ensure=(height:number)=>{if(y-height>=55)return;pages.push([]);links.push([]);y=790;pages.at(-1)!.push(draw('HireFlow - private interview guide (continued)',48,y,9,true,true));y-=24;};
   const wrap=(text:string,size:number,bold=false)=>{
-    const out:string[]=[];for(const paragraph of clean(text).split('\n')){let line='';for(const word of paragraph.split(/\s+/).filter(Boolean)){
+    const out:string[]=[];for(const paragraph of pdfText(text).split('\n')){let line='';for(const word of paragraph.split(/\s+/).filter(Boolean)){
       if(line&&width(line+' '+word,size,bold)>499){out.push(line);line='';}
       if(width(word,size,bold)>499){let part='';for(const {segment}of new Intl.Segmenter('und',{granularity:'grapheme'}).segment(word)){if(part&&width(part+segment,size,bold)>499){out.push(part);part='';}part+=segment;}line=part;}else line+=(line?' ':'')+word;
     }if(line)out.push(line);}return out;
