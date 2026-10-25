@@ -147,7 +147,7 @@ describe('private coordinated workspace archives', () => {
     expect(rows[1]).toMatchObject({ user_id: 1, state: 'failed', input_snapshot: '{}', dispatched_at: null }); expect(rows[1].failure_reason).toContain('fresh guide export');
   });
 
-  it('runs the real offline CLI into a new private local D1/KV directory', async () => {
+  it('persists the real offline CLI restore across a separate D1/KV process restart', async () => {
     const backup = await exportArchive(), temp = mkdtempSync(join(tmpdir(), 'hireflow-isolated-restore-'));
     try {
       const directory = join(temp, 'archive'), target = join(temp, 'restored'); mkdirSync(directory, { mode: 0o700 }); mkdirSync(join(directory, 'artifacts'), { mode: 0o700 });
@@ -156,6 +156,42 @@ describe('private coordinated workspace archives', () => {
       const result = spawnSync(process.execPath, [`${root}../scripts/restore_workspace_backup.mjs`, '--run-isolated-restore', '--archive', directory, '--destination', target, '--manifest-sha256', backup.hash], { encoding: 'utf8', timeout: 30000 });
       expect(result.status, result.stderr).toBe(0); expect(JSON.parse(result.stdout)).toMatchObject({ state: 'restored_offline', user_id: 1, application_count: 2, authentication_restored: false });
       expect(JSON.parse(readFileSync(join(target, 'mapping.json'), 'utf8')).application_ids).toEqual({ 1001: 1, 1002: 2 });
+      // A receipt is not evidence that Miniflare persisted anything. Reopen
+      // without migrations/import, in a genuinely separate process, and read
+      // actual restored rows and KV bytes after the CLI has disposed its runtime.
+      const probe = join(temp, 'verify-restored-state.mjs');
+      writeFileSync(probe, `
+        import assert from 'node:assert/strict';
+        import {createHash} from 'node:crypto';
+        import {createRequire} from 'node:module';
+        import {readFileSync} from 'node:fs';
+        import {join} from 'node:path';
+        const require=createRequire(${JSON.stringify(`${root}package.json`)});
+        const {Miniflare,convertV4MiniflareOptions}=require('miniflare');
+        const target=process.argv[2],archive=process.argv[3];
+        const mapping=JSON.parse(readFileSync(join(target,'mapping.json'),'utf8'));
+        const snapshot=JSON.parse(readFileSync(join(archive,'snapshot.json'),'utf8'));
+        const manifest=JSON.parse(readFileSync(join(archive,'manifest.json'),'utf8'));
+        const mf=new Miniflare(convertV4MiniflareOptions({modules:true,script:'export default {fetch(){return new Response(null,{status:404});}}',compatibilityDate:'2026-10-21',compatibilityFlags:['nodejs_compat'],d1Databases:['DB'],kvNamespaces:['FILES_KV'],resourcePersistencePath:join(target,'state'),outboundService(){throw new Error('Network forbidden while reopening restored state');}}));
+        try {
+          const db=await mf.getD1Database('DB'),kv=await mf.getKVNamespace('FILES_KV');
+          const apps=(await db.prepare('SELECT user_id,status,resume_version,attempts,applied_at FROM applications ORDER BY id').all()).results;
+          assert.equal(apps.length,2);assert.deepEqual(apps[0],{user_id:1,status:'applied',resume_version:2,attempts:1,applied_at:'2026-10-01T10:00:00.000Z'});
+          assert.equal(apps[1].status,'needs_action');
+          const versions=(await db.prepare('SELECT version FROM resumes ORDER BY id').all()).results.map(row=>row.version);
+          assert.deepEqual(versions,[1,2,1]);
+          const history=(await db.prepare('SELECT status,reason,created_at FROM application_status_events WHERE application_id=? ORDER BY id').bind(mapping.application_ids['1001']).all()).results;
+          assert.deepEqual(history,snapshot.tables.application_status_events.filter(row=>row.application_id===1001).map(({status,reason,created_at})=>({status,reason,created_at})));
+          assert.ok(history.length>0);
+          for(const artifact of manifest.artifacts){const bytes=await kv.get(mapping.artifact_keys[artifact.source_key],{type:'arrayBuffer'});assert.ok(bytes);assert.equal(createHash('sha256').update(new Uint8Array(bytes)).digest('hex'),artifact.sha256);}
+          const forbidden=['sessions','account_owners','account_passkeys','account_recovery_keys','submission_reviews','outbox','automation_checkpoints','resume_preparations','email_deliveries','weekly_schedules','weekly_schedule_runs','workspace_reminders','discovery_cycles','discovery_candidates','prep_refreshes'];
+          for(const table of forbidden)assert.equal((await db.prepare('SELECT count(*) AS n FROM '+table).first()).n,0,table+' must remain empty after restart');
+          console.log(JSON.stringify({reopened:true,applications:apps.length,resume_versions:versions.length,preserved_history:history.length,verified_artifacts:manifest.artifacts.length,authority_tables_empty:forbidden.length}));
+        }finally{await mf.dispose();}
+      `, { mode: 0o600 });
+      const reopened = spawnSync(process.execPath, [probe, target, directory], { encoding: 'utf8', timeout: 30000 });
+      expect(reopened.status, reopened.stderr).toBe(0);
+      expect(JSON.parse(reopened.stdout)).toMatchObject({ reopened: true, applications: 2, resume_versions: 3, verified_artifacts: backup.manifest.artifacts.length, authority_tables_empty: 15 });
       const rejected = spawnSync(process.execPath, [`${root}../scripts/restore_workspace_backup.mjs`, '--run-isolated-restore', '--archive', directory, '--destination', target, '--manifest-sha256', backup.hash], { encoding: 'utf8', timeout: 10000 }); expect(rejected.status).not.toBe(0);
     } finally { rmSync(temp, { recursive: true, force: true }); }
   }, 45000);

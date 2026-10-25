@@ -80,6 +80,13 @@ destination database. Artifacts are read and verified one at a time; no 32-MiB
 base64/JSON file bundle is created in a Worker. The destination directory is
 0700; the ID/file mapping and restore receipt are private files.
 
+The actual database and KV bytes persist under `DESTINATION/state` through
+Miniflare 5's `resourcePersistencePath`. Retain this directory together with
+`mapping.json`; a receipt alone is not recovered data. The CLI regression starts
+a second process after restore exits, reopens that same state without importing
+or applying migrations, and verifies application/status history, resume
+versions, every artifact hash and empty authentication/outbox tables.
+
 Manifest, metadata and document hashes must match before rows are committed.
 The database import is transactional and uses an isolation guard. On a failed
 import, newly copied files are removed; source files are never modified. Owner,
