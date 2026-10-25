@@ -1,0 +1,267 @@
+{
+  "schema_version": 1,
+  "measured_at": "2026-10-25T10:46:03.126Z",
+  "worker_version": "d3848a38-6007-41bf-8112-7a228a3a101d",
+  "source_revision": "595f68e",
+  "pages_version": "85755cd9",
+  "e2e_run": "83836557fce3",
+  "window_start": "2026-10-25T10:34:49.314Z",
+  "window_end": "2026-10-25T10:40:46.454Z",
+  "functional_e2e_passed": true,
+  "sampler_traffic_added": false,
+  "scope": "One active synthetic owner completed PDF signup, internship and job modes, queued discovery/matching/PDF preparation, two reviewed applications to owned forms, prep guides, a weekly report, mobile checks and logout. Aggregate telemetry can include other callers; six unrelated cheap probes are reported separately.",
+  "gate": {
+    "http_cpu_p95_target_ms": 10,
+    "observed_api_fetch_p95_ms": 9,
+    "passed": true,
+    "remaining_outlier": "One PDF signup used 14 ms CPU. This is an observed interactive envelope, not an all-requests guarantee, concurrent-load capacity test or sustained SLA."
+  },
+  "final_invocation_log_groups": [
+    {
+      "event_type": "fetch",
+      "outcome": "ok",
+      "reported_count": 126,
+      "sample_interval": 1,
+      "cpu_ms": {
+        "p50": 3,
+        "p95": 9,
+        "p99": 10,
+        "max": 14
+      },
+      "wall_p95_ms": 2989
+    },
+    {
+      "event_type": "queue",
+      "outcome": "ok",
+      "reported_count": 14,
+      "sample_interval": 1,
+      "cpu_ms": {
+        "p50": 19,
+        "p95": 444,
+        "p99": 444,
+        "max": 444
+      },
+      "wall_p95_ms": 20373
+    }
+  ],
+  "product_api_fetch": {
+    "reported_count": 120,
+    "sample_interval": 1,
+    "cpu_ms": {
+      "p50": 3,
+      "p95": 9,
+      "p99": 10,
+      "max": 14
+    },
+    "wall_p95_ms": 2989,
+    "excluded_unrelated_probe_count": 6,
+    "exclusion_reason": "Known unrelated environment-file probes only; no expensive product endpoint was excluded. Including these probes gives 126 fetches with unchanged 3/9/10/14 ms CPU quantiles/max."
+  },
+  "native_graphql": {
+    "dataset": "workersInvocationsAdaptive",
+    "reported_invocations": 153,
+    "runtime_errors": 0,
+    "cpu_scope": "Whole Worker/version window; HTTP and Queue are mixed. This dataset has no trigger dimension.",
+    "cpu_ms": {
+      "p50": 3.631,
+      "p95": 19.519,
+      "p99": 253.053
+    },
+    "isolate_memory_bytes": {
+      "p50": 24883280,
+      "p95": 33513212,
+      "p99": 38526844
+    }
+  },
+  "scheduled": {
+    "state": "no_samples",
+    "reported_count": null,
+    "cpu_ms": {
+      "p50": null,
+      "p95": null,
+      "p99": null,
+      "max": null
+    },
+    "note": "No scheduled CPU group was available from the invocation aggregates. The scheduled GraphQL dataset also returned no rows. Unobserved is not zero cost."
+  },
+  "selected_route_groups": [
+    {
+      "route": "profile_signup",
+      "method": "POST",
+      "reported_count": 1,
+      "sample_interval": 1,
+      "cpu_ms": {
+        "p50": 14,
+        "p95": 14,
+        "p99": 14,
+        "max": 14
+      }
+    },
+    {
+      "route": "weekly_plan_swap",
+      "method": "POST",
+      "reported_count": 2,
+      "sample_interval": 1,
+      "cpu_ms": {
+        "p50": 9,
+        "p95": 10,
+        "p99": 10,
+        "max": 10
+      }
+    },
+    {
+      "route": "weekly_plan_confirmation",
+      "method": "POST",
+      "reported_count": 2,
+      "sample_interval": 1,
+      "cpu_ms": {
+        "p50": 6,
+        "p95": 9,
+        "p99": 9,
+        "max": 9
+      }
+    },
+    {
+      "route": "weekly_plan",
+      "method": "GET",
+      "reported_count": 30,
+      "sample_interval": 1,
+      "cpu_ms": {
+        "p50": 6,
+        "p95": 9,
+        "p99": 9,
+        "max": 9
+      }
+    },
+    {
+      "route": "report_generation",
+      "method": "POST",
+      "reported_count": 1,
+      "sample_interval": 1,
+      "cpu_ms": {
+        "p50": 8,
+        "p95": 8,
+        "p99": 8,
+        "max": 8
+      }
+    },
+    {
+      "route": "resume_draft_edit",
+      "method": "PUT",
+      "reported_count": 1,
+      "sample_interval": 1,
+      "cpu_ms": {
+        "p50": 7,
+        "p95": 7,
+        "p99": 7,
+        "max": 7
+      }
+    },
+    {
+      "route": "operations_status",
+      "method": "GET",
+      "reported_count": 7,
+      "sample_interval": 1,
+      "cpu_ms": {
+        "p50": 2,
+        "p95": 7,
+        "p99": 7,
+        "max": 7
+      }
+    },
+    {
+      "route": "discovery_poll",
+      "method": "GET",
+      "reported_count": 18,
+      "sample_interval": 1,
+      "cpu_ms": {
+        "p50": 2,
+        "p95": 6,
+        "p99": 6,
+        "max": 6
+      }
+    },
+    {
+      "route": "manual_job_import",
+      "method": "POST",
+      "reported_count": 2,
+      "sample_interval": 1,
+      "cpu_ms": {
+        "p50": 4,
+        "p95": 6,
+        "p99": 6,
+        "max": 6
+      }
+    },
+    {
+      "route": "discovery_start",
+      "method": "POST",
+      "reported_count": 2,
+      "sample_interval": 1,
+      "cpu_ms": {
+        "p50": 3,
+        "p95": 5,
+        "p99": 5,
+        "max": 5
+      }
+    },
+    {
+      "route": "account_security",
+      "method": "GET",
+      "reported_count": 4,
+      "sample_interval": 1,
+      "cpu_ms": {
+        "p50": 1,
+        "p95": 3,
+        "p99": 3,
+        "max": 3
+      }
+    }
+  ],
+  "historical_http_cases": [
+    {
+      "worker_version": "d9634e84-a645-4833-8da3-b091492f0e73",
+      "functional_e2e_passed": false,
+      "reported_fetch_count": 71,
+      "cpu_ms": {
+        "p50": 6,
+        "p95": 28,
+        "p99": 108,
+        "max": 108
+      }
+    },
+    {
+      "worker_version": "2ef717f6-2ca8-4754-8ade-f141ade740e5",
+      "functional_e2e_passed": true,
+      "reported_fetch_count": 110,
+      "cpu_ms": {
+        "p50": 4,
+        "p95": 18,
+        "p99": 22,
+        "max": 24
+      }
+    },
+    {
+      "worker_version": "d3848a38-6007-41bf-8112-7a228a3a101d",
+      "functional_e2e_passed": true,
+      "reported_product_api_fetch_count": 120,
+      "cpu_ms": {
+        "p50": 3,
+        "p95": 9,
+        "p99": 10,
+        "max": 14
+      }
+    }
+  ],
+  "sources": [
+    "Cloudflare Workers Observability dry calculation aggregates, scoped by Worker/version/window",
+    "Cloudflare GraphQL workersInvocationsAdaptive and workersInvocationsScheduled"
+  ],
+  "limitations": [
+    "Distinct finite cycles are not a matched-load causal experiment.",
+    "Invocation-log CPU is millisecond precision; GraphQL CPU derives from microsecond metrics. Counts can differ across telemetry systems.",
+    "The window contains no instrumentation of cold module startup.",
+    "No concurrency, sustained throughput or worst-case large/complex-Unicode input guarantee is established.",
+    "No paid plan, allowance reset, logging-sampling change or production profiler capture was used."
+  ]
+}

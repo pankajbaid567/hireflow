@@ -1,0 +1,20 @@
+{
+  "status": "passed",
+  "pages_deployment": "c11dc0d8",
+  "worker_version": "d3848a38-6007-41bf-8112-7a228a3a101d",
+  "verification": "Fresh anonymous full Chromium browser; ordinary Python urllib user-agent received Cloudflare1010",
+  "profile_page_http": 200,
+  "application_assets_unchanged": [
+    "/assets/index-Bw4ERH04.js",
+    "/assets/index-B8vXzKsS.css"
+  ],
+  "demo_http": 200,
+  "demo_content_type": "video/webm",
+  "demo_bytes": 5742147,
+  "demo_sha256": "d12f06fb11151dd403c63bac5ea1d66dcf203577aeaf073100eb1c0dbe4e8ac5",
+  "api_health_http": 200,
+  "anonymous_session_authenticated": false,
+  "browser_errors": 0,
+  "owner_code_input_visible": 0,
+  "tls_verified": true
+}

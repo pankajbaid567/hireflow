@@ -1,6 +1,6 @@
 # Cloudflare Pages and Workers deployment
 
-**Current deployment, 23 October 2026:** [Pages dashboard](https://hireflow-dashboard.pages.dev/profile), deployment `cdc2de6a` ([deployment URL](https://cdc2de6a.hireflow-dashboard.pages.dev)); [API Worker](https://hireflow-api.baidpankaj567.workers.dev/health), version `d9634e84-a645-4833-8da3-b091492f0e73`. D1 migrations through `0010` are applied. P1 adds genuine hybrid matching, structured source facts, immutable listing history, company exclusion and Unicode PDF coverage. The coordinated production two-mode acceptance is running; results will be recorded in P1 verification after completion. P0 production evidence remains [historical](p0-verification.md). Pages assets are `index-ClUMs1P_.js` and `index-B8vXzKsS.css`. Publish with `npm run build:cloudflare` to select the Cloudflare API capabilities.
+**Current deployment, 25 October 2026:** [Pages dashboard](https://hireflow-dashboard.pages.dev/profile), deployment `c11dc0d8` ([deployment URL](https://c11dc0d8.hireflow-dashboard.pages.dev)); [API Worker](https://hireflow-api.baidpankaj567.workers.dev/health), version `d3848a38-6007-41bf-8112-7a228a3a101d`. D1 migrations through `0012` are applied. P1 adds genuine hybrid matching, structured source facts, immutable listing history, company exclusion and Unicode PDF coverage. The final production two-mode acceptance passed; [P1 verification](p1-verification.md) records actual providers, controlled forms, CPU, cleanup and the demo. P0 production evidence remains [historical](p0-verification.md). Pages assets are `index-Bw4ERH04.js` and `index-B8vXzKsS.css`. Publish with `npm run build:cloudflare` to select the Cloudflare API capabilities.
 
 **Historical baseline evidence:** public/deep-link, API health, anonymous-session and private-profile checks passed. Production UI made five source searches in 10.834 seconds and verified eight listings: Internshala three, Wellfound three, Greenhouse two; four new and four known. Nine cards displayed original links, with LinkedIn restrictions shown. No application was confirmed during discovery. The baseline controlled UI cycle passed PDF-only signup, edits, plan/swap/PDF, one controlled submission, prep, report/library, mobile and logout. Separate old-host migration passed same-owner transfer, fragment removal, replay rejection and both-origin logout. These earlier runs do not establish the new P0 production contract. No employer application or real email was sent.
 
@@ -17,7 +17,7 @@ This runtime is separate from the original Python/PostgreSQL application. It run
 | Application dispatch | Queue `hireflow-applications` | `APPLICATION_QUEUE`; batch/concurrency one |
 | Application browser | Cloudflare Browser Run | `BROWSER` |
 | Bounded semantic matching | Workers AI BGE small, CLS pooling, 384 dimensions | `AI`; private versioned vectors in D1 |
-| Recovery of queued outbox work | Five-minute cron | `*/5 * * * *` |
+| Recovery/expiry/retention work | Five-minute cron enqueues bounded Queue maintenance | `*/5 * * * *` |
 | Pages → API transport | Service binding to `hireflow-api` | `API` in Pages |
 | Transitional old-cookie bridge | `https://hireflow-blue-seven.vercel.app/api/workspace-migrate` | Legacy Vercel project; retained only for migration |
 | Optional alternative file store | R2, not activated on this account | `FILES` when explicitly configured |
@@ -41,6 +41,7 @@ The API's configured variables are:
 | `GEMINI_FALLBACK_MODEL` | `gemini-3.5-flash-lite`; blank disables alternate models |
 | `BROWSER_ENABLED` | `true` for authorized automatic attempts |
 | `BROWSER_DAILY_BUDGET_SECONDS` | `540` or lower |
+| `PLAN_WORK_IN_QUEUE` | `true`; bounded scoring and resume preparation run through versioned Queue leases |
 | `SEMANTIC_MATCHING_ENABLED` | `true`; lexical fallback on unavailable provider, invalid vectors or exhausted allowance |
 | `SEMANTIC_DAILY_TEXT_BUDGET` | `100` text reservations per UTC day; hard cap 100, no uncertain refunds |
 | `EMAIL_PROVIDER` | Configured integration selection; `resend` currently |
@@ -81,7 +82,7 @@ every pending migration: `0002` adds transfers; `0003` adds draft leases and
 tailoring metadata; `0004` adds account/passkey/recovery tables, session metadata
 and source-bound atomic transfers; `0005` adds private automation checkpoints;
 `0006` adds immutable answer/PDF review authorization; `0007` adds operational
-telemetry/diagnostics; `0008` adds source-backed listing facts, historical snapshots and review invalidation; `0009` adds private semantic cache/usage and matching metadata; `0010` adds the bounded operations-request index. Apply all pending migrations before code publication.
+telemetry/diagnostics; `0008` adds source-backed listing facts, historical snapshots and review invalidation; `0009` adds private semantic cache/usage and matching metadata; `0010` adds the bounded operations-request index; `0011` adds durable owner-scoped discovery tickets; `0012` extends score/PDF leases with dispatch, kind, captured versions, bounded attempts and interrupted-upload cleanup. Apply all pending migrations before code publication.
 Back up D1 first; deployment does not copy local database contents. Existing
 sessions survive `0004`, but old unbound transfer links require reminting.
 
@@ -161,7 +162,7 @@ Review extracted facts before applying. The deployed preparation pipeline asks G
 
 PDFs use a single-column A4 layout, core Helvetica fonts, clear headings, hanging bullets, clickable supplied HTTP(S) URLs, and page continuations. Typical profiles fit one or two pages; longer history can use more pages to preserve facts. A hard limit of **800 layout lines throws an explicit error** instead of silently truncating. ASCII/core-font constraints remain: accented Latin text is transliterated, and unsupported scripts such as CJK are not preserved. Check names, full facts, links, layout, and page count in the actual PDF; use the original resume manually when fidelity is insufficient.
 
-The deployed Worker matcher is weighted lexical scoring with aliases and a profile-version cache. Python FAISS/sentence-transformers helpers are separate and not integrated into this Worker. Neither the score nor the prep predictions are a hiring guarantee. See the [audit](milestone-audit.md#m3--matching-partial) for the semantic-matching gap.
+The deployed Worker uses genuine Workers AI BGE CLS embeddings with private versioned D1 vectors and a bounded hybrid contribution to the existing six factors. Source/profile changes invalidate scores and reviews; unavailable inference or exhausted allowance has a visible lexical fallback. Python normal plans optionally use genuine BGE/FAISS separately. Neither matching nor interview predictions are hiring probabilities. See [AI evaluation](ai-evaluation.md) for frozen synthetic metrics, actual-model provenance and limitations.
 
 ## Discovery, confirmation, and manual action
 
@@ -169,7 +170,7 @@ The deployed Worker matcher is weighted lexical scoring with aliases and a profi
 
 The 22 October production check used a repaired internship profile with 44 skills and no location restriction: two Tavily searches returned 16 candidates; 13 total network requests verified six listings from Wellfound, Greenhouse and Internshala. Old postings and LinkedIn's blocked responses were omitted. The six verified opportunities were imported, the temporary diagnostic session was revoked, and no employer submission was attempted. The earlier zero-result response was not reproduced after publication of the current bundle; its precise cause is unproven. Search diagnostics record only mode/counts, public host, HTTP status and rejection reason, never identity, query text, credentials or request headers. Private evidence: `/tmp/hireflow-discovery-production-diagnostic.json` and `/tmp/hireflow-discovery-production-safe-trace.json` on the verification machine.
 
-Plan preparation scores at most five stale matches per request. With a configured tailoring provider, it prepares one draft per request; offline preparation can render three. D1 leases prevent concurrent polls from duplicating model calls for the same draft, and profile edits invalidate pending drafts without changing submitted versions. The UI polls every two seconds while preparation remains incomplete and disables confirmation until PDFs are ready. Preview the reviewed version, swap/remove it from the selection if needed, then confirm. Application work runs asynchronously through the queue.
+Production sets `PLAN_WORK_IN_QUEUE=true`: matching and factual PDF preparation execute in owner-scoped Queue leases; HTTP polls render prepared results or progress. Lease admission captures profile/listing versions, rotates tokens on interrupted recovery, cleans unregistered uploads and stops after bounded failures. Refresh/regenerate explicitly retries a failed preparation; passive polling does not repeat provider calls indefinitely. Quota exhaustion avoids unnecessary inference. Small offline fixtures use the same helpers synchronously. Exact PDF/answer review and confirmation remain required before any application task can execute.
 
 CAPTCHAs are detected, not solved. Expired listings, unsupported/missing form steps, login requirements, browser budget limits, and uncertain submission outcomes become explicit manual-action states. A failed listing must not be called applied. Check the employer page and submission state before retrying; no test authorizes submissions to real employers.
 

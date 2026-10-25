@@ -1,0 +1,28 @@
+{
+  "status": "passed",
+  "scope": "Exact synthetic capacity/acceptance owners only; no global pruning",
+  "synthetic_users_removed": [
+    17,
+    18,
+    19,
+    20
+  ],
+  "unreferenced_owned_qa_jobs_removed": [
+    31,
+    37,
+    42,
+    48,
+    52,
+    58
+  ],
+  "private_qa_objects_removed": 20,
+  "distinct_verified_public_jobs_retained": 16,
+  "real_owner_preserved": true,
+  "real_application_records_preserved": 11,
+  "real_resume_versions_preserved": 11,
+  "real_private_files_hash_checked": 12,
+  "real_records_and_pdf_bytes_unchanged_during_each_cleanup": true,
+  "actual_browser_usage_preserved": true,
+  "actual_semantic_usage_preserved": true,
+  "signup_throttles_preserved": true
+}

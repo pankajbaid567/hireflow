@@ -17,7 +17,7 @@ employer integration is complete.
 | **M5 — Application automation** | Fill/upload/answer/submit on internship/job portals; multi-step, CAPTCHA, retries, status history and recovery. | Real Browser Run applied to owned QA forms in both modes. Local real-browser/D1 tests exercise four-step recovery, CAPTCHA/manual action, changed forms, stale approvals, cancellation, interrupted/uncertain work and safe retries. Submitted PDF/answers remain bound to the exact approval. | **Partial portal coverage.** Public native forms are supported within the compatibility matrix; arbitrary ATS vendors, login/Easy Apply and custom/embedded controls are not certified. CAPTCHA is detected, never solved. Python retains separate single-form automation. |
 | **M6 — Preparation** | Predicted rounds, skill categories, 2–3 useful resources/topic, 5–10 JD-specific questions, current company/review evidence and export. | Saved guides/viewer, topics, expandable questions, attributed external resources and source-backed or explicitly unknown company information. Actual provider-backed preparation was opened in both modes. Controlled evaluation measures JD context, supported claims and missing/stale/broken sources. | **Partial.** Counts/accessibility depend on evidence and provider availability; fallback behavioral questions have measured high duplication. No standalone prep PDF/HTML export or comprehensive company-career-page research. Controlled citation support does not prove every live link is useful. |
 | **M7 — Reports/delivery/hiring** | Weekly insights/study plan, mixed-mode summaries, email HTML/PDF/resumes, scheduler and optional hiring workflow. | Private weekly HTML, per-application status/failure/manual links, scores, skill demand and study priorities. Production mixed week contains Internship and Job applications, uses one shared UTC-week quota and preserves submitted PDFs after mode changes. JSON/CSV shortlisting and mocked SendGrid/Resend integrations exist. | **Partial.** Real email/verified sender, report PDF/export and full weekly scheduling are incomplete. No comprehensive applicant-PDF parsing, hiring dashboard/export/email workflow. A report is not automatically an email. |
-| **M8 — Dashboard/integration/demo** | All views, mobile, both modes end-to-end, failure handling, architecture, fresh setup and 3–5-minute demo. | Rich profile, plan/source diagnostics, immutable PDF review, tracker, prep, library and report. Fresh production run `328d62554e26` passed real intake/search/hybrid ranking/review → two owned applications → both preps → mixed report/quota → mobile/logout. Architecture, clean install and isolated actual Docker integration are documented. | **Verified controlled scope; final release gate tracked separately.** A complete synthetic run is not all-employer certification or a 100+ weekly application cycle. The recorded demo is synthetic and edited pacing is not a latency benchmark. CPU improvement needs the exact corrected release measurement in the capacity evidence. |
+| **M8 — Dashboard/integration/demo** | All views, mobile, both modes end-to-end, failure handling, architecture, fresh setup and 3–5-minute demo. | Rich profile, plan/source diagnostics, immutable PDF review, tracker, prep, library and report. Fresh production run `328d62554e26` passed real intake/search/hybrid ranking/review → two owned applications → both preps → mixed report/quota → mobile/logout. Architecture, clean install and isolated actual Docker integration are documented. | **Verified controlled scope; final release gate tracked separately.** A complete synthetic run is not all-employer certification or a 100+ weekly application cycle. The recorded demo is synthetic and edited pacing is not a latency benchmark. Final queued-plan release measured product HTTP CPU P95/P99 9/10 ms with one 14 ms signup outlier; see the bounded usage envelope in capacity evidence. |
 
 ## Runtime and portal boundaries
 
@@ -54,16 +54,15 @@ QA never confirms an actual discovered employer listing.
 - [Capacity](p1-capacity.md): native CPU/memory and trigger-separated aggregates.
   The first P1 HTTP P95/P99 was 28/108 ms; queued discovery lowered it to 18/22 ms
   but that still exceeded the HTTP objective. Warm read-only health samples and
-  Queue CPU cannot substitute for the full HTTP cycle. Final plan-work changes
-  require their own actual release sample before P1-09 is closed.
+  Queue CPU cannot substitute for the full HTTP cycle. The final queued-plan cycle measured 120 product fetches at CPU P50/P95/P99 3/9/10 ms, one 14 ms signup outlier and zero native runtime errors. P1-09 is closed for that measured single-workflow envelope; concurrency and worst-case capacity remain unclaimed.
 - P0 ownership, edit/reapproval, durable recovery and provider/budget checks remain
   [historical verified evidence](p0-verification.md), not missing capabilities.
   [Account security](account-security.md) describes exact recovery guarantees.
 
 All three CI workflows passed for P1 implementation `bd6fff2` and queue-discovery
-correction `c2e1647`, including PostgreSQL rollback/check, real PDF reader tests,
+correction `c2e1647`; applicable Backend/Cloudflare CI also passed for queued-plan release `595f68e`, including PostgreSQL rollback/check, real PDF reader tests,
 AI evaluation and isolated React/Worker/D1/R2 browser E2E. Local corrected gates
-were 458 Worker, 373 Python and 127 frontend tests, plus the 120-case evaluation.
+are 470 Worker, 373 Python and 127 frontend tests, plus the 120-case evaluation.
 Opt-in live checks are reported separately.
 
 ## Remaining work

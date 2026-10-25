@@ -1,8 +1,8 @@
 # Both-mode production acceptance
 
-This document describes the explicit P1-05/P1-06 production check. **The first
-candidate run stopped before the remaining acceptance checks**; its observed
-results and limits are recorded below.
+This document describes the explicit P1-05/P1-06 production check. **The final
+2026-10-25 release completed the full two-mode workflow**. The earlier failed
+harness run remains recorded separately below.
 A local fixture or a collection of passing unit tests does not establish the
 full production workflow.
 
@@ -11,7 +11,8 @@ full production workflow.
 Use Node 22+, installed full Playwright Chromium, the project Python virtualenv,
 Poppler (`pdftotext`), FFmpeg/ffprobe and authenticated local Wrangler access
 for scoped read-only D1 inventory. The current deployed Worker must include
-migrations 0008–0011, the Workers AI binding and the matching/review changes.
+migrations 0008–0012, the Workers AI binding, `PLAN_WORK_IN_QUEUE=true` and the
+matching/review changes.
 Run only on an authorized release:
 
 ```bash
@@ -57,6 +58,9 @@ runtime coverage in [task tests](../cloudflare/tests/tasks.test.ts),
 [review tests](../cloudflare/tests/review-workflow.test.ts),
 [operations tests](../cloudflare/tests/operations.test.ts) and
 [P1 workflow tests](../cloudflare/tests/p1-workflow.test.ts).
+Private ticket ownership, duplicate delivery, profile/expiry races and recovery
+also have [discovery Queue coverage](../cloudflare/tests/discovery-tasks.test.ts)
+and [plan Queue coverage](../cloudflare/tests/plan-tasks.test.ts).
 Those tests must be reported as controlled failure scenarios; they must not be
 presented as additional real employer submissions.
 
@@ -89,6 +93,71 @@ signup throttles, semantic usage or actual browser reservations. The capacity
 sampler's separate owner must not be deleted before its before/after check ends.
 
 ## Results
+
+### Final complete workflow — 2026-10-25
+
+Run `83836557fce3` **passed** from **10:34:49.314 to 10:40:46.454 UTC** on
+Worker `d3848a38-6007-41bf-8112-7a228a3a101d`, Pages `85755cd9` and source
+`595f68e`, with migration 0012 and queued plan preparation enabled. One new
+synthetic owner completed PDF-only signup, Internship and Job modes, exact
+resume/answer review, two owned-form applications, saved preparation guides,
+mixed-week report, quota back-switch, mobile views and logout.
+
+The actual Gemini fallback was `gemini-3.5-flash-lite`; extracted identity,
+education, the Atlas Note Assistant project and zero professional years were
+retained. Manual QA additions genuinely waited for queued normalization,
+hybrid BGE CLS matching and private PDF preparation. The internship PDF was
+edited to immutable v2, compared and approved; Job used reviewed v1. Both
+downloaded PDFs passed fact checks and visual rendering inspection.
+
+Each source received its own actual Tavily search. The UI and owner-scoped D1
+inventory verified eight public listings, with full descriptions of
+2,453–5,388 characters and `json_ld` or `ats_api` provenance:
+
+| Mode | Source | Verified | Observed status |
+| --- | --- | ---: | --- |
+| Internship | Internshala | 1 | ok |
+| Internship | Wellfound | 2 | ok |
+| Internship | Greenhouse | 0 | empty |
+| Internship | Lever | 0 | empty |
+| Internship | LinkedIn | 0 | restricted (4 results) |
+| Job | Naukri | 0 | empty (4 searched) |
+| Job | LinkedIn | 0 | restricted (4 results) |
+| Job | Greenhouse | 3 | ok |
+| Job | Lever | 2 | ok |
+
+The Internship discovery ticket completed at **10:35:51.169 UTC** and Job at
+**10:38:27.037 UTC**, through `202` start/`200` owner-only polling. Each owned
+form reached `applied` in one attempt with the complete status trail. Exactly
+two guarded confirmations were recorded; public listings remained unsubmitted.
+Saved guides contained two rounds each, four/five questions respectively and
+six resource links each. This checks saved guide rendering and link attributes,
+not the correctness of every external resource or predicted company claim.
+
+The report contained ten opportunities across both modes and two applied
+applications, with shared UTC-week quota accounting. Switching back to
+Internship did not restore another slot; the first submitted PDF stayed
+byte-identical. Tracker/library/report loaded their actual data without 390px
+horizontal overflow. Logout returned the private profile and both reviewed
+PDF requests to `401`. Browser errors, HTTP 5xx, resource-limit responses,
+out-of-scope browser requests, employer submissions and email sends were all
+zero in this run. CPU/capacity conclusions are tracked separately from these
+functional assertions.
+
+The reviewed [captioned, silent demo](https://hireflow-dashboard.pages.dev/assets/hireflow-p1-demo.webm)
+is **4:45**, 1366×768, VP9/20 fps and 5,742,147 bytes. The release retains
+[sanitized production evidence](evidence/p1-production.json) separately from
+private owner records.
+The complete 354.32-second recording was uniformly time-scaled by 0.80436 with
+no reordered or cut interactions. Actual native PDFs, private HTML report and
+mobile view are visible. Full-page evidence snapshots briefly rescale some
+frames; the phone view is letterboxed. No capture artifacts are masked.
+**This edited pacing is not a latency benchmark.** Only the reviewed final
+WebM is a publication asset. Raw recordings, cookies and private proof
+directories remain private; the artifact contains no audio, credentials or
+real applicant contact details.
+
+### Historical first attempt — 2026-10-23
 
 The authorized run `bd0e4e7807ac` started on **2026-10-23 at
 09:21:05.372 UTC**, against Worker
@@ -135,8 +204,8 @@ quota-back-switch, mobile/logout checks and final sanitized demo were not
 completed in this run. The failed proof remains unchanged under the private
 run directory, with a separate read-only diagnostic inventory. Exactly two
 guarded confirmations and zero out-of-scope browser requests, employer
-submissions or email sends were recorded. Synthetic records remain retained
-pending the owner's scoped cleanup. No retry or replacement submission was
+submissions or email sends were recorded. Its synthetic workspace was later
+removed by scoped cleanup while private evidence was retained. No retry or replacement submission was
 manually triggered during diagnosis.
 
 The harness now accepts bounded recovery only with the full ordered status
@@ -144,10 +213,13 @@ invariants above. Offline validation accepted both recorded successful
 histories and rejected six invalid histories, including missing retry reasons,
 duplicate `applied` events, attempt-count mismatches and an uncertain outcome.
 This corrects the harness requirement; it does not retroactively convert the
-failed run into a complete pass. A fresh end-to-end run remains gated on the
-next deployed candidate and must complete the remaining checks without an
-operator-created test login.
+failed run into a complete pass. The final complete run above used a fresh
+normal PDF-only signup, without an operator-created test login.
 
 The earlier local recording preflight verified Chromium WebM generation and
 ffprobe decoding with zero network requests; it is not production acceptance
 evidence or a finished demonstration.
+
+The reviewed demo was subsequently published by Pages deployment `c11dc0d8`.
+Application JavaScript/CSS and the API Worker are identical to the tested UI
+release; this publication adds the video artifact only.

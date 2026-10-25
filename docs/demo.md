@@ -7,11 +7,24 @@ information, recovery keys, cookies, operator secrets or private user data.
 
 ## Recording and evidence status
 
-This document supplies a timed **4:00 script** and the claims to demonstrate.
-A script alone is **not a recorded demo**. The coordinated release must add the
-actual video/artifact location and duration after capture; do not describe an
-uncaptured recording as complete. Automated production screenshots and E2E proof
-are separate from a narrated 3–5-minute recording.
+[Watch the 4:45 production demo](https://hireflow-dashboard.pages.dev/assets/hireflow-p1-demo.webm).
+Recorded **25 October 2026** from the real Pages UI and Worker
+`d3848a38-6007-41bf-8112-7a228a3a101d` (`595f68e`). The captioned, silent VP9
+screencast follows a synthetic PDF through both real source searches, genuine
+BGE matching, exact PDF/answer review, two owned QA applications, preparation,
+a mixed-week report, mobile and logout. [Sanitized proof](evidence/p1-production.json).
+
+The complete ordered recording is uniformly time-scaled from **354.32 to 285
+seconds**; no events were reordered or cut out. Loading/fallback states remain
+visible. This edited pacing is **not a latency benchmark**. The browser's real
+viewport is restored after PDF/report popups to avoid capture clipping; the
+mobile portion is letterboxed. No image masks or invented UI states are used.
+All contacts and projects are synthetic. No recovery keys/provider credentials,
+employer submission or email delivery appears in the recording. Synthetic
+workspaces/private files are cleaned after evidence is retained.
+
+The timed four-minute table below remains a suggested narration guide; the
+actual linked capture is a 4:45 captioned walkthrough.
 
 ## Timed sequence
 

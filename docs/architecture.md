@@ -14,17 +14,18 @@ flowchart LR
   P -->|API service binding| W[TypeScript API Worker]
   W --> D[(D1: owners, jobs, approvals, history)]
   W --> K[(Private KV: uploads, PDF versions, reports)]
-  W --> A[Workers AI: bounded BGE embeddings]
-  W --> G[Groq / Gemini: extraction and grounded selection]
+  C --> A[Workers AI: bounded BGE embeddings]
+  W --> G[Groq / Gemini: PDF extraction]
+  C --> L[Groq / Gemini: grounded resume selection]
   W --> S[Private search ticket: profile and mode bound]
   S --> Q
   C --> T[Tavily / SerpAPI: source-specific discovery]
   W -->|Owner-only search status polling| D
   CR[Five-minute Cron] -->|Maintenance task| Q
   W --> O[Atomic confirmation and outbox]
-  O --> Q[Application Queue]
-  Q --> C[Worker consumer: exact review claim]
-  C --> B[Browser Run: supported public form]
+  O --> Q[Shared work Queue]
+  Q --> C[Worker consumer: task-specific claims]
+  C -->|Approved application tasks only| B[Browser Run: supported public form]
   B -->|Owned facts, approved PDF and answers only| F[Application form]
   C --> D
   C --> K
@@ -32,7 +33,7 @@ flowchart LR
 
 The Worker is an ordinary TypeScript application with explicit functional
 boundaries. It is not a LangGraph `StateGraph`, a Python process or a FAISS server.
-Queue/outbox state and browser checkpoints provide the real orchestration.
+Queue/outbox state and browser checkpoints provide the real orchestration. Production uses `PLAN_WORK_IN_QUEUE=true`: score refresh and factual PDF preparation use captured profile/listing versions, an owner-scoped lease and token rotation on recovery. Small offline fixtures can use the same helpers synchronously. Queued work never creates application approval; exhausted quota avoids unnecessary inference.
 
 | Boundary | Source and responsibility |
 | --- | --- |

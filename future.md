@@ -1,8 +1,8 @@
 # HireFlow: remaining work and future roadmap
 
-Updated: **23 October 2026 (IST)**. P0 implemented and published; [verification and runtime boundaries](docs/p0-verification.md).
+Updated: **25 October 2026 (IST)**. P0 is published; P1 implementation and release evidence are tracked in [P1 verification](docs/p1-verification.md).
 
-This is the prioritized backlog for finishing the original project, improving its AI and engineering quality, and considering new capabilities. **P0 is implemented with the scoped evidence linked below; unchecked P1/P2/P3 items remain planned or pending verification.** The eight original milestones remain partial; completing optional ideas does not close their acceptance gaps.
+This is the prioritized backlog for finishing the original project, improving its AI and engineering quality, and considering new capabilities. **Checked items have the scoped implementation/evidence linked below; unchecked items remain pending.** P1 completion is distinct from completing every original milestone or certifying arbitrary employer portals.
 
 Sources: [original milestones](MILESTONES.md), [expectation-versus-reality audit](docs/milestone-audit.md), [current application](README.md), and [Cloudflare deployment and limits](docs/cloudflare.md). The audit contains the detailed evidence; this file describes what to do next.
 
@@ -10,10 +10,10 @@ Sources: [original milestones](MILESTONES.md), [expectation-versus-reality audit
 
 - The live dashboard is [Cloudflare Pages](https://hireflow-dashboard.pages.dev); its backend is the [API Worker](https://hireflow-api.baidpankaj567.workers.dev/health), using D1, private KV documents, Queues and Browser Run. The Python/FastAPI/PostgreSQL application is a separate local/container implementation.
 - PDF intake, rich profile editing, reviewed plans, swaps, company blacklisting, private versioned PDFs, application history, prep guides and weekly HTML reports have working paths.
-- Discovery already makes **five separate source searches in Internship mode** and **four in Job mode**. The production Internship UI verified eight JDs across Internshala, Wellfound and Greenhouse. Search is bounded to eight verified results per request; it is not a demonstrated 100+ listing cycle.
-- Deployed matching is weighted lexical matching. Groq selects existing facts/projects for tailoring; generation falls back visibly when unavailable. Embeddings, a vector index and measured semantic ranking are not connected to the deployed matching path.
-- A controlled production application cycle passed against an owned QA form. This does not establish automatic submission compatibility with real employer portals. Production email delivery and a complete weekly scheduler remain unconfigured/incomplete.
-- P0 checks passed: **299 Python, 369 Worker and 112 frontend tests**, local real-browser integration and all three GitHub CI workflows. Production passkey/recovery and the controlled Pages application cycle were also exercised. Functional tests are not an AI-quality benchmark.
+- Discovery makes **five separate searches in Internship mode** and **four in Job mode**, using private durable Queue tickets and UI polling. Both modes have actual source-specific production evidence; restricted/empty sites remain visible. Each search is bounded to eight verified full JDs, not a demonstrated 100+ listing cycle.
+- Deployed matching uses genuine BGE CLS embeddings with private versioned D1 vectors, preserves six-factor weights/explanatory gaps and falls back lexically. Python normal plans optionally use genuine BGE/FAISS. The frozen 120-case synthetic benchmark has heldout hybrid nDCG@3 0.9511 vs lexical 0.6991; labels are not independent hiring outcomes. Model matching and PDF preparation run in bounded versioned Queue work on production.
+- Both-mode production UI acceptance has exercised real PDF extraction/search/embeddings, two reviewed owned-QA submissions, preparation, a mixed-mode report, shared quota, immutable PDFs, mobile and logout. Exact release and CPU results are in the verification documents. This does not certify real employer portals. Email delivery and a complete weekly scheduler remain incomplete.
+- Current local gates: **373 Python, 470 Worker and 127 frontend tests**, the 120-case AI evaluation, isolated React/browser E2E and actual secret-free PostgreSQL/Docker integration. GitHub CI separately verifies migrations/rollback, readers, evaluation and builds. Functional test counts alone do not establish AI quality.
 
 ## Priority and tracking rules
 
@@ -73,60 +73,71 @@ Priority expresses importance, not a completion-time promise. Provider credentia
 
 ### P1-01 — Labeled AI evaluation suite
 
-- [ ] **Improvement · M1, M3, M4, M6:** Build a versioned, consent-safe dataset of profiles, PDFs, JDs, rankings, resume selections and preparation outputs. Include India-specific compensation, fresher/experienced profiles, ambiguous skills, short JDs, unavailable providers and adversarial instructions in external text.
+- [x] **Improvement · M1, M3, M4, M6:** Build a versioned, consent-safe dataset of profiles, PDFs, JDs, rankings, resume selections and preparation outputs. Include India-specific compensation, fresher/experienced profiles, ambiguous skills, short JDs, unavailable providers and adversarial instructions in external text.
 - **Done when:** a documented evaluation set, ideally 100+ representative cases, measures extraction accuracy, unsupported/fabricated claims, fact preservation, ranking relevance, question specificity, source support, latency and cost. Keep development and held-out evaluation data separate. Publish error analysis and compare changes against the current baseline; counts of passing functional tests alone do not satisfy this item.
 - **Evaluation controls:** set justified quality thresholds before changing the implementation. Combine deterministic checks and a reviewed human rubric; an LLM judge alone is insufficient evidence of factual correctness.
+- **Evidence:** Versioned 120-case corpus, frozen adoption gates, real model provenance, extraction/factuality/source-support/question-context/duplication metrics and authored review rubric are published in [AI evaluation](docs/ai-evaluation.md). Independent human ratings, actual billing totals and live resource usefulness remain explicitly unmeasured.
 
 ### P1-02 — Embeddings and hybrid matching in the actual plan path
 
-- [ ] **Remaining / Improvement · M3:** Connect profile/JD embeddings and retrieval to normal plan generation. Integrate the existing FAISS helper into the Python path; choose a separately compatible vector-storage/retrieval design for Workers rather than pretending FAISS runs in the deployed Worker.
+- [x] **Remaining / Improvement · M3:** Connect profile/JD embeddings and retrieval to normal plan generation. Integrate the existing FAISS helper into the Python path; choose a separately compatible vector-storage/retrieval design for Workers rather than pretending FAISS runs in the deployed Worker.
 - **Done when:** saved vectors are versioned by model/profile/JD, updates invalidate stale results, and the UI's ranking actually uses the retrieval output. Compare lexical, semantic and hybrid ranking on held-out relevance labels using Recall@K and nDCG, with latency/cost measurements. Adopt the more complex approach only if results justify it.
 - **Preserve:** the documented six-factor weights, deterministic tie-breaking, explanatory skill gaps and a lexical fallback. A similarity score is not a calibrated hiring probability.
 - **Depends on:** P1-01; a cost/capacity decision for any external embedding or vector service.
+- **Evidence:** Workers AI BGE CLS/private D1 and optional Python BGE/FAISS normal-plan integration, heldout ranking comparison, invalidation/budgets and actual provider/route evidence are in [AI evaluation](docs/ai-evaluation.md).
 
 ### P1-03 — Complete listing schema and reliable fit signals
 
-- [ ] **Remaining · M2, M3:** Persist source, canonical application URL, required skills, required experience, posting/expiry dates, selection process and structured compensation. Represent missing information explicitly and retain evidence/provenance instead of turning inferred values into facts.
+- [x] **Remaining · M2, M3:** Persist source, canonical application URL, required skills, required experience, posting/expiry dates, selection process and structured compensation. Represent missing information explicitly and retain evidence/provenance instead of turning inferred values into facts.
 - **Done when:** schema migrations, all supported extractors, APIs and reports agree on these fields. Normalize INR/LPA, monthly/annual amounts, ranges, other currencies and undisclosed pay; compare against the correct internship stipend or job salary preference without using unrelated JD numbers. Test role, location, experience and company signals on labeled cases.
 - **Python extraction gap:** ensure generic/static scrapers persist a real full JD instead of a placeholder description; snippets and empty descriptions cannot qualify as complete verified listings.
 - **Related quality work:** connect spam/quality filtering to normal persistence, store an explained confidence score, and evaluate false positives on legitimate small startups. Clarify what company quality actually measures.
+- **Evidence:** D1 migrations 0008–0012 / Alembic005, shared pay contracts, full-detail extraction, explained risk rules, API/UI/report facts and stale-write safeguards are implemented; see [P1 verification](docs/p1-verification.md).
 
 ### P1-04 — Company-wide prior-application exclusion
 
-- [ ] **Remaining · M4:** Prevent future drafts for an already-applied company according to a documented company-level policy, beyond the existing user/job duplicate protection and explicit blacklist.
+- [x] **Remaining · M4:** Prevent future drafts for an already-applied company according to a documented company-level policy, beyond the existing user/job duplicate protection and explicit blacklist.
 - **Done when:** normalized company identities/aliases handle different postings from the same employer, historical applications remain unchanged, and tests cover similarly named unrelated companies. Define how failed/manual-action attempts, reapplications and time windows affect eligibility instead of silently guessing.
+- **Evidence:** Normalized identities, explicit private aliases, all-time known-submission exclusion, conservative uncertain-write policy and immutable historical snapshots have real D1/Python regressions; see [company policy](docs/architecture.md#lifecycle-and-authorization).
 
 ### P1-05 — Live Job-mode discovery verification
 
-- [ ] **Verification · M2, M8:** Run the equivalent production UI discovery check in Job mode for Naukri, LinkedIn, Greenhouse and Lever, with real source-specific calls and retained sanitized evidence.
+- [x] **Verification · M2, M8:** Run the equivalent production UI discovery check in Job mode for Naukri, LinkedIn, Greenhouse and Lever, with real source-specific calls and retained sanitized evidence.
 - **Done when:** accepted active JDs, canonical URLs, source diagnostics, duplicate handling, filters and correct mode are verified through the UI. Restricted/empty sources must remain visible; do not fabricate a Naukri success to complete the matrix. This check must not submit any application.
 - **Existing evidence:** the five-source Internship path is already production verified. Named source configuration and local Job-mode fixtures do not prove live Job-mode results.
+- **Evidence:** Actual two-mode source-specific UI search evidence, including empty Naukri and restricted LinkedIn rather than fabricated imports, is recorded in [production acceptance](docs/p1-acceptance.md).
 
 ### P1-06 — Complete acceptance scenarios for both modes
 
-- [ ] **Remaining / Verification · M1–M8:** Exercise each mode from intake through real discovery, ranking, reviewed PDFs, controlled application, preparation and report, and verify an explicit mixed-mode week. Add failure scenarios for stale profiles/approvals, partial batches, CAPTCHA, provider/search failure, budget exhaustion and interrupted work.
+- [x] **Remaining / Verification · M1–M8:** Exercise each mode from intake through real discovery, ranking, reviewed PDFs, controlled application, preparation and report, and verify an explicit mixed-mode week. Add failure scenarios for stale profiles/approvals, partial batches, CAPTCHA, provider/search failure, budget exhaustion and interrupted work.
 - **Done when:** evidence identifies exactly which stages used real providers and which used controlled forms; quota accounting, status trails and private document versions remain correct. A complete run must not be inferred by combining unrelated passing unit tests. Real-source discovery must not cause an employer submission during QA.
 - **Depends on:** relevant P0 work, P1-05 and P2-07 for the mixed-mode report acceptance case.
+- **Evidence:** Complete both-mode production UI acceptance plus separate failure/race coverage and shared-week quota/history checks are recorded in [production acceptance](docs/p1-acceptance.md). Final queued-plan release results are linked there after execution.
 
 ### P1-07 — Architecture, reproducible setup and honest demo
 
-- [ ] **Remaining / Decision · M1, M8:** Add `docs/architecture.md`, a 3–5-minute demo with `docs/demo.md`, and a fresh-machine walkthrough. Explain Pages/Worker/D1/KV/Queues versus Python/FastAPI/PostgreSQL, actual agent boundaries, data flow, review state and failure handling.
+- [x] **Remaining / Decision · M1, M8:** Add `docs/architecture.md`, a 3–5-minute demo with `docs/demo.md`, and a fresh-machine walkthrough. Explain Pages/Worker/D1/KV/Queues versus Python/FastAPI/PostgreSQL, actual agent boundaries, data flow, review state and failure handling.
 - **Done when:** a clean environment can follow the maintained setup instructions, install the required Python dependencies and Chromium, migrate its database and run the documented checks. Verify the Cloudflare account bootstrap separately from the local Docker path, and keep resource IDs/account configuration environment-specific.
 - **Documentation cleanup:** reconcile older local-oriented instructions such as `docs/workflow.md` with the live deployment, preserve historical evidence as historical, and remove unsupported architecture claims. Queue/outbox orchestration is currently real; a working LangGraph `StateGraph` is not. Choose whether an evaluated graph implementation is actually needed instead of adding a framework solely for resume keywords.
+- **Evidence:** [Architecture](docs/architecture.md), [clean environment and actual Docker evidence](docs/fresh-setup.md) and [demo evidence](docs/demo.md) are delivered. Same-host isolated installation, fresh CI runners and a container build are distinguished from an independently provisioned physical laptop/account.
 
 ### P1-08 — Resume extraction and rendering coverage
 
-- [ ] **Improvement / Verification · M1, M4:** Expand the quality corpus for long/multi-column resumes, unusual layouts, sparse profiles, links and non-ASCII names/content. Improve Unicode/font support where the current PDF renderer is limited, while retaining complete facts, readable wrapping and explicit size/content bounds.
+- [x] **Improvement / Verification · M1, M4:** Expand the quality corpus for long/multi-column resumes, unusual layouts, sparse profiles, links and non-ASCII names/content. Improve Unicode/font support where the current PDF renderer is limited, while retaining complete facts, readable wrapping and explicit size/content bounds.
 - **Done when:** extracted facts and selected resume facts are checked against the source; rendered pages have no clipping, missing sections or broken links across representative PDFs. Distinguish text-based extraction from OCR support rather than silently claiming scanned PDFs work. Regression evidence should include visual inspection and machine-readable text checks.
+- **Evidence:** 16 artifacts/19 rendered pages, source/fact/URL/bounds checks, visual inspection, Latin/Devanagari support and actual Gemini PDF extraction probes are recorded in [PDF quality](docs/p1-pdf-quality.md). OCR and arbitrary scripts remain separate.
 
 ### P1-09 — Reduce measured Worker CPU tail
 
-- [ ] **Improvement / Verification · M8:** Profile the deployed account, PDF/review, plan and telemetry paths, reduce avoidable CPU and repeat a representative load sample. The first post-P0 window had no invocation errors but CPU P95/P99 of 14.581/24.715 ms exceeded the published Free 10 ms HTTP allowance; occasional platform flexibility is not sustainable headroom.
+- [x] **Improvement / Verification · M8:** Profile the deployed account, PDF/review, plan and telemetry paths, reduce avoidable CPU and repeat a representative load sample. The first post-P0 window had no invocation errors but CPU P95/P99 of 14.581/24.715 ms exceeded the published Free 10 ms HTTP allowance; occasional platform flexibility is not sustainable headroom.
 - **Done when:** measured route/cycle percentiles and failure rates justify the documented free-tier usage envelope. Retain bounded work, private telemetry and safe manual handoff; do not activate paid infrastructure automatically. [Measured evidence](docs/p0-operations.md#post-deployment-sample).
+- **Evidence:** Final real two-mode release measured 120 product API fetches with CPU P50/P95/P99 3/9/10 ms, one 14 ms signup outlier, zero native runtime errors and bounded memory. Heavy discovery/matching/PDF/maintenance use the Queue allowance. This validates a small single-workflow envelope, not sustained/concurrent or worst-case input capacity. [Measured evidence](docs/p1-capacity.md), [portable aggregates](docs/evidence/p1-capacity.json).
 
 ## P2 — scale discovery and finish delivery/preparation features
 
 ### P2-01 — Background discovery and a measured 100+ pool
+
+- **Already shipped in P1:** bounded durable discovery tickets, owner-only polling, private profile/mode binding, expiry, deduplication and queued execution. Larger per-source cursors/checkpoints and the 100+ verified pool below remain pending.
 
 - [ ] **Remaining · M2:** Move larger searches into resumable bounded jobs with pagination, source rotation, freshness refresh, canonical deduplication, cancellation and progress. Support saved cursor/checkpoint state so one timeout does not restart the entire cycle.
 - **Done when:** a cycle demonstrates 100+ distinct, active, sufficiently complete relevant listings with source/mode/geography precision measurements, not 100 search snippets or repeated records. Respect provider and per-domain budgets and preserve partial results on failures.
@@ -163,6 +174,8 @@ Priority expresses importance, not a completion-time promise. Provider credentia
 - **Depends on:** P0-02, P0-05, P2-01 and P2-05 for email scheduling.
 
 ### P2-07 — Mixed-mode and delivery-complete reports
+
+- **Already shipped in P1:** actual mixed-week Internship/Job grouping, shared UTC-week quota/no reset, both PDF/guide links and immutable submitted files. Export/email content and real delivery verification remain pending; this entire item is not checked off.
 
 - [ ] **Remaining / Verification · M7, M8:** Define mode changes and simultaneous internship/job activity within one week, including shared versus separate quotas. Group results clearly while retaining top-five skill demand, strongest/weakest match types and the top-three study priorities across the appropriate applications.
 - **Done when:** mixed statuses and both listing types appear with the correct PDF/guide links, compensation units, failure reasons and manual instructions. Verify mode-specific and overall summaries, HTML rendering and emailed content. Explicit policy must prevent mode switching from accidentally resetting consumed quota.

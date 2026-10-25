@@ -1,7 +1,7 @@
 # P1 implementation and release verification
 
 The P1 source builds on P0 commit `358510a`. The first P1 implementation was
-published as `bd6fff2`; the corrected queue-based release is being verified.
+published as `bd6fff2`; the final queued-plan release passed production verification on 25 October 2026.
 This file distinguishes implemented behavior, controlled tests and actual
 production evidence. It does not certify arbitrary employer portals or complete
 all original milestones.
@@ -67,6 +67,54 @@ allowance; no plan or browser/provider budget was raised.
 
 ## Corrected production release
 
-Deployment IDs, fresh complete acceptance, demo, scoped cleanup and final CI
-will be recorded after actual execution. No complete P1 production pass is
-claimed by this pending section.
+The final release is **Worker `d3848a38-6007-41bf-8112-7a228a3a101d`**,
+source **`595f68e`**, D1 migrations through **`0012`**, and Pages UI `85755cd9`.
+The subsequent Pages artifact publication **`c11dc0d8`** adds the reviewed demo without changing
+application JavaScript/CSS or the API Worker.
+
+Fresh run **`83836557fce3`**, 25 October **10:34:49.314–10:40:46.454 UTC**, passed
+normal PDF-only signup, editable facts, Internship and Job source searches,
+actual queued BGE matching/PDF preparation, immutable PDF review/edit/comparison,
+two reviewed owned-form submissions, both prep guides, mixed-week HTML report,
+shared quota/no reset, unchanged historical PDF, mobile and logout/private 401s.
+Both QA applications reached `applied` in **one attempt**; exactly two guarded
+confirmations, zero browser errors and zero employer/email submissions.
+Gemini extraction used the actual configured `gemini-3.5-flash-lite` fallback.
+
+Internship searches verified **3** full JDs (Internshala 1, Wellfound 2);
+Greenhouse/Lever were empty and LinkedIn restricted. Job searches verified **5**
+(Greenhouse 3, Lever 2); Naukri was empty and LinkedIn restricted. Each of the
+five/four named sources received one separate real search. Empty/restricted rows
+were displayed accurately. [Sanitized production proof](evidence/p1-production.json).
+
+The exact release window measured **120 product API fetches** with native
+invocation-log CPU **P50/P95/P99 3/9/10 ms**, maximum **14 ms** from one signup.
+Excluding six unrelated cheap probes leaves the same quantiles. Fourteen Queue
+invocations had CPU P95 444 ms, within their separate allowance. Whole-Worker
+GraphQL recorded **153 invocations, zero runtime errors**, and isolate memory
+P99 **38,526,844 bytes**. Counts/precision differ by telemetry source; no Cron CPU
+group was available. [Capacity proof](evidence/p1-capacity.json).
+
+This closes P1-09 for the measured **single active interactive workflow**; it
+is not an all-requests-below-10-ms guarantee, concurrent/sustained-load result or
+large/complex-input capacity claim. The signup outlier and earlier failing
+28/108- and 18/22-ms HTTP tails remain documented. No paid tier, allowance reset
+or extra sampler traffic made the result pass.
+
+[Watch the 4:45 captioned production demo](https://hireflow-dashboard.pages.dev/assets/hireflow-p1-demo.webm).
+Its complete ordered recording is uniformly time-scaled; it is not a latency
+benchmark. Privacy and native-PDF/report/mobile frame reviews passed.
+
+Scoped cleanup removed synthetic owners **17–20**, six unreferenced owned QA
+jobs and twenty private QA objects. Verified public jobs were retained. The real
+owner's 11 applications, 11 resume versions and 12 private file hashes matched
+before/after each cleanup. Actual browser/semantic usage and signup throttles
+were preserved. [Sanitized cleanup proof](evidence/p1-cleanup.json).
+
+Core release CI for `595f68e` passed [Backend](https://github.com/pankajbaid567/hireflow/actions/runs/40185275102)
+and [Cloudflare](https://github.com/pankajbaid567/hireflow/actions/runs/40185275066).
+Frontend-only CI correctly did not trigger for unchanged frontend files; its
+applicable `c2e1647` workflow passed. Subsequent artifact/documentation commits
+use the same applicable workflows; [current branch checks](https://github.com/pankajbaid567/hireflow/actions?query=branch%3Amain)
+record their actual status. [Publication proof](evidence/p1-publication.json) verifies
+the final anonymous browser, unchanged application assets, API health and exact public-video SHA-256.

@@ -2,7 +2,7 @@
 
 ## Current public deployment target
 
-The live frontend is **Cloudflare Pages**, project `hireflow-dashboard`, at [hireflow-dashboard.pages.dev/profile](https://hireflow-dashboard.pages.dev/profile). The API is [hireflow-api.baidpankaj567.workers.dev](https://hireflow-api.baidpankaj567.workers.dev/health). On **23 October 2026**, P1 Pages `cdc2de6a`, Worker `d9634e84-a645-4833-8da3-b091492f0e73` and D1 migrations through `0010` were published. Local checks passed; the coordinated P1 two-mode production acceptance is running and will be recorded separately. [P0 verification](p0-verification.md) remains historical. Use `npm run build:cloudflare` when publishing Pages, as documented in the [Cloudflare guide](cloudflare.md). No real employer application or email is authorized during QA.
+The live frontend is **Cloudflare Pages**, project `hireflow-dashboard`, at [hireflow-dashboard.pages.dev/profile](https://hireflow-dashboard.pages.dev/profile). The API is [hireflow-api.baidpankaj567.workers.dev](https://hireflow-api.baidpankaj567.workers.dev/health). On **25 October 2026**, P1 Pages `c11dc0d8`, Worker `d3848a38-6007-41bf-8112-7a228a3a101d` and D1 migrations through `0012` were published. Local/CI checks and the final two-mode production acceptance passed; [P1 verification](p1-verification.md) records the exact providers/forms, CPU envelope, demo and scoped cleanup. [P0 verification](p0-verification.md) remains historical. Use `npm run build:cloudflare` when publishing Pages, as documented in the [Cloudflare guide](cloudflare.md). No real employer application or email is authorized during QA.
 
 | Resource | Actual project / binding |
 | --- | --- |

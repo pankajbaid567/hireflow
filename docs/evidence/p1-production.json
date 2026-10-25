@@ -1,0 +1,231 @@
+{
+  "schema_version": 1,
+  "status": "passed",
+  "verified_at": "2026-10-25",
+  "source_commit": "595f68e2c82e2ea57fa0126b62dc6473263042b9",
+  "worker_version": "d3848a38-6007-41bf-8112-7a228a3a101d",
+  "pages_ui_deployment": "85755cd9",
+  "d1_migration_head": "0012",
+  "scope": "one-synthetic-owner-two-modes-real-source-discovery-owned-forms-only",
+  "run_id": "83836557fce3",
+  "started_at": "2026-10-25T10:34:49.314Z",
+  "finished_at": "2026-10-25T10:40:46.454Z",
+  "extraction": {
+    "model": "gemini-3.5-flash-lite",
+    "fallback_used": true
+  },
+  "modes": [
+    {
+      "mode": "internship",
+      "start_http_status": 202,
+      "http_status": 200,
+      "discovery_id": "8b567b70-5fad-42b8-83af-cea71cf467e2",
+      "state": "completed",
+      "created_at": "2026-10-25T10:35:40.939Z",
+      "finished_at": "2026-10-25T10:35:51.169Z",
+      "polls": 4,
+      "discovered": 3,
+      "imported": 3,
+      "already_known": 0,
+      "sources": [
+        {
+          "id": "internshala",
+          "name": "Internshala",
+          "searched": 4,
+          "verified": 1,
+          "restricted": 0,
+          "status": "ok",
+          "search_calls": 1
+        },
+        {
+          "id": "wellfound",
+          "name": "Wellfound",
+          "searched": 4,
+          "verified": 2,
+          "restricted": 0,
+          "status": "ok",
+          "search_calls": 1
+        },
+        {
+          "id": "greenhouse",
+          "name": "Greenhouse",
+          "searched": 2,
+          "verified": 0,
+          "restricted": 0,
+          "status": "empty",
+          "search_calls": 1
+        },
+        {
+          "id": "lever",
+          "name": "Lever",
+          "searched": 4,
+          "verified": 0,
+          "restricted": 0,
+          "status": "empty",
+          "search_calls": 1
+        },
+        {
+          "id": "linkedin",
+          "name": "LinkedIn",
+          "searched": 4,
+          "verified": 0,
+          "restricted": 4,
+          "status": "restricted",
+          "search_calls": 1
+        }
+      ],
+      "warnings": [
+        "Expired roles, search pages, duplicates, and pages blocked by job sites were omitted."
+      ],
+      "verified_by_ui": true
+    },
+    {
+      "mode": "job",
+      "start_http_status": 202,
+      "http_status": 200,
+      "discovery_id": "681f3ab7-8d8b-4a6f-a0e1-9f865a5278b1",
+      "state": "completed",
+      "created_at": "2026-10-25T10:38:14.525Z",
+      "finished_at": "2026-10-25T10:38:27.037Z",
+      "polls": 5,
+      "discovered": 5,
+      "imported": 5,
+      "already_known": 0,
+      "sources": [
+        {
+          "id": "naukri",
+          "name": "Naukri",
+          "searched": 4,
+          "verified": 0,
+          "restricted": 0,
+          "status": "empty",
+          "search_calls": 1
+        },
+        {
+          "id": "linkedin",
+          "name": "LinkedIn",
+          "searched": 4,
+          "verified": 0,
+          "restricted": 4,
+          "status": "restricted",
+          "search_calls": 1
+        },
+        {
+          "id": "greenhouse",
+          "name": "Greenhouse",
+          "searched": 4,
+          "verified": 3,
+          "restricted": 0,
+          "status": "ok",
+          "search_calls": 1
+        },
+        {
+          "id": "lever",
+          "name": "Lever",
+          "searched": 4,
+          "verified": 2,
+          "restricted": 0,
+          "status": "ok",
+          "search_calls": 1
+        }
+      ],
+      "warnings": [
+        "Expired roles, search pages, duplicates, and pages blocked by job sites were omitted."
+      ],
+      "verified_by_ui": true
+    }
+  ],
+  "controlled_applications": [
+    {
+      "mode": "internship",
+      "status": "applied",
+      "attempts": 1,
+      "resume_version": 2,
+      "matching_method": "hybrid",
+      "embedding_model": "@cf/baai/bge-small-en-v1.5:cls:profile-jd-v1",
+      "semantic_score": 0.8312,
+      "status_history": [
+        "pending",
+        "planned",
+        "confirmed",
+        "applying",
+        "applied"
+      ],
+      "prep": {
+        "rounds": 2,
+        "questions": 4,
+        "resources": 6
+      }
+    },
+    {
+      "mode": "job",
+      "status": "applied",
+      "attempts": 1,
+      "resume_version": 1,
+      "matching_method": "hybrid",
+      "embedding_model": "@cf/baai/bge-small-en-v1.5:cls:profile-jd-v1",
+      "semantic_score": 0.8502,
+      "status_history": [
+        "pending",
+        "planned",
+        "confirmed",
+        "applying",
+        "applied"
+      ],
+      "prep": {
+        "rounds": 2,
+        "questions": 5,
+        "resources": 6
+      }
+    }
+  ],
+  "report": {
+    "applied_count": 2,
+    "mode_summaries": [
+      {
+        "listing_type": "internship",
+        "total_applications": 4,
+        "applied_count": 1,
+        "average_match_score": 0.6211000000000001
+      },
+      {
+        "listing_type": "job",
+        "total_applications": 6,
+        "applied_count": 1,
+        "average_match_score": 0.53635
+      }
+    ],
+    "quota_policy": "shared_across_modes_per_UTC_week"
+  },
+  "checks": {
+    "shared_quota_no_reset": true,
+    "historical_pdf_unchanged": true,
+    "logout_revokes_private_access": true,
+    "public_listing_persistence_verified": true
+  },
+  "guarded_confirmation_requests": 2,
+  "out_of_scope_requests": 0,
+  "browser_errors": 0,
+  "employer_submissions": 0,
+  "email_sends": 0,
+  "http_resource_limit_responses": 0,
+  "demo": {
+    "url": "https://hireflow-dashboard.pages.dev/assets/hireflow-p1-demo.webm",
+    "bytes": 5742147,
+    "sha256": "d12f06fb11151dd403c63bac5ea1d66dcf203577aeaf073100eb1c0dbe4e8ac5",
+    "raw_duration_seconds": 354.32,
+    "duration_seconds": 285,
+    "timing_scale": 0.8043576428087604,
+    "timing_note": "Idle/provider waits and interactions uniformly time-scaled to fit a 3\u20135-minute screencast. No event ordering changed; this edited screencast is not a latency benchmark.",
+    "synthetic_identity_only": true,
+    "credential_screens_opened": false,
+    "employer_submissions": 0,
+    "capture_browser": "full Chromium, headless",
+    "desktop_viewport": {
+      "width": 1366,
+      "height": 768
+    },
+    "popup_viewport_reset": "Actual 1px resize-and-restore after popup close prevents screencast clipping; no pixels or interactions masked."
+  },
+  "pages_artifact_deployment": "c11dc0d8"
+}

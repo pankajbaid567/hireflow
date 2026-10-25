@@ -2,7 +2,15 @@
 
 HireFlow helps students and job seekers build a reviewed application plan, prepare truthful resume PDFs, track supported automatic applications, and study for interviews. Applications require explicit confirmation. Blocked forms, CAPTCHAs, expired vacancies, and uncertain submissions are recorded for manual action.
 
-**Live dashboard:** [hireflow-dashboard.pages.dev](https://hireflow-dashboard.pages.dev/profile). The frontend and backend are hosted on Cloudflare: Pages serves React and the same-origin API proxy, and the [API Worker](https://hireflow-api.baidpankaj567.workers.dev/health) handles application data and work. Release verification on 23 October 2026 (IST) passed: PDF-only signup, structured profile edits, plan/PDF review, one controlled form submission, tracking, prep, report, downloads, mobile and logout. Old-browser workspace transfer and replay rejection passed in a separate browser run. Production UI discovery made five separate searches and verified eight listings across Internshala, Wellfound and Greenhouse; source counts and original listing links are visible. The old Vercel origin is retained temporarily as a session-migration bridge.
+**Live dashboard:** [hireflow-dashboard.pages.dev](https://hireflow-dashboard.pages.dev/profile).
+React/Pages and the [API Worker](https://hireflow-api.baidpankaj567.workers.dev/health)
+run on Cloudflare with D1, private KV files, Queues and Browser Run.
+**P0 and P1 are implemented and production verified within their documented scopes.**
+The 25 October two-mode run used a synthetic PDF, real source searches and BGE
+matching, reviewed PDFs, two owned QA submissions, prep guides, mixed report,
+mobile and logout. [Verification](docs/p1-verification.md) ·
+[Watch the 4:45 demo](https://hireflow-dashboard.pages.dev/assets/hireflow-p1-demo.webm).
+The old Vercel origin remains a temporary workspace-migration bridge.
 
 The original specification is **not fully complete**. Read the [milestone audit](docs/milestone-audit.md) for implemented, partial, missing, and unverified requirements, and the [prioritized roadmap](future.md) for remaining work, improvements and future additions.
 
@@ -85,12 +93,17 @@ npm run check --prefix cloudflare
 venv/bin/python -m pytest tests/ -v
 ```
 
-Latest local P0 checks: **299 Python tests, 369 Worker tests and 112 frontend tests
-passed**; typecheck, frontend build, Worker deploy dry run and the isolated React
-dashboard E2E passed. Seven opt-in live tests were skipped by default. All three
-[GitHub CI workflows](https://github.com/pankajbaid567/hireflow/actions) passed for
-`a664041`, including PostgreSQL migration rollback/checks. Separate new P0
-production checks verified recovery and the controlled Pages application cycle.
+Current local checks: **373 Python, 470 Worker and 127 frontend tests passed**,
+plus the frozen **120-case AI evaluation**, typecheck, Pages build, Worker dry
+run and isolated React/Worker/D1/R2 browser E2E. Seven live tests are opt-in.
+A separate real PostgreSQL/Docker cycle and production both-mode acceptance
+passed. [Release evidence and CI](docs/p1-verification.md) distinguish mocked,
+actual-provider and controlled-form stages.
+
+The measured final interactive cycle had HTTP CPU **P95/P99 9/10 ms**, zero native
+runtime errors and one **14 ms signup outlier**. Heavy search, matching, PDF and
+maintenance work runs in the Queue. This is a small single-workflow Free-tier
+sample, not a sustained/concurrent capacity guarantee. [Capacity details](docs/p1-capacity.md).
 
 Default tests use isolated data and controlled forms. Live provider/browser verification requires explicit run switches and consumes account usage. It must target HireFlow's synthetic QA form, never a real employer application. Local test success does not by itself prove a complete production UI workflow or compliance with Workers Free CPU limits.
 

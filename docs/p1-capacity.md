@@ -6,6 +6,12 @@ this work. The P0 full-cycle measurement remains historical:
 CPU P50/P95/P99 **3.515/14.581/24.715 ms**, 252 invocations and zero errors.
 Those numbers must not be replaced by unrelated health-only latency.
 
+The final production cycle meets the bounded interactive target: **120 product
+HTTP fetches, CPU P50/P95/P99 3/9/10 ms, max 14 ms**. The 14-ms signup outlier
+remains explicit. This is one active owner's complete two-mode workflow, not a
+sustained-load or concurrency guarantee. Portable, sanitized aggregates are in
+[p1-capacity.json](evidence/p1-capacity.json).
+
 ## Measurement boundaries
 
 Two separate tools now supply reproducible evidence:
@@ -298,6 +304,73 @@ conclusive CPU reduction, so the experiment was reverted. No profile/auth
 behavior change is retained from this investigation. Private proofs are
 `profile-signup-{before,after}-repeat-{1,2,3}.json` under the same directory.
 
+## Final queued-plan release: bounded interactive target met
+
+Worker **`d3848a38-6007-41bf-8112-7a228a3a101d`**, source **`595f68e`**, migration
+`0012` with `PLAN_WORK_IN_QUEUE=true`, and Pages `85755cd9` completed run
+**`83836557fce3`** successfully. The exact proof window is **2026-10-25
+10:34:49.314–10:40:46.454 UTC**. PDF signup, both listing modes, real source
+discovery, hybrid matching, queued PDF preparation, two exact reviewed
+submissions to owned forms, prep guides, the weekly report, mobile checks and
+logout passed. No health sampler or other extra application traffic was added
+to improve the percentiles.
+
+| Final invocation scope / outcome | Reported count | CPU P50 / P95 / P99 / max, ms | Wall P95, ms |
+| --- | --- | --- | --- |
+| All fetch / ok in the shared window | 126 | 3 / 9 / 10 / 14 | 2,989 |
+| Product API fetch / ok, excluding six unrelated probes | 120 | 3 / 9 / 10 / 14 | 2,989 |
+| Queue / ok | 14 | 19 / 444 / 444 / 444 | 20,373 |
+| Scheduled | Unobserved | Not measured | Not measured |
+
+All observed invocation-log groups reported sample interval 1. Six unsolicited
+environment-file probes appeared in the shared public Worker window at 1–4 ms
+CPU. Removing only those unrelated probes leaves the product CPU percentiles
+unchanged; no expensive endpoint was excluded. Scheduled CPU was unavailable
+even in a same-Worker query without a version filter, and the scheduled
+GraphQL dataset returned no rows. Its absence does not establish zero cost.
+
+Native GraphQL for the exact final version/window reports **153 invocations,
+zero runtime errors**, mixed CPU P50/P95/P99 **3.631/19.519/253.053 ms**, and
+isolate memory P50/P95/P99 **24,883,280/33,513,212/38,526,844 bytes**. Queue CPU
+belongs to its consumer allowance; the mixed GraphQL P95 is not the HTTP P95.
+Different telemetry datasets, sampling and retained CPU fields can produce
+different counts. No missing samples are interpreted as zero.
+
+| Product route group | Count | CPU P50 / P95 / P99 / max, ms |
+| --- | --- | --- |
+| PDF signup | 1 | 14 / 14 / 14 / 14 |
+| Weekly-plan GET | 30 | 6 / 9 / 9 / 9 |
+| Swap | 2 | 9 / 10 / 10 / 10 |
+| Confirmation | 2 | 6 / 9 / 9 / 9 |
+| Manual job import | 2 | 4 / 6 / 6 / 6 |
+| Discovery start | 2 | 3 / 5 / 5 / 5 |
+| Discovery polling | 18 | 2 / 6 / 6 / 6 |
+| Report generation | 1 | 8 / 8 / 8 / 8 |
+| Draft edit | 1 | 7 / 7 / 7 / 7 |
+| Operations status | 7 | 2 / 7 / 7 / 7 |
+| Account security | 4 | 1 / 3 / 3 / 3 |
+
+| Release / functional result | Reported fetch count | HTTP CPU P50 / P95 / P99 / max, ms |
+| --- | --- | --- |
+| First P1 `d9634e84`, failed E2E assertion | 71 | 6 / 28 / 108 / 108 |
+| Queued discovery `2ef717f6`, passed E2E | 110 | 4 / 18 / 22 / 24 |
+| Queued plans `d3848a38`, passed E2E | 120 product / 126 total | 3 / 9 / 10 / 14 |
+
+The observed product HTTP P95 fell **28 → 18 → 9 ms**, meeting the **≤10-ms**
+target for this complete single-owner workflow. These are distinct finite
+cycles, not a matched-load causal experiment. The signup's **14-ms** maximum
+exceeds the per-request allowance and remains a rare observed tail; it is not
+proven to be cold-start CPU. Module startup was not instrumented. This evidence
+does not establish a sustained SLA, concurrent-user capacity, or safe cost for
+every large document/complex Unicode input. No paid plan, extra allowance or
+budget reset was used to achieve the result.
+
+Portable evidence is [p1-capacity.json](evidence/p1-capacity.json). Private
+platform and aggregate proofs are `cycle-final-83836557fce3.json`,
+`final-cycle-trigger-aggregates.json`, `final-cycle-route-aggregates.json`,
+`final-cycle-api-no-probes.json` and scheduled-availability records under
+`/tmp/hireflow-p1-capacity/`. They contain no raw application request logs.
+
 ## Reproduce and compare
 
 Use Node 22+, installed locked Cloudflare dependencies and Playwright tooling.
@@ -345,11 +418,10 @@ is separate from browser/provider budgets, which must never be reset for QA.
 
 ## Release gate
 
-**The post-P1 read comparison and corrected functional E2E are complete; the
-10-ms HTTP P95 objective remains open at 18 ms.** The exact failed and successful
-cycle scopes are retained above. Further plan/preparation changes require a new
-coordinated release and complete controlled cycle before claiming a changed
-free-tier envelope for the entire workflow. The
+**The bounded interactive release gate is met: product HTTP P95 9 ms across
+120 fetches in a complete, passed two-mode production cycle.** The 14-ms signup
+outlier and unmeasured startup/concurrency/large-input boundaries remain above.
+The exact earlier failed and successful cycle scopes are retained. The
 warm read matrix does not certify long Unicode resumes, uncached discovery,
 model calls or cold module startup. Record CPU/memory, invocation errors and
 the measured bundle/version, and retain any unmeasured boundaries. The published
