@@ -68,7 +68,7 @@ export async function readPublicSource(env:Env,raw:string,init:RequestInit={},re
   }
   if(!response.ok||method==='HEAD'){await response.body?.cancel();const safe=new Headers({'Content-Type':type,'X-HireFlow-Source-Cache':'miss'});for(const name of ['Location','Cache-Control','Retry-After']){const value=response.headers.get(name);if(value)safe.set(name,value);}return new Response(null,{status:response.status,headers:safe});}
   if(!supportedSourceType(type,options.allowScripts)){await response.body?.cancel();return new Response(null,{status:415});}
-  const reader=response.body?.getReader();if(!reader)return new Response(null,{status:response.status,headers:response.headers});
+  const reader=response.body?.getReader();if(!reader){await run(env,'DELETE FROM source_read_cache WHERE url=?',url);return new Response(null,{status:response.status,headers:{'Content-Type':type,'X-HireFlow-Source-Cache':'miss','X-HireFlow-Fetched-At':iso}});}
   const chunks:Uint8Array[]=[];let size=0,truncated=false;
   for(;;){const next=await reader.read();if(next.done)break;const take=next.value.subarray(0,maximumBody-size);chunks.push(take);size+=take.length;if(take.length<next.value.length||size>=maximumBody){truncated=true;await reader.cancel();break;}}
   const bytes=new Uint8Array(size);let offset=0;for(const part of chunks){bytes.set(part,offset);offset+=part.length;}

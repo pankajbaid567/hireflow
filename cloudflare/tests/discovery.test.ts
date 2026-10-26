@@ -23,7 +23,7 @@ describe('active individual job discovery', () => {
     });
     const jobs = await discoverJobs(env, { name: 'Private Candidate', email: 'private@example.com', mode: 'internship', skills: ['Python'], target_roles: ['AI Engineer'] }, { warn() {}, trace: value => traces.push(value) });
     expect(jobs).toHaveLength(1);
-    expect(traces).toContainEqual({ stage: 'fetch', host: 'wellfound.com', status: 403 });
+    expect(traces).toContainEqual({ stage: 'fetch', host: 'wellfound.com', status: 403, cache:'none' });
     expect(traces).toContainEqual({ stage: 'rejected', host: 'wellfound.com', reason: 'expired_date' });
     expect(traces).toContainEqual({ stage: 'summary', search_results: 3, unique_candidates: 3, verified: 1, skipped: 2, requests: 8 });
     const serialized = JSON.stringify(traces);

@@ -32,6 +32,10 @@ describe('shared public source cache and rate limits',()=>{
   await available();respond=()=>new Response('private new response',{headers:{'Cache-Control':'no-store'}});await read(undefined,{},true);expect((await db.prepare('SELECT count(*) AS n FROM source_read_cache').first<{n:number}>())!.n).toBe(0);
   await available();respond=()=>new Response('active again');await read();await available();respond=()=>new Response('login or removed',{status:404});expect((await read(undefined,{},true)).status).toBe(404);expect((await read()).status).toBe(404);expect((await read()).text).toBe('');
  });
+ it('generates trusted accounting headers for a bodyless native response and ignores upstream cache/cookie claims',async()=>{
+  respond=()=>new Response(null,{headers:{'Content-Type':'text/html','X-HireFlow-Source-Cache':'hit','X-HireFlow-Fetched-At':'synthetic-upstream-time','Set-Cookie':'synthetic=private'}});
+  const value=await read();expect(value.status).toBe(200);expect(value.bytes).toBe(0);expect(value.headers['x-hireflow-source-cache']).toBe('miss');expect(value.headers['x-hireflow-fetched-at']).not.toBe('synthetic-upstream-time');expect(value.headers['set-cookie']).toBeUndefined();expect(calls).toHaveLength(1);expect(await usage()).toBe(1);
+ });
  it('persists Retry-After dates without reducing a day-long requested pause to one hour',async()=>{
   respond=()=>new Response(null,{status:429,headers:{'Retry-After':new Date(Date.now()+86400000).toUTCString()}});const first=await read();expect(first).toMatchObject({http:429,deferred:true,attempted:true});expect(first.delay).toBeGreaterThan(86390);expect((await read('https://source.example.com/jobs/two'))).toMatchObject({deferred:true,attempted:false});expect(calls).toHaveLength(1);
  });
