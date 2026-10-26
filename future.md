@@ -1,6 +1,6 @@
 # HireFlow: remaining work and future roadmap
 
-Updated: **25 October 2026 (IST)**. P0 is published; P1 implementation and release evidence are tracked in [P1 verification](docs/p1-verification.md).
+Updated: **26 October 2026 (IST)**. P0 and P1 are published within their documented scopes; [P2 verification](docs/p2-verification.md) records the new release and remaining acceptance.
 
 This is the prioritized backlog for finishing the original project, improving its AI and engineering quality, and considering new capabilities. **Checked items have the scoped implementation/evidence linked below; unchecked items remain pending.** P1 completion is distinct from completing every original milestone or certifying arbitrary employer portals.
 
@@ -10,10 +10,10 @@ Sources: [original milestones](MILESTONES.md), [expectation-versus-reality audit
 
 - The live dashboard is [Cloudflare Pages](https://hireflow-dashboard.pages.dev); its backend is the [API Worker](https://hireflow-api.baidpankaj567.workers.dev/health), using D1, private KV documents, Queues and Browser Run. The Python/FastAPI/PostgreSQL application is a separate local/container implementation.
 - PDF intake, rich profile editing, reviewed plans, swaps, company blacklisting, private versioned PDFs, application history, prep guides and weekly HTML reports have working paths.
-- Discovery makes **five separate searches in Internship mode** and **four in Job mode**, using private durable Queue tickets and UI polling. Both modes have actual source-specific production evidence; restricted/empty sites remain visible. Each search is bounded to eight verified full JDs, not a demonstrated 100+ listing cycle.
+- Discovery makes **five separate searches in Internship mode** and **four in Job mode**, using private durable Queue tickets and UI polling. Both modes have actual source-specific production evidence; restricted/empty sites remain visible. Quick searches are bounded to eight verified full JDs each. P2 larger cycles separately rotate six Internship/five Job sources (including Ashby), with resumable search/detail reservations and a persistent local option; a real relevant 100+ pool is not demonstrated.
 - Deployed matching uses genuine BGE CLS embeddings with private versioned D1 vectors, preserves six-factor weights/explanatory gaps and falls back lexically. Python normal plans optionally use genuine BGE/FAISS. The frozen 120-case synthetic benchmark has heldout hybrid nDCG@3 0.9511 vs lexical 0.6991; labels are not independent hiring outcomes. Model matching and PDF preparation run in bounded versioned Queue work on production.
-- Both-mode production UI acceptance has exercised real PDF extraction/search/embeddings, two reviewed owned-QA submissions, preparation, a mixed-mode report, shared quota, immutable PDFs, mobile and logout. Exact release and CPU results are in the verification documents. This does not certify real employer portals. Email delivery and a complete weekly scheduler remain incomplete.
-- Current local gates: **373 Python, 470 Worker and 127 frontend tests**, the 120-case AI evaluation, isolated React/browser E2E and actual secret-free PostgreSQL/Docker integration. GitHub CI separately verifies migrations/rollback, readers, evaluation and builds. Functional test counts alone do not establish AI quality.
+- Both-mode production UI acceptance has exercised real PDF extraction/search/embeddings, two reviewed owned-QA submissions, preparation, a mixed-mode report, shared quota, immutable PDFs, mobile and logout. Exact release and CPU results are in the verification documents. This does not certify real employer portals. Opt-in timezone-aware draft scheduling, reminders and pause/resume are now implemented. Real email sender configuration/inbox receipt remains incomplete; schedules never authorize submissions.
+- Current local gates: **390 Python, 601 Worker and 145 frontend tests**, the 120-case AI evaluation, isolated React/browser E2E and actual secret-free PostgreSQL/Docker integration. GitHub CI separately verifies migrations/rollback, readers, evaluation and builds. Functional test counts alone do not establish AI quality.
 
 ## Priority and tracking rules
 
@@ -135,60 +135,67 @@ Priority expresses importance, not a completion-time promise. Provider credentia
 
 ## P2 — scale discovery and finish delivery/preparation features
 
+**Release status (2026-10-26):** Core implementation is published on the free Cloudflare deployment. [Release, production-browser and recovery evidence](docs/p2-verification.md) records what was actually verified. P2-03, P2-04, the non-email P2-06 workflow, P2-08 and P2-09 are implemented and verified within their documented bounds. P2-01's real 100+ pool, P2-02's broader dynamic-portal coverage, P2-05's real inbox receipt and P2-07's delivery acceptance remain open. A passing mocked or synthetic test does not close those conditions.
+
 ### P2-01 — Background discovery and a measured 100+ pool
 
-- **Already shipped in P1:** bounded durable discovery tickets, owner-only polling, private profile/mode binding, expiry, deduplication and queued execution. Larger per-source cursors/checkpoints and the 100+ verified pool below remain pending.
+- **Now shipped:** bounded durable discovery tickets plus private resumable query/source checkpoints, atomic attempt reservations, source rotation, full-JD verification, deduplication, progress, cancellation/resume and explicit persistent local execution. Tavily query variants are not advertised as provider pagination.
 
-- [ ] **Remaining · M2:** Move larger searches into resumable bounded jobs with pagination, source rotation, freshness refresh, canonical deduplication, cancellation and progress. Support saved cursor/checkpoint state so one timeout does not restart the entire cycle.
+- [ ] **Acceptance still open · M2:** Demonstrate the real relevant 100+ pool with measured source/mode/geography precision. The engine passes an actual workerd/D1 100-distinct-synthetic-JD test and local process-restart tests; an eight-minute production pilot made 11 search attempts / 62 detail-check reservations and retained zero listings. Its checkpoint was explicitly cancelled. One false geography rejection was diagnosed and repaired; this does not establish the 100+ live pool. See [discovery policy and local alternative](docs/p2-discovery-scheduler.md).
 - **Done when:** a cycle demonstrates 100+ distinct, active, sufficiently complete relevant listings with source/mode/geography precision measurements, not 100 search snippets or repeated records. Respect provider and per-domain budgets and preserve partial results on failures.
 - **Depends on:** P0-05, P1-03 and P1-05. If that throughput is not sustainable on the configured free accounts, document the measured limit and offer explicit local execution or a separately approved infrastructure choice.
 
 ### P2-02 — Portal adapters, career pages and shared rate limits
 
-- [ ] **Remaining / Improvement · M2, M5:** Expand permitted company-career, static and JavaScript-page adapters; add per-domain scheduling, caching, backoff and selector/metadata drift detection. Improve Internshala/Wellfound public detail coverage and assess permitted authenticated integrations separately.
+- [ ] **Partly implemented · M2, M5:** Public Ashby/Greenhouse/Lever APIs, static/JSON-LD pages, Internshala/Wellfound detail parsing, source failure states, shared daily budgets, per-host scheduling/cache/backoff and metadata regression fixtures are shipped. [Source coverage and actual read checks](docs/p2-source-adapters.md) state current limits. Broader JavaScript-only and authenticated portal integrations remain unsupported and require separate permitted-access validation; landing-page availability does not prove individual-JD coverage.
 - **Done when:** each supported source has a fixture suite, documented field coverage and a current live read-only check. A failure on one portal leaves other sources usable. Keep login-required, restricted and inaccessible states explicit; follow permitted APIs/access rules rather than assuming every portal exposes an accessible feed.
 - **Depends on:** P0-03 for applying support. An adapter that only reads JDs must not be advertised as automatic application support.
 
 ### P2-03 — Better preparation and company evidence
 
-- [ ] **Remaining / Improvement · M6; issues 17–19:** Fetch accessible company/career evidence, label predicted rounds as estimates, improve strong/moderate/gap analysis, validate 2–3 useful resources per supported topic and produce 5–10 JD-specific questions across the required categories when evidence/budgets permit.
+- [x] **Implemented / verified with explicit fallbacks · M6; issues 17–19:** Fetch accessible company/career evidence, label predicted rounds as estimates, improve strong/moderate/gap analysis, validate 2–3 useful resources per supported topic and produce 5–10 JD-specific questions across the required categories when evidence/budgets permit.
 - **Done when:** outputs are distinct per JD and mode, resources are checked and attributed, recent news has a valid date within the required window, and stage/team/stack/review claims distinguish sourced facts from estimates. Evaluate relevance and duplication using P1-01, not JSON shape alone.
+- **Evidence:** [16-case preparation comparison](docs/p2-preparation-quality.md), frozen 120-case regression and a real production six-question guide with dated/cited evidence and visible warnings. Known-case behavioral duplication fell from 87.5% to 0%; independent human relevance/resource-usefulness evaluation is not claimed.
 - **Fallback rule:** when links/reviews or model output are unavailable, retain clear warnings and useful guidance. Never invent reviews, interview rounds, citations or extra questions just to meet a count; track these shortfalls as acceptance limitations.
 
 ### P2-04 — Standalone preparation exports
 
-- [ ] **Remaining · M6:** Generate a private per-listing HTML/PDF guide with rounds, topics, working resource links, questions, company evidence and generation time.
+- [x] **Implemented / production verified · M6:** Generate a private per-listing HTML/PDF guide with rounds, topics, working resource links, questions, company evidence and generation time.
+- **Evidence:** Owner-only immutable export versions, expiry/stale/failure behavior and real PDF-reader tests; production four-page PDF and HTML linked from the weekly report, with anonymous access denied. See [exports](docs/prep-exports.md) and [release evidence](docs/p2-verification.md).
 - **Done when:** the artifact is saved/versioned and linked from the guide, library/report where appropriate; authorization and expired/deleted artifact behavior are tested. A weekly report that merely links to the React guide does not satisfy this export requirement.
 
 ### P2-05 — Configure and verify email delivery
 
-- [ ] **Remaining / Verification · M7; issue 21:** Configure a real supported provider and verified sender, then verify HTML reports, up to ten resume attachments, oversized-attachment link fallback and delivery timestamps/failure reasons.
+- [ ] **Blocked on external sender setup / receipt · M7; issue 21:** Configure a real supported provider and verified sender, then verify HTML reports, up to ten resume attachments, oversized-attachment link fallback and delivery timestamps/failure reasons.
 - **Done when:** an explicitly authorized test to an owner-controlled address confirms receipt; retry/idempotency controls prevent duplicate delivery; links preserve document privacy and have an appropriate authenticated or expiring access design. Mocked provider success is not delivery proof.
+- **Implementation shipped:** immutable queued payloads, owner-derived recipient, attachment/link bounds, exact document versions and provider-specific idempotency/uncertain-send recovery pass provider-mocked tests. No real send is claimed; deployed supported-provider keys and a verified sender are absent.
 - **Dependencies:** provider key, verified sender/domain as required, account quotas and P0-01 where authentication is needed. Do not send to applicants, employers or other recipients during ordinary testing.
 
 ### P2-06 — Consent-preserving weekly scheduler
 
-- [ ] **Improvement / inferred weekly-workflow scope · M7:** Schedule discovery, draft planning, review reminders, preparation/report generation and optional opted-in report delivery with user timezone, per-cycle deduplication and durable recovery. Weekly reports/email are explicit commitments; a complete autonomous scheduler, timezone controls and pause/resume are additional workflow scope rather than literal M7 acceptance criteria.
+- [x] **Implemented / non-email workflow verified · M7:** Schedule discovery, draft planning, review reminders, preparation/report generation and optional opted-in report delivery with user timezone, per-cycle deduplication and durable recovery. Weekly reports/email are explicit commitments; a complete autonomous scheduler, timezone controls and pause/resume are additional workflow scope rather than literal M7 acceptance criteria.
 - **Done when:** missed/duplicate ticks, restarts, provider outages, timezone/week boundaries and quota rollover are tested. Scheduled work may prepare and remind; only a valid review/confirmation can authorize the exact submitted opportunities/resume versions. Provide pause/resume controls and visible next-run state.
-- **Existing cron:** the five-minute recovery/outbox cron is not this complete weekly scheduler.
+- **Evidence:** [Timezone/lease/recovery and consent policy](docs/p2-discovery-scheduler.md), actual scheduling-stage tests, and production UI opt-in/pause/next-run/mobile checks. Real scheduled email remains unavailable until P2-05 is configured; no application approval is created by a schedule.
 - **Depends on:** P0-02, P0-05, P2-01 and P2-05 for email scheduling.
 
 ### P2-07 — Mixed-mode and delivery-complete reports
 
-- **Already shipped in P1:** actual mixed-week Internship/Job grouping, shared UTC-week quota/no reset, both PDF/guide links and immutable submitted files. Export/email content and real delivery verification remain pending; this entire item is not checked off.
+- **Now shipped:** mixed-week Internship/Job grouping, shared UTC-week quota/no reset, immutable resume versions, private standalone guide exports, HTML summaries/action instructions and matching immutable provider-payload fixtures. Production HTML links were verified. Real inbox delivery remains P2-05's external dependency; this entire item is not checked off.
 
-- [ ] **Remaining / Verification · M7, M8:** Define mode changes and simultaneous internship/job activity within one week, including shared versus separate quotas. Group results clearly while retaining top-five skill demand, strongest/weakest match types and the top-three study priorities across the appropriate applications.
+- [ ] **Delivery acceptance still open · M7, M8:** Verify an explicitly authorized real mixed-mode report in the owner inbox, including authenticated exact-version links and delivery/failure timestamps. Existing mode-switch/shared-quota rules, summaries and HTML/provider-payload content are covered by tests; provider acceptance is not proof of delivery.
 - **Done when:** mixed statuses and both listing types appear with the correct PDF/guide links, compensation units, failure reasons and manual instructions. Verify mode-specific and overall summaries, HTML rendering and emailed content. Explicit policy must prevent mode switching from accidentally resetting consumed quota.
 
 ### P2-08 — Backup, restore, retention and migration lifecycle
 
-- [ ] **Improvement · M1, M8:** Document and exercise coordinated D1/document backup and restore, artifact retention, orphan cleanup and scoped user export/deletion. Define rollback expectations for schema and application releases.
+- [x] **Implemented / production archive restored offline · M1, M8:** Document and exercise coordinated D1/document backup and restore, artifact retention, orphan cleanup and scoped user export/deletion. Define rollback expectations for schema and application releases.
 - **Done when:** a synthetic workspace can be restored with correct ownership, status history and PDF versions, without cross-user leakage. Cleanup cannot delete referenced or submitted artifacts unintentionally.
+- **Evidence:** [Lifecycle policy](docs/workspace-lifecycle.md), actual isolated D1/file tests and a five-artifact production synthetic archive restored into a new local D1/KV workspace. A second process reopened persistent records/history/resume version and verified all five hashes; twenty authorization/execution tables remained empty. Production orphan cleanup remains dry-run and disabled. Scoped QA cleanup and preservation checks are recorded in [release evidence](docs/p2-verification.md).
 - **Migration lifecycle:** keep the old Vercel bridge while needed; define verified recovery/migration readiness and a communicated retirement plan before removing it. R2 is an optional future storage migration, not a required fix or permission to activate billing.
 
 ### P2-09 — Backend parity and regression maintenance
 
-- [ ] **Remaining / Decision · M1–M8:** Decide which Python and Worker features are maintained to parity and publish an API/behavior matrix. If the Python path remains supported, wire its normal plan route to the intended optional tailoring/prep configuration and verify the behavior, rather than treating unused helpers as integrated features.
+- [x] **Implemented / documented supported scope · M1–M8:** Decide which Python and Worker features are maintained to parity and publish an API/behavior matrix. If the Python path remains supported, wire its normal plan route to the intended optional tailoring/prep configuration and verify the behavior, rather than treating unused helpers as integrated features.
+- **Evidence:** [Backend matrix](docs/backend-parity.md), normal Python plan/pipeline factory wiring and shared regression/CI. Python deliberately lacks the listed Cloudflare-only features; it is not advertised as full deployed-runtime parity.
 - **Done when:** shared contract fixtures cover schemas, scoring/versioning, confirmation, ownership and statuses; CI makes intentional differences visible. Keep database records independent unless a tested migration/import path is explicitly provided. Document the smaller runtime requirements versus optional embedding/ML dependencies for reproducible installs.
 
 ## P3 — optional module and experiments
@@ -247,7 +254,9 @@ For an AI internship portfolio, the highest-value proof after the trust fixes is
 
 Do not present planned features, restricted-source search results, mocked email delivery, an unused embedding helper, a generic form fixture or an estimated interview process as verified real-world capability.
 
-| Priority | Estimated elapsed time |
+These are historical estimates from before P0–P2 implementation, not estimates of the remaining work or provider/domain waiting time. Use the item status/evidence above for current progress.
+
+| Priority | Original estimated elapsed time |
 |---|---:|
 | P0 | 10–20 hrs |
 | P1 | 10–20 hrs |

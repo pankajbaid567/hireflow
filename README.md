@@ -15,7 +15,8 @@ The old Vercel origin remains a temporary workspace-migration bridge.
 P2 adds resumable larger discovery, evidence-labelled preparation, private
 versioned guide exports, opt-in weekly draft scheduling, durable report delivery
 and coordinated workspace backup/restore. [P2 verification](docs/p2-verification.md)
-separates controlled tests and live evidence. Actual email sender setup and inbox
+separates controlled tests and live evidence. A real 100+ relevant pool and broader
+dynamic-portal coverage remain unverified. Actual email sender setup and inbox
 receipt are still required; a queued or provider-accepted email is not delivery.
 
 The original specification is **not fully complete**. Read the [milestone audit](docs/milestone-audit.md) for implemented, partial, missing, and unverified requirements, and the [prioritized roadmap](future.md) for remaining work, improvements and future additions.
@@ -99,17 +100,19 @@ npm run check --prefix cloudflare
 venv/bin/python -m pytest tests/ -v
 ```
 
-Current local checks: **373 Python, 470 Worker and 127 frontend tests passed**,
+Current local checks: **390 Python, 601 Worker and 145 frontend tests passed**,
 plus the frozen **120-case AI evaluation**, typecheck, Pages build, Worker dry
 run and isolated React/Worker/D1/R2 browser E2E. Seven live tests are opt-in.
 A separate real PostgreSQL/Docker cycle and production both-mode acceptance
-passed. [Release evidence and CI](docs/p1-verification.md) distinguish mocked,
+passed. [P2 release evidence and CI](docs/p2-verification.md) distinguish mocked,
 actual-provider and controlled-form stages.
 
-The measured final interactive cycle had HTTP CPU **P95/P99 9/10 ms**, zero native
+The historical P1 interactive cycle had HTTP CPU **P95/P99 9/10 ms**, zero native
 runtime errors and one **14 ms signup outlier**. Heavy search, matching, PDF and
 maintenance work runs in the Queue. This is a small single-workflow Free-tier
-sample, not a sustained/concurrent capacity guarantee. [Capacity details](docs/p1-capacity.md).
+sample, not a sustained/concurrent capacity guarantee. [P1 capacity details](docs/p1-capacity.md).
+P2 analytics cover mixed HTTP/Queue work; trigger-specific queries were unavailable,
+so they do not establish current HTTP-only headroom. [P2 measurements](docs/p2-verification.md#measured-discovery-and-remaining-acceptance).
 
 Default tests use isolated data and controlled forms. Live provider/browser verification requires explicit run switches and consumes account usage. It must target HireFlow's synthetic QA form, never a real employer application. Local test success does not by itself prove a complete production UI workflow or compliance with Workers Free CPU limits.
 
