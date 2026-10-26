@@ -1,6 +1,8 @@
 # Cloudflare Pages and Workers deployment
 
-**Current deployment, 25 October 2026:** [Pages dashboard](https://hireflow-dashboard.pages.dev/profile), deployment `c11dc0d8` ([deployment URL](https://c11dc0d8.hireflow-dashboard.pages.dev)); [API Worker](https://hireflow-api.baidpankaj567.workers.dev/health), version `d3848a38-6007-41bf-8112-7a228a3a101d`. D1 migrations through `0012` are applied. P1 adds genuine hybrid matching, structured source facts, immutable listing history, company exclusion and Unicode PDF coverage. The final production two-mode acceptance passed; [P1 verification](p1-verification.md) records actual providers, controlled forms, CPU, cleanup and the demo. P0 production evidence remains [historical](p0-verification.md). Pages assets are `index-Bw4ERH04.js` and `index-B8vXzKsS.css`. Publish with `npm run build:cloudflare` to select the Cloudflare API capabilities.
+**Deployment, 26 October 2026:** [Pages dashboard](https://hireflow-dashboard.pages.dev/profile), deployment `ec151322` ([deployment URL](https://ec151322.hireflow-dashboard.pages.dev), assets from `a6814e6`); [API Worker](https://hireflow-api.baidpankaj567.workers.dev/health), version `70ad62bb-eca4-4be4-9c82-ef28ab64e02d`, source `e6d5e4c`. D1 migrations through `0019` are applied. Pages Functions and the same-origin API are verified with typed JSON health and backend validation. [P2 verification](p2-verification.md) records exact release gates, CI and remaining acceptance.
+
+P1's production two-mode acceptance, actual providers, controlled forms, CPU, cleanup and demo remain recorded in [P1 verification](p1-verification.md); P0 evidence is [historical](p0-verification.md). A real 100+ relevant opportunity pool and actual owner inbox delivery remain unverified. The JavaScript reader's current allowlist covers only HireFlow's owned synthetic fixture host.
 
 **Historical baseline evidence:** public/deep-link, API health, anonymous-session and private-profile checks passed. Production UI made five source searches in 10.834 seconds and verified eight listings: Internshala three, Wellfound three, Greenhouse two; four new and four known. Nine cards displayed original links, with LinkedIn restrictions shown. No application was confirmed during discovery. The baseline controlled UI cycle passed PDF-only signup, edits, plan/swap/PDF, one controlled submission, prep, report/library, mobile and logout. Separate old-host migration passed same-owner transfer, fragment removal, replay rejection and both-origin logout. These earlier runs do not establish the new P0 production contract. No employer application or real email was sent.
 
@@ -15,7 +17,7 @@ This runtime is separate from the original Python/PostgreSQL application. It run
 | Profiles, hashed sessions, application history | D1 `hireflow`, ID `e4664667-cedb-4f84-9da6-32610a77c127` | `DB`; migrations under `cloudflare/migrations/` |
 | Private uploads, resume versions, reports | KV `hireflow-files`, ID `b2c25a76089c4c11aacf1d0fef9b1b51` | `FILES_KV` |
 | Application dispatch | Queue `hireflow-applications` | `APPLICATION_QUEUE`; batch/concurrency one |
-| Application browser | Cloudflare Browser Run | `BROWSER` |
+| Application browser and approved public job hydration | Cloudflare Browser Run | `BROWSER`; shared daily reservations |
 | Bounded semantic matching | Workers AI BGE small, CLS pooling, 384 dimensions | `AI`; private versioned vectors in D1 |
 | Recovery/expiry/retention work | Five-minute cron enqueues bounded Queue maintenance | `*/5 * * * *` |
 | Pages → API transport | Service binding to `hireflow-api` | `API` in Pages |
@@ -44,6 +46,10 @@ The API's configured variables are:
 | `PLAN_WORK_IN_QUEUE` | `true`; bounded scoring and resume preparation run through versioned Queue leases |
 | `SEMANTIC_MATCHING_ENABLED` | `true`; lexical fallback on unavailable provider, invalid vectors or exhausted allowance |
 | `SEMANTIC_DAILY_TEXT_BUDGET` | `100` text reservations per UTC day; hard cap 100, no uncertain refunds |
+| `DISCOVERY_SHARED_GUARDS` | `true`; shared native source budgets, host spacing and backoff |
+| `DISCOVERY_DAILY_SEARCH_BUDGET` / `DISCOVERY_DAILY_DETAIL_BUDGET` | `25` / `400` across guarded callers |
+| `DYNAMIC_SOURCE_ENABLED` | `true`; optional public JavaScript fallback after a valid static read |
+| `DYNAMIC_SOURCE_HOSTS` | `hireflow-dashboard.pages.dev` only; owned synthetic source, no wildcard or implicit subdomains |
 | `EMAIL_PROVIDER` | Configured integration selection; `resend` currently |
 | `FROM_EMAIL` | Currently a placeholder, **not a verified sender** |
 
@@ -57,7 +63,7 @@ VITE_PREVIOUS_DASHBOARD_URL=https://hireflow-blue-seven.vercel.app
 
 Pages runtime configuration uses service binding `API=hireflow-api`, public origin `WORKER_API_URL=https://hireflow-api.baidpankaj567.workers.dev`, and secret `WORKSPACE_ACCESS_CODE`. The secret must match the API's `ACCESS_CODE`. It is injected **only on `POST /profile`**. Caller copies of the access-code header are stripped everywhere; it is never injected into reads, updates, or `/session/login`. Missing configuration returns a clean 503 for signup.
 
-Keep `ACCESS_CODE`, `WORKSPACE_ACCESS_CODE`, `GROQ_API_KEY`, `GEMINI_API_KEY`, search keys, email keys, and sessions out of Git, command arguments, logs, screenshots, PDFs, and browser bundles. Never prefix a secret with `VITE_`. Normal users do not enter the operator credential.
+Keep `ACCESS_CODE`, `WORKSPACE_ACCESS_CODE`, `GROQ_API_KEY`, `GEMINI_API_KEY`, search keys, email keys, and sessions out of Git, command arguments, logs, screenshots, PDFs, and browser bundles. Never prefix a secret with `VITE_`. Normal users do not enter the operator credential. Signed provider receipts additionally require the appropriate server-only `RESEND_WEBHOOK_SECRET` or `SENDGRID_WEBHOOK_PUBLIC_KEY`; a provider response alone is not proof of inbox delivery.
 
 The new checkpoint implementation also derives its private-state encryption key
 from `ACCESS_CODE`. Rotation prevents restoration of earlier encrypted browser
@@ -66,7 +72,7 @@ rather than deleting them to force a retry.
 
 ## Deploy or redeploy
 
-Use Node 22+ and the locked Wrangler dependency in `cloudflare/`. Check the intended account, resource IDs, and current authorization before mutations. Existing resources already exist; **do not recreate them**.
+Use Node 22+ and the locked **Wrangler 4.151.3** dependency in `cloudflare/`. Check the intended account, resource IDs, and current authorization before mutations. Existing resources already exist; **do not recreate them**.
 
 From the repository root, validate and deploy the API:
 
@@ -82,22 +88,28 @@ every pending migration: `0002` adds transfers; `0003` adds draft leases and
 tailoring metadata; `0004` adds account/passkey/recovery tables, session metadata
 and source-bound atomic transfers; `0005` adds private automation checkpoints;
 `0006` adds immutable answer/PDF review authorization; `0007` adds operational
-telemetry/diagnostics; `0008` adds source-backed listing facts, historical snapshots and review invalidation; `0009` adds private semantic cache/usage and matching metadata; `0010` adds the bounded operations-request index; `0011` adds durable owner-scoped discovery tickets; `0012` extends score/PDF leases with dispatch, kind, captured versions, bounded attempts and interrupted-upload cleanup. P2 adds `0013` discovery cycles/public read budgets, `0014` private guide export versions, `0015` weekly draft schedules, `0016` coordinated workspace lifecycle, `0017` immutable email delivery tickets and `0018` explicit prep refresh leases. Apply all pending migrations before code publication.
+telemetry/diagnostics; `0008` adds source-backed listing facts, historical snapshots and review invalidation; `0009` adds private semantic cache/usage and matching metadata; `0010` adds the bounded operations-request index; `0011` adds durable owner-scoped discovery tickets; `0012` extends score/PDF leases with dispatch, kind, captured versions, bounded attempts and interrupted-upload cleanup. P2 adds `0013` discovery cycles/public read budgets, `0014` private guide export versions, `0015` weekly draft schedules, `0016` coordinated workspace lifecycle, `0017` immutable email delivery tickets, `0018` explicit prep refresh leases and `0019` signed email receipt history. All are applied on the recorded baseline. Applied migrations remain immutable; repairs need a new forward migration. Apply pending migrations before code publication.
 Back up D1 first; deployment does not copy local database contents. Existing
 sessions survive `0004`, but old unbound transfer links require reminting.
 
-Build and publish Pages **from `frontend`**, so the Functions directory and Pages configuration resolve correctly:
+Build and publish Pages with the guarded wrapper, from the repository root:
 
 ```bash
-cd frontend
-npm ci
-npm test -- --run
-npm run build:cloudflare
-../cloudflare/node_modules/.bin/wrangler pages deploy dist \
-  --project-name hireflow-dashboard --branch main --commit-dirty=true
+npm ci --prefix frontend
+npm test --prefix frontend
+npm --prefix frontend run deploy:cloudflare
 ```
 
-In installed Wrangler 4.151.3, routine deployment of this existing Pages project uses the command above, without `--force`. Creating a new project has a separate compatibility path that may require `pages project create --force`; inspect that command’s installed help before provisioning another project. Check `pages deploy --help` before changing CLI versions. Do not run frontend publication from `cloudflare/` or create a second API Worker. Project creation is not part of routine redeployment.
+The wrapper builds in Cloudflare mode, checks the build and Functions source, and runs project-local Wrangler with **`frontend/` as its working directory**. This ensures Pages Functions accompany assets. An upload from the wrong directory can leave `/api/health` returning the SPA with HTTP 200 and profile creation returning 405; neither is a working API deployment. Routine publication of the existing project does not use `--force`, create another project or create a second API Worker.
+
+After publication, the wrapper requires typed JSON `/api/health` with `status=ok` and `runtime=cloudflare-workers`. It also posts an invalid empty profile and requires the backend's JSON validation response, HTTP 422. This creates no owner and verifies both the API proxy and server-only bootstrap configuration. To rerun those checks without publishing:
+
+```bash
+npm --prefix frontend run build:cloudflare
+node scripts/deploy_cloudflare_pages.mjs --verify-only
+```
+
+`--check-build` checks only local build/Functions presence. Neither that local check nor a successful asset upload replaces the published typed API checks. Check the pinned `pages deploy --help` before changing CLI versions; new-project provisioning is separate from routine redeployment.
 
 Use `build:cloudflare` for Pages: it selects the tracked public
 `frontend/.env.cloudflare` values. A generic `npm run build` targets the separate
@@ -158,9 +170,9 @@ transfer/recovery contract is deployed. New production proof passed same-owner m
 
 PDF extraction uses Gemini **even when text generation uses Groq**. Configure `GEMINI_API_KEY` (or supported `GOOGLE_API_KEY` alias). Temporary provider/network failures allow bounded retry and the explicitly configured fallback, within a shared 45-second deadline. Larger PDFs use one temporary Files API upload and cleanup. Successful extraction records the model and fallback flag. Failed replacement extraction returns an error and preserves the existing profile; it must not save a partly read PDF as a complete profile.
 
-Review extracted facts before applying. The deployed preparation pipeline asks Groq to select one or two existing source facts for a role-specific summary and two or three existing projects. The response contains only validated fact IDs and project indices; the renderer copies the selected facts and complete selected projects rather than accepting model-authored achievements. Internship summaries emphasize project evidence; job summaries favor actual experience. Skills are ordered by actual matches, and supplied experience, dates, education/GPA, links, certifications, achievements and languages are preserved. Missing sections are omitted. If the provider is unconfigured, fails, times out or selects invalid facts, preparation uses deterministic selection and exposes a review warning. Every saved version records method, model, selected evidence and profile version. Production draft metadata confirmed `llm_grounded` with `openai/gpt-oss-20b`. Two additional actual-Groq synthetic role/mode fixtures selected different relevant facts and project pairs, and both PDFs passed visual/bounds checks. The final complete browser cycle passed on the release above.
+Review extracted facts before applying. The deployed preparation pipeline asks Groq to select one or two existing source facts for a role-specific summary and two or three existing projects. The response contains only validated fact IDs and project indices; the renderer copies the selected facts and complete selected projects rather than accepting model-authored achievements. Internship summaries emphasize project evidence; job summaries favor actual experience. Skills are ordered by actual matches, and supplied experience, dates, education/GPA, links, certifications, achievements and languages are preserved. Missing sections are omitted. If the provider is unconfigured, fails, times out or selects invalid facts, preparation uses deterministic selection and exposes a review warning. Every saved version records method, model, selected evidence and profile version. Production draft metadata confirmed `llm_grounded` with `openai/gpt-oss-20b`. Two additional actual-Groq synthetic role/mode fixtures selected different relevant facts and project pairs, and both PDFs passed visual/bounds checks. The complete two-mode/submission browser cycle belongs to the historical P1 release documented in [P1 acceptance](p1-acceptance.md). The current release separately verifies a real-opportunity plan, preparation, export and report flow; see [P2 verification](p2-verification.md).
 
-PDFs use a single-column A4 layout, core Helvetica fonts, clear headings, hanging bullets, clickable supplied HTTP(S) URLs, and page continuations. Typical profiles fit one or two pages; longer history can use more pages to preserve facts. A hard limit of **800 layout lines throws an explicit error** instead of silently truncating. ASCII/core-font constraints remain: accented Latin text is transliterated, and unsupported scripts such as CJK are not preserved. Check names, full facts, links, layout, and page count in the actual PDF; use the original resume manually when fidelity is insufficient.
+PDFs use a single-column A4 layout, clear headings, hanging bullets, clickable supplied HTTP(S) URLs, and page continuations. ASCII uses the small Helvetica path; embedded Unicode fonts preserve supported Latin/Greek/Cyrillic text and shaped Devanagari. Unsupported scripts fail visibly. Typical profiles fit one or two pages; longer history can use more pages to preserve facts. A hard limit of **800 layout lines throws an explicit error** instead of silently truncating, and complex-script work has a separate free-runtime bound. See [PDF quality and exact script limits](p1-pdf-quality.md). Check names, full facts, links, layout, and page count in the actual PDF; use the original resume manually when fidelity is insufficient.
 
 The deployed Worker uses genuine Workers AI BGE CLS embeddings with private versioned D1 vectors and a bounded hybrid contribution to the existing six factors. Source/profile changes invalidate scores and reviews; unavailable inference or exhausted allowance has a visible lexical fallback. Python normal plans optionally use genuine BGE/FAISS separately. Neither matching nor interview predictions are hiring probabilities. See [AI evaluation](ai-evaluation.md) for frozen synthetic metrics, actual-model provenance and limitations.
 
@@ -168,7 +180,11 @@ The deployed Worker uses genuine Workers AI BGE CLS embeddings with private vers
 
 **Find opportunities** searches for a bounded set of verified individual postings and imports full JDs; repeated listings are reported as duplicates rather than new additions. You may also add an actual URL and JD manually. Restricted portals, stale postings, and unsupported details can reduce results; a 100+ listing cycle is not established.
 
-The 22 October production check used a repaired internship profile with 44 skills and no location restriction: two Tavily searches returned 16 candidates; 13 total network requests verified six listings from Wellfound, Greenhouse and Internshala. Old postings and LinkedIn's blocked responses were omitted. The six verified opportunities were imported, the temporary diagnostic session was revoked, and no employer submission was attempted. The earlier zero-result response was not reproduced after publication of the current bundle; its precise cause is unproven. Search diagnostics record only mode/counts, public host, HTTP status and rejection reason, never identity, query text, credentials or request headers. Private evidence: `/tmp/hireflow-discovery-production-diagnostic.json` and `/tmp/hireflow-discovery-production-safe-trace.json` on the verification machine.
+The historical 22 October production check used a repaired internship profile with 44 skills and no location restriction: two Tavily searches returned 16 candidates; 13 total network requests verified six listings from Wellfound, Greenhouse and Internshala. Old postings and LinkedIn's blocked responses were omitted. The six verified opportunities were imported, the temporary diagnostic session was revoked, and no employer submission was attempted. The earlier zero-result response was not reproduced in that run; its precise cause is unproven. Search diagnostics record only mode/counts, public host, HTTP status and rejection reason, never identity, query text, credentials or request headers. Private evidence: `/tmp/hireflow-discovery-production-diagnostic.json` and `/tmp/hireflow-discovery-production-safe-trace.json` on the verification machine.
+
+P2 adds resumable multi-source cycles, official Ashby detail reads and shared native source guards. Daily search exhaustion can drain pending details; host-specific backoff preserves each candidate while other eligible work proceeds. See [source coverage and live samples](p2-source-adapters.md) and [cycle evidence](p2-verification.md) for accepted listings, partial results and restrictions rather than treating a target count as a verified pool.
+
+The optional [public JavaScript reader](dynamic-sources.md) currently allows only the owned `hireflow-dashboard.pages.dev` fixture. The native Queue/Browser Run probe on source `a6814e6` made four native GETs, used fifteen renderer D1 calls, retained the full synthetic JD and explicit India location, and acknowledged browser close. Both runs' temporary QA Worker/Queue resources and exact private keys were removed and checked absent; source/browser reservations were retained. This verifies bounded transport, not arbitrary external JavaScript portal support.
 
 Production sets `PLAN_WORK_IN_QUEUE=true`: matching and factual PDF preparation execute in owner-scoped Queue leases; HTTP polls render prepared results or progress. Lease admission captures profile/listing versions, rotates tokens on interrupted recovery, cleans unregistered uploads and stops after bounded failures. Refresh/regenerate explicitly retries a failed preparation; passive polling does not repeat provider calls indefinitely. Quota exhaustion avoids unnecessary inference. Small offline fixtures use the same helpers synchronously. Exact PDF/answer review and confirmation remain required before any application task can execute.
 
@@ -176,17 +192,17 @@ CAPTCHAs are detected, not solved. Expired listings, unsupported/missing form st
 
 ## Reports and email gap
 
-Reports collect cycle applications, states/reasons, exact resume versions, standalone guide exports, match summaries and study priorities. HTML reports and downloads remain private. **Actual production email delivery is not configured or verified.** Set a supported `RESEND_API_KEY` or `SENDGRID_API_KEY` and a provider-verified `FROM_EMAIL` before an explicitly authorized send. The placeholder sender is rejected. A durable delivery ticket separates queued, provider-accepted and confirmed delivery states; uncertain sends cannot be blindly repeated. Report generation alone does not send email. The opt-in [weekly scheduler](p2-discovery-scheduler.md) prepares drafts and reminders, with separately opted-in email after configuration. It never authorizes applications. See [P2 verification](p2-verification.md) for measured release evidence and remaining external setup.
+Reports collect cycle applications, states/reasons, exact resume versions, standalone guide exports, match summaries and study priorities. HTML reports and downloads remain private. **Actual production email delivery is not configured or verified.** Set a supported `RESEND_API_KEY` or `SENDGRID_API_KEY` and a provider-verified `FROM_EMAIL` before an explicitly authorized send. The placeholder sender is rejected. A durable delivery ticket separates queued, provider-accepted and confirmed delivery states; signed Resend/SendGrid receipts preserve distinct timestamps and reject untrusted/replayed events. Those isolated cryptographic tests are not real inbox evidence. The owner's Gmail-versus-Resend setup choice and an authorized real receipt test remain pending; no Gmail sending adapter is claimed. The [free Resend self-demo setup](email-delivery.md#free-setup-without-sendgrid) can send to the Resend account's own inbox without buying a domain. Uncertain sends cannot be blindly repeated. Report generation alone does not send email. The opt-in [weekly scheduler](p2-discovery-scheduler.md) prepares drafts and reminders, with separately opted-in email after configuration. It never authorizes applications. See [P2 verification](p2-verification.md) for measured release evidence and remaining external setup.
 
 ## Free-tier limits
 
 This is a small-workload deployment, not unlimited service or a promise of future pricing.
 
-- Workers Free: 100,000 requests/day, **10 ms CPU per invocation**. Pages Functions use Workers limits; static assets are separate. See [Workers pricing](https://developers.cloudflare.com/workers/platform/pricing/) and [Pages limits](https://developers.cloudflare.com/pages/platform/limits/).
-- D1 Free: 5 million rows read/day, 100,000 written/day, 5 GB storage. See [D1 pricing](https://developers.cloudflare.com/d1/platform/pricing/).
+- Workers Free: 100,000 requests/day, **10 ms CPU per HTTP request or Cron invocation**. Pages Functions use Workers limits; static assets are separate. Queue consumers have a documented default 30-second CPU allowance and separate wall-time limits. See [Workers limits](https://developers.cloudflare.com/workers/platform/limits/), [Queue limits](https://developers.cloudflare.com/queues/platform/limits/) and [Pages limits](https://developers.cloudflare.com/pages/platform/limits/).
+- D1 Free: 5 million rows read/day, 100,000 written/day, 5 GB account storage and 50 database calls per invocation. `DB.batch()` counts as one call; statement/row/storage limits still apply. See [D1 pricing](https://developers.cloudflare.com/d1/platform/pricing/) and [D1 limits](https://developers.cloudflare.com/d1/platform/limits/).
 - KV Free: 1 GB storage; 100,000 reads/day; 1,000 writes, deletes and lists/day. See [KV pricing](https://developers.cloudflare.com/kv/platform/pricing/).
 - Queues Free: 10,000 operations/day, 24-hour retention; writes, reads, deletions and retries count. See [Queues pricing](https://developers.cloudflare.com/queues/platform/pricing/).
-- Browser Run Free: 600 browser seconds/day, three concurrent sessions, one new browser every 20 seconds. The app conservatively reserves 60 seconds per attempt against 540 seconds/day, at most nine reservations by default. See [Browser Run limits](https://developers.cloudflare.com/browser-run/limits/).
+- Browser Run Free: 600 browser seconds/day, three concurrent sessions, one new browser every 20 seconds. Applications conservatively reserve 60 seconds per attempt; public source renders reserve 90, allowing for interrupted close and native idle timeout. They share the configured 540-second ledger, admitting at most nine application reservations or six source renders if no other browser work consumes it. These are conservative reservations, not exact native usage. See [Browser Run limits](https://developers.cloudflare.com/browser-run/limits/).
 
 D1 coordinates budget and launch spacing; queue concurrency stays one. A weekly quota of ten does not promise ten automated applications in one day. The app's safeguards do not replace provider billing controls. No paid plan or R2 billing enrollment is automatically enabled. Search, LLM and email accounts have separate quotas.
 
@@ -217,7 +233,7 @@ The Vite server supplies the server bootstrap only on profile creation. Producti
 
 ```bash
 npm test --prefix frontend
-npm run build --prefix frontend
+npm run build:cloudflare --prefix frontend
 npm audit --prefix frontend --audit-level=moderate
 npm run check --prefix cloudflare
 node scripts/verify_cloudflare_dashboard.mjs
@@ -225,12 +241,14 @@ node scripts/verify_cloudflare_dashboard.mjs
 
 The last script uses isolated D1/file storage, real React/Chromium, and a test-only queue hook with remote employer submission disabled. It checks structured edits, private PDFs, preparation/report views, mobile layout, restored sessions and logout. Servers are disposed afterward. Default tests do not send real email.
 
+Recorded local release gates passed **706 Worker tests** (four opt-in skipped), **390 Python tests** (three opt-in skipped) and **152 frontend tests**, including five deployment-guard regressions. Typecheck, dry run, frozen evaluation and preparation gates pass. Their exact source, remote CI and production outcomes are recorded in [P2 verification](p2-verification.md).
+
 ## Release verification
 
-After actual publication, check:
+After actual publication, run the typed proxy checks and basic private/deep-link checks:
 
 ```bash
-curl --fail https://hireflow-dashboard.pages.dev/api/health
+node scripts/deploy_cloudflare_pages.mjs --verify-only
 curl --fail -I https://hireflow-dashboard.pages.dev/profile
 curl -i https://hireflow-dashboard.pages.dev/api/profile/1
 ```

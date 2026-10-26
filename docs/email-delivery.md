@@ -8,6 +8,39 @@ Set `EMAIL_PROVIDER=resend` or `sendgrid`, the corresponding Worker secret `RESE
 
 The deployed project has no configured email provider key or verified sender at this implementation checkpoint. No real email was sent. Provider-fixture tests prove the application behavior below; **actual owner-controlled inbox receipt remains unverified and P2-05/P2-07 delivery acceptance remains pending**. A real send also requires an explicitly authorized owner recipient. Readiness checks configuration presence, not successful provider/domain verification.
 
+### Free setup without SendGrid
+
+Resend is already supported and is the default in `.env.example` and the
+Worker configuration. Its [free plan](https://resend.com/pricing) currently
+allows 3,000 emails/month, capped at 100/day. Keep the free plan and overages
+disabled; HireFlow does not activate billing.
+
+For a personal demonstration, create a Resend account using your own inbox,
+create a send API key, and privately configure `RESEND_API_KEY`,
+`EMAIL_PROVIDER=resend` and `FROM_EMAIL=onboarding@resend.dev`. That test sender
+can send **only to the inbox associated with the Resend account**; the saved
+HireFlow profile email must match it. This does not require buying a domain.
+Sending reports to other users requires a verified domain and its sender.
+See [Resend's test-domain restriction](https://resend.com/docs/knowledge-base/403-error-resend-dev-domain).
+Configure the signed webhook described below to record provider delivery
+events, then explicitly request one report send and verify its receipt in your
+own inbox. Merely adding the API key does not authorize a test email.
+
+Put keys in an ignored local secret file or the Worker secret dashboard,
+never a frontend variable or chat message. A local `.env` is not automatically
+uploaded to production. Use the project-pinned Wrangler secret command with
+interactive input when publishing it. Review `FROM_EMAIL` in
+`cloudflare/wrangler.jsonc` before deploying, since config variables replace
+dashboard variables.
+
+Gmail plus Nodemailer/SMTP is another possible low-volume personal option,
+but **it is not implemented by this project's email provider switch**.
+Nodemailer is a transport library, not a free mailbox/provider. Gmail app
+passwords require [Google 2-Step Verification](https://support.google.com/mail/answer/185833),
+and native Node SMTP support cannot be assumed to work unchanged in Workers.
+Choosing it requires a separately tested transport and the same durable
+uncertain-send safeguards; setting `EMAIL_PROVIDER=gmail` today is unsupported.
+
 ## Owner API
 
 All routes require the owner's authenticated private session and use `Cache-Control: no-store`.

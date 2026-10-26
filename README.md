@@ -12,12 +12,15 @@ mobile and logout. [Verification](docs/p1-verification.md) ·
 [Watch the 4:45 demo](https://hireflow-dashboard.pages.dev/assets/hireflow-p1-demo.webm).
 The old Vercel origin remains a temporary workspace-migration bridge.
 
-P2 adds resumable larger discovery, evidence-labelled preparation, private
-versioned guide exports, opt-in weekly draft scheduling, durable report delivery
-and coordinated workspace backup/restore. [P2 verification](docs/p2-verification.md)
-separates controlled tests and live evidence. A real 100+ relevant pool and broader
-dynamic-portal coverage remain unverified. Actual email sender setup and inbox
-receipt are still required; a queued or provider-accepted email is not delivery.
+P2 adds resumable larger discovery, bounded public JavaScript reading,
+evidence-labelled preparation, private versioned guide exports, opt-in weekly
+draft scheduling, signed report-delivery receipts and coordinated workspace
+backup/restore. [P2 verification](docs/p2-verification.md) separates controlled
+tests and live evidence. Native JavaScript hydration is verified on an owned
+synthetic source; the deployed allowlist contains only that host. A real 100+
+relevant pool and arbitrary external JavaScript portal coverage remain
+unverified. Actual email sender setup and inbox receipt are still required;
+a queued or provider-accepted email is not delivery.
 
 The original specification is **not fully complete**. Read the [milestone audit](docs/milestone-audit.md) for implemented, partial, missing, and unverified requirements, and the [prioritized roadmap](future.md) for remaining work, improvements and future additions.
 
@@ -43,17 +46,22 @@ transfer rerun passed migration, replay rejection and logout on both origins.
 
 [Deployment and resource details](docs/cloudflare.md) include the actual bindings, secrets, quotas, commands, and verification status. No provider secret belongs in browser code.
 
+The 26 October deployment uses Worker source `e6d5e4c`, version
+`70ad62bb-eca4-4be4-9c82-ef28ab64e02d`, Pages `ec151322` (assets from
+`a6814e6`), and D1 migrations through `0019`. Exact CI and production evidence
+are recorded in [P2 verification](docs/p2-verification.md).
+
 ## User flow
 
 1. Upload a PDF and save the profile, or enter details manually. The browser receives a private session automatically; normal users enter no operator code or profile ID.
 2. Review extracted facts and edit experience, projects, education, summary, links, certifications, achievements, and spoken languages. Set internship/job mode, target roles, locations, minimum compensation, excluded companies, weekly quota, and batch or individual review.
-3. Choose **Find opportunities** or add an actual listing URL and full job description. Internship mode makes five separate source searches (Internshala, Wellfound, Greenhouse, Lever, LinkedIn); job mode makes four (Naukri, LinkedIn, Greenhouse, Lever). Candidates are verified in rotation, with up to eight accepted listings per search. Repeated listings are deduplicated; the UI shows per-site results, restrictions and original listing links. This is not a 100+ listing pool or authenticated portal integration.
+3. Choose **Find opportunities** or add an actual listing URL and full job description. Internship mode makes five separate source searches (Internshala, Wellfound, Greenhouse, Lever, LinkedIn); job mode makes four (Naukri, LinkedIn, Greenhouse, Lever). Candidates are verified in rotation, with up to eight accepted listings across the combined Find opportunities operation. Repeated listings are deduplicated; the UI shows per-site results, restrictions and original listing links. This is not a 100+ listing pool or authenticated portal integration.
 4. Review the ranked plan and skill gaps. Edit, compare, reject or regenerate each opportunity’s PDF, then review its answers and approve that exact version. Swap listings or change the selection; confirm only the approved opportunities you authorize.
 5. Track the result and any manual instructions. Open private resume versions, interview guides, and the weekly HTML report.
 
 The Worker uses **six-factor hybrid matching**: genuine Workers AI BGE embeddings contribute only 20% of the technical factor, with private versioned D1 vectors and a visible lexical fallback. The separate Python plan path supports real BGE/FAISS when explicitly enabled. On the frozen synthetic heldout benchmark, hybrid nDCG@3 was **0.9511 versus 0.6991** for lexical matching; these are authored relevance labels, not hiring outcomes. [Evaluation and limitations](docs/ai-evaluation.md) include factuality, source support, error analysis and actual-model provenance. Groq selects existing facts/projects for resume tailoring; immutable PDFs retain method, model and profile version.
 
-Automatic submission supports suitable public native forms with up to eight recognizable steps and encrypted completed-step checkpoints. Unknown controls, login walls and uncertain submissions require manual action; arbitrary employer portals are not certified. See the [compatibility matrix](docs/portal-compatibility.md). There is no blanket guarantee that a listing can be applied to automatically. **Production email is not configured:** SendGrid/Resend integration exists, but a provider key and verified sender are still needed, and no real delivery is claimed.
+Automatic submission supports suitable public native forms with up to eight recognizable steps and encrypted completed-step checkpoints. Unknown controls, login walls and uncertain submissions require manual action; arbitrary employer portals are not certified. See the [compatibility matrix](docs/portal-compatibility.md). There is no blanket guarantee that a listing can be applied to automatically. **Production email is not configured:** SendGrid/Resend sending and signed receipt handling exist, but a provider key, verified sender and authorized inbox test are still needed. The owner's Gmail-versus-Resend setup choice remains pending; no Gmail sending adapter or real delivery is claimed.
 
 ## Existing workspace migration
 
@@ -88,6 +96,13 @@ Cloudflare deployment.
 
 For Worker/Pages development, use **Node 22 or newer** and follow [the Cloudflare guide](docs/cloudflare.md#local-development-and-checks). Python development requires Python 3.11+, the project virtual environment, dependencies, and Playwright Chromium; [workflow.md](docs/workflow.md) covers those commands.
 
+Publish the existing Pages project from the repository root with
+`npm --prefix frontend run deploy:cloudflare`. The wrapper builds in Cloudflare
+mode and runs pinned Wrangler 4.151.3 from `frontend/`, so API Functions accompany
+the assets. After building, `node scripts/deploy_cloudflare_pages.mjs --verify-only`
+checks typed API health and invalid-profile validation without publishing or
+creating an owner. See the [deployment steps](docs/cloudflare.md#deploy-or-redeploy).
+
 ## Checks
 
 ```bash
@@ -100,12 +115,13 @@ npm run check --prefix cloudflare
 venv/bin/python -m pytest tests/ -v
 ```
 
-Current local checks: **390 Python, 601 Worker and 145 frontend tests passed**,
-plus the frozen **120-case AI evaluation**, typecheck, Pages build, Worker dry
-run and isolated React/Worker/D1/R2 browser E2E. Seven live tests are opt-in.
-A separate real PostgreSQL/Docker cycle and production both-mode acceptance
-passed. [P2 release evidence and CI](docs/p2-verification.md) distinguish mocked,
-actual-provider and controlled-form stages.
+Recorded local release gates: **390 Python, 706 Worker and 152 frontend tests
+passed**, with three Python and four Worker opt-in tests skipped. Frontend
+coverage includes five Pages deployment-guard regressions. Typecheck, Pages
+build, Worker dry run and isolated React/Worker/D1/private-file browser E2E
+passed. The unchanged **120-case AI evaluation**, 16-case preparation check
+and PostgreSQL/Docker cycle have passing evidence. [P2 release evidence and CI](docs/p2-verification.md)
+distinguish exact source revisions, mocked, actual-provider and controlled-form stages.
 
 The historical P1 interactive cycle had HTTP CPU **P95/P99 9/10 ms**, zero native
 runtime errors and one **14 ms signup outlier**. Heavy search, matching, PDF and
@@ -129,6 +145,7 @@ Default tests use isolated data and controlled forms. Live provider/browser veri
 | `docs/milestone-audit.md` | Requirement-by-requirement audit and remaining work |
 | `docs/architecture.md`, `docs/fresh-setup.md` | Runtime boundaries, data flow and verified clean setup |
 | `docs/ai-evaluation.md`, `docs/p1-pdf-quality.md` | Measured AI and PDF quality, with limitations |
+| `docs/p2-source-adapters.md`, `docs/dynamic-sources.md` | Public source coverage, bounded JavaScript transport and native verification limits |
 | `docs/demo.md` | Synthetic walkthrough and actual recording evidence |
 | `future.md` | Prioritized remaining work, AI improvements and optional future additions |
 
