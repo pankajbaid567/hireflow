@@ -1,5 +1,5 @@
 /** Bounded, unauthenticated hydration for explicitly permitted public job hosts. */
-import {launch} from '@cloudflare/playwright';
+import type {launch} from '@cloudflare/playwright';
 import {Buffer} from 'node:buffer';
 import {first,run} from './storage';
 import {browserDailyBudgetSeconds,submissionDelayMs} from './telemetry';
@@ -86,6 +86,9 @@ export async function readDynamicPublicSource(env:Env,raw:string,options:{timeou
   const remaining=()=>Math.max(1,deadline-Date.now());
   const check=()=>{if(blocked)throw blocked;if(finished||Date.now()>=deadline)throw new SourceDeferred('Rendered source timed out; its checkpoint can be retried.',30,true);};
   const work=async()=>{
+    // Static API/evaluation paths do not need the native browser runtime.
+    const {launch}=await import('@cloudflare/playwright');
+    check();
     launchAttempted=true;browser=await launch(env.BROWSER);
     if(finished){await closeBrowser(browser);throw new SourceDeferred('Rendered browser acquisition timed out.',30,true);}
     check();

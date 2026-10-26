@@ -1,6 +1,6 @@
 /** Evidence-aware interview preparation. Public sources remain untrusted data. */
 import type {Env,Row} from './types';
-export const PREP_VERSION='prep-evidence-v2';
+export const PREP_VERSION='prep-evidence-v3';
 type SearchResult={title:string;url:string;content:string;published_date?:string};
 type Page={url:string;body:string;text:string};
 export interface PrepAdapters {
@@ -23,8 +23,12 @@ const stop=new Set('a an the to of and or for with in on at by as is are be we o
 const tokens=(value:string)=>normalize(value).split(' ').filter(token=>token.length>2&&!stop.has(token));
 const unique=<T>(values:T[])=>[...new Set(values)];
 const unsafeInstruction=/\b(?:ignore (?:all |the |any )?(?:previous|prior|system)|system prompt|api[_ -]?key|send (?:my |your )?(?:password|secret)|reveal (?:the |your )?secret)\b/i;
+// Portal section labels are not duties. Keeping them as the first requirement
+// turned full descriptions into "sparse" JDs and generated questions about a
+// heading instead of the employer's actual work.
+const sectionLabel=/^(?:(?:about|overview of) (?:the |this )?(?:work from home )?(?:internship|job(?:\/internship)?|role|company|opportunity)|(?:selected )?(?:intern(?:'s|s|s')?|candidate(?:'s|s|s')?)\s+(?:(?:day[- ]to[- ]day|key)\s+)?responsibilities(?:\s+include)?|(?:key |your |primary |main )?(?:responsibilities|duties|requirements|qualifications)|skills? (?:required|needed)|what (?:you(?:'ll| will) do|we (?:offer|are looking for))|who (?:can|should) apply|perks|benefits|stipend|salary|duration|start date|apply by|number of openings)\s*[:.!?]?$/i;
 export function prepRequirements(jd:string,title=''):string[]{
- const parts=jd.split(/(?<=[.!?])\s+|[\r\n]+/).map(line=>line.replace(/^[-*•\s]+/,'').trim()).filter(line=>line&&!unsafeInstruction.test(line)&&!/^.{0,30}(?:interview process|selection process)\s*:/i.test(line)&&!(/\brounds?\b/i.test(line)&&/\b(?:technical|hr|founder|interview)\b/i.test(line)));
+ const parts=jd.split(/(?<=[.!?])\s+|[\r\n]+/).map(line=>line.trim().replace(/^(?:[-*•]+\s*|\d+[.)]\s+)/,'').trim()).filter(line=>line&&!sectionLabel.test(line.replace(/[’‘]/g,"'"))&&!unsafeInstruction.test(line)&&!/^.{0,30}(?:interview process|selection process)\s*:/i.test(line)&&!(/\brounds?\b/i.test(line)&&/\b(?:technical|hr|founder|interview)\b/i.test(line)));
  return unique(parts.filter(line=>tokens(line).length).map(line=>line.slice(0,600))).slice(0,8).length?unique(parts.filter(line=>tokens(line).length).map(line=>line.slice(0,600))).slice(0,8):[clean(title,300)].filter(Boolean);
 }
 function requiredSkills(job:Row,profile:Row,adapters:Pick<PrepAdapters,'skills'|'hasSkill'>){

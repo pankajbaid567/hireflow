@@ -36,7 +36,7 @@ describe('explicit queued prep refresh',()=>{
   const old=(await guide())!;expect((await request('/applications/1/prep-guide/refresh','POST',{}, {anonymous:true})).status).toBe(401);
   await json('/applications/1/prep-guide/refresh','POST',{});const row=(await lease())!;await json('/applications/1/prep-guide/refresh','POST',{});expect((await lease())!.token).toBe(row.token);expect(calls).toBe(0);
   active=gate();const work=deliver(row);await active.entered;const current=await json('/applications/1/prep-guide');expect(current.version).toBe('legacy-v1');expect(current.refresh.state).toBe('running');expect(JSON.stringify(current.refresh)).not.toContain(row.token);await deliver(row);active.release();await work;
-  const fresh=await json('/applications/1/prep-guide');expect(fresh.version).toBe('prep-evidence-v2');expect(fresh.guide_revision).toBeGreaterThan(old.revision);expect(fresh.refresh.state).toBe('completed');expect(fresh.questions.length).toBeGreaterThanOrEqual(5);expect(calls).toBe(1);expect(fresh.guide_stale).toBe(false);
+  const fresh=await json('/applications/1/prep-guide');expect(fresh.version).toBe('prep-evidence-v3');expect(fresh.guide_revision).toBeGreaterThan(old.revision);expect(fresh.refresh.state).toBe('completed');expect(fresh.questions.length).toBeGreaterThanOrEqual(5);expect(calls).toBe(1);expect(fresh.guide_stale).toBe(false);
   expect((await db.prepare('SELECT count(*) AS n FROM submission_reviews').first<{n:number}>())!.n).toBe(0);expect((await db.prepare('SELECT count(*) AS n FROM outbox').first<{n:number}>())!.n).toBe(0);
  });
  it('returns409 when a profile changes before durable enqueue instead of claiming a refresh was requested',async()=>{

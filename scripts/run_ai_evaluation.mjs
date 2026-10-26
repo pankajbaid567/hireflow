@@ -10,7 +10,9 @@ import { spawnSync } from 'node:child_process';
 const root=fileURLToPath(new URL('../',import.meta.url)),require=createRequire(new URL('../cloudflare/package.json',import.meta.url));
 const {build}=require('esbuild'),directory=mkdtempSync(join(tmpdir(),'hireflow-ai-eval-'));
 try{
- const output=join(directory,'evaluate.mjs');await build({entryPoints:[join(root,'evals/evaluate.ts')],bundle:true,platform:'node',format:'esm',outfile:output,logLevel:'silent',target:'node22'});
+ // Browser Run is Worker-only and lazily loaded. Offline evaluation must fail
+ // if it accidentally enters that path, rather than shim a native browser.
+ const output=join(directory,'evaluate.mjs');await build({entryPoints:[join(root,'evals/evaluate.ts')],bundle:true,platform:'node',format:'esm',outfile:output,logLevel:'silent',target:'node22',external:['@cloudflare/playwright']});
  const child=spawnSync(process.execPath,[output,'--root',root,...process.argv.slice(2)],{cwd:root,stdio:'inherit',env:process.env});
  process.exitCode=child.status??1;
 }finally{rmSync(directory,{recursive:true,force:true});}

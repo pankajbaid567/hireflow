@@ -1,10 +1,36 @@
 import {describe,expect,it} from 'vitest';
-import {buildEvidencePrepGuide,localPrepQuestions,analyzePrepTopics,predictPrepRounds,validatePrepQuestions,type PrepAdapters} from '../src/prep_intelligence';
+import {buildEvidencePrepGuide,localPrepQuestions,prepRequirements,analyzePrepTopics,predictPrepRounds,validatePrepQuestions,type PrepAdapters} from '../src/prep_intelligence';
 import {extractSkills} from '../src/intelligence';
 const canonical=(skill:string)=>extractSkills(skill)[0]||skill;
 function adapters(values:Partial<PrepAdapters>={}):PrepAdapters{return{skills:extractSkills,canonical,hasSkill:(source,skill)=>extractSkills(source).some(value=>canonical(value)===canonical(skill)),searchReady:false,configured:false,search:async()=>[],accessible:async url=>url.startsWith('https://')?url:null,page:async()=>null,publicUrl:raw=>typeof raw==='string'&&raw.startsWith('https://')?raw:null,generate:async()=>{throw new Error('No model configured');},failureMessage:()=> 'provider unavailable',...values};}
 const appointment={company:'Example Employer',title:'Python Engineer',listing_type:'internship',description:'Python and SQL required to coordinate clinic appointments and patient booking slots. Interview process: two rounds, technical and HR.'};
 describe('P2 evidence-aware preparation',()=>{
+ it('uses real responsibilities after portal headings rather than treating a complete JD as sparse',()=>{
+  const job={...appointment,description:[
+   'About the internship:',"Selected intern's day-to-day responsibilities include:",
+   '1. Build Python scripts to identify community service providers and validate repeated directory records.',
+   '2. Use JavaScript to build an accessible appointment booking interface.',
+   '3. Use SQL to check conflicting appointment slots and missing patient records.',
+   'Skills required:', 'Python, JavaScript, SQL', 'Who can apply:', 'Perks:',
+  ].join('\n')};
+  const requirements=prepRequirements(job.description,job.title),questions=localPrepQuestions({},job,adapters());
+  expect(requirements[0]).toBe('Build Python scripts to identify community service providers and validate repeated directory records.');
+  expect(questions.length).toBeGreaterThanOrEqual(5);
+  expect(questions.every(question=>job.description.includes(question.evidence.quote))).toBe(true);
+  expect(questions.some(question=>/sparse JD|only establishes|task to About|responsibilities include:/i.test(question.question))).toBe(false);
+  expect(questions.filter(question=>question.category==='behavioral').every(question=>/community service providers|appointment booking/.test(question.question))).toBe(true);
+ });
+ it('does not invent duties from portal headings when no task description is present',()=>{
+  const guide=localPrepQuestions({}, {...appointment,description:'About the internship:\nResponsibilities:\nSkills required:\nPython\nPerks:'},adapters());
+  expect(guide.length).toBeLessThan(5);
+  expect(guide.every(question=>question.evidence.quote==='Python')).toBe(true);
+ });
+ it.each(["Selected intern’s day-to-day responsibilities include:",'About the work from home job/internship:','Responsibilities.'])('recognizes formatted portal heading %s and retains verbatim task evidence',heading=>{
+  const jd=heading+'\n  1) Build Python scripts to validate community directory records.';
+  const requirements=prepRequirements(jd);
+  expect(requirements).toEqual(['Build Python scripts to validate community directory records.']);
+  expect(jd).toContain(requirements[0]);
+ });
  it('asks concrete JD/role-specific questions, with distinct behavioral decisions and exact JD evidence',()=>{
   const profile={skills:['Python'],projects:[{name:'Booking Tool',description:'Coordinated booking slots using Python.'}]};
   const first=localPrepQuestions(profile,appointment,adapters()),second=localPrepQuestions(profile,{...appointment,description:'Python and SQL required to detect unusual banking payment patterns and investigate fraud.'},adapters());

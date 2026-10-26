@@ -12,7 +12,8 @@
     "build:cloudflare": "vite build --mode cloudflare",
     "preview": "vite preview --host 0.0.0.0 --port 3000",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "deploy:cloudflare": "npm run build:cloudflare && node ../scripts/deploy_cloudflare_pages.mjs --run-deploy"
   },
   "dependencies": {
     "@simplewebauthn/browser": "14.0.0",
