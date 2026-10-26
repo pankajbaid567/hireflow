@@ -2,44 +2,75 @@
 
 The Cloudflare runtime queues one private, immutable delivery for an authenticated owner's saved report version. The recipient always comes from the owned profile; the endpoint accepts no arbitrary recipient. Nothing sends during profile creation, report generation, ordinary acceptance testing, or prep export generation. A manual send requires its own button/POST; scheduled sends require enabled weekly preparation and explicit email opt-in.
 
+## Free setup without SendGrid
+
+### Gmail with Nodemailer
+
+The deployed Worker supports `EMAIL_PROVIDER=gmail`, using pinned Nodemailer
+10.2.1 with the fixed `smtp.gmail.com:465` TLS connection. No SendGrid/Resend
+API key or purchased domain is required for this path. Gmail's account limits
+and automated-login restrictions still apply; the app's own quota is separate.
+
+1. Enable Google 2-Step Verification and create a dedicated
+   [App Password](https://support.google.com/mail/answer/185833). Google may not
+   offer App Passwords for some managed or Advanced Protection accounts.
+2. Put `GMAIL_USER` and `GMAIL_APP_PASSWORD` in an ignored local `.env`, or enter
+   them through Worker secrets. Use the App Password, never the normal Google
+   account password. Do not paste credentials in chat, Git or frontend variables.
+3. Publish both secrets to `hireflow-api`; a local `.env` is not automatically
+   uploaded. From `cloudflare/`, the pinned interactive commands are
+   `npm exec -- wrangler secret put GMAIL_USER` and
+   `npm exec -- wrangler secret put GMAIL_APP_PASSWORD`.
+4. The Gmail sender always derives from `GMAIL_USER`. `FROM_EMAIL` applies only
+   to Resend/SendGrid. The default recipient is the same Gmail inbox; additional
+   team inboxes require the private comma-separated `GMAIL_ALLOWED_RECIPIENTS`
+   secret (at most ten extra addresses). This is operator authorization, not
+   independent email-ownership verification.
+5. Generate and review a report, then explicitly send it. For hiring reports,
+   confirm the recipient twice and approve that exact report hash. Verify
+   receipt in the intended inbox before claiming end-to-end email delivery.
+
+Weekly and hiring sends share an atomic D1 allowance of ten SMTP attempts per
+UTC day. `GMAIL_DAILY_ATTEMPT_LIMIT` can be configured from one to twenty; it
+cannot disable the bound. Uncertain attempts are never refunded. The Node
+transport uses a fresh non-pooled connection, verified certificates and TLS1.2+
+with a twenty-second overall deadline, no file/URL attachment access and no
+SMTP credential/body logging. Gmail JSON never chooses a server, TLS policy,
+password or arbitrary recipient. Public access to a profile does not authorize
+sending to an address outside the private operator allowlist.
+
+Gmail has no submission idempotency key. An interrupted or uncertain transaction
+becomes `needs_action`; it is never blindly retried. Check the sender Sent folder
+and recipient before considering a fresh report. SMTP250 records `accepted_at`
+and `smtp_server_acceptance`; it never fills `delivered_at` or invents a signed
+webhook/inbox receipt. Existing Resend/SendGrid receipts remain independent.
+
+The local Python helper supports the same Gmail configuration with standard
+library `SMTP_SSL`; Nodemailer runs in the Worker/Node path. Python's atomic
+SQLite quota ledger is under its private local-storage directory and is
+**separate** from Cloudflare's D1 ledger. It is not cross-runtime quota sharing.
+
 ## Setup and current evidence
 
-Set `EMAIL_PROVIDER=resend` or `sendgrid`, the corresponding Worker secret `RESEND_API_KEY` or `SENDGRID_API_KEY`, and a verified plain-address `FROM_EMAIL`. Verify sender/domain ownership and account quotas in that provider's dashboard. Keep secrets out of frontend variables, Git, reports and logs.
+Gmail is the selected Worker provider, but no Gmail credentials are configured
+and **no actual email or SMTP authentication has occurred**. The credential-free
+native Cloudflare Queue probe verified Nodemailer TLS/EHLO/QUIT against Gmail;
+it cannot send mail or prove authentication/inbox placement. The final factory
+has actual protocol/MIME tests and native compatibility evidence, including
+cleanup of every exact QA resource. See [P3 verification](p3-verification.md).
 
-The deployed project has no configured email provider key or verified sender at this implementation checkpoint. No real email was sent. Provider-fixture tests prove the application behavior below; **actual owner-controlled inbox receipt remains unverified and P2-05/P2-07 delivery acceptance remains pending**. A real send also requires an explicitly authorized owner recipient. Readiness checks configuration presence, not successful provider/domain verification.
+Alternative providers remain supported: select `EMAIL_PROVIDER=resend` or
+`sendgrid`, configure the corresponding private API key and a provider-verified
+`FROM_EMAIL`. Keep secrets server-side. Signed receipt setup is described below.
+Resend's [free plan](https://resend.com/pricing) currently allows 3,000 emails/month,
+capped at 100/day. Its `onboarding@resend.dev` test sender can send only to the
+inbox associated with that Resend account; other recipients require a verified
+domain. See [the test-domain restriction](https://resend.com/docs/knowledge-base/403-error-resend-dev-domain).
 
-### Free setup without SendGrid
-
-Resend is already supported and is the default in `.env.example` and the
-Worker configuration. Its [free plan](https://resend.com/pricing) currently
-allows 3,000 emails/month, capped at 100/day. Keep the free plan and overages
-disabled; HireFlow does not activate billing.
-
-For a personal demonstration, create a Resend account using your own inbox,
-create a send API key, and privately configure `RESEND_API_KEY`,
-`EMAIL_PROVIDER=resend` and `FROM_EMAIL=onboarding@resend.dev`. That test sender
-can send **only to the inbox associated with the Resend account**; the saved
-HireFlow profile email must match it. This does not require buying a domain.
-Sending reports to other users requires a verified domain and its sender.
-See [Resend's test-domain restriction](https://resend.com/docs/knowledge-base/403-error-resend-dev-domain).
-Configure the signed webhook described below to record provider delivery
-events, then explicitly request one report send and verify its receipt in your
-own inbox. Merely adding the API key does not authorize a test email.
-
-Put keys in an ignored local secret file or the Worker secret dashboard,
-never a frontend variable or chat message. A local `.env` is not automatically
-uploaded to production. Use the project-pinned Wrangler secret command with
-interactive input when publishing it. Review `FROM_EMAIL` in
-`cloudflare/wrangler.jsonc` before deploying, since config variables replace
-dashboard variables.
-
-Gmail plus Nodemailer/SMTP is another possible low-volume personal option,
-but **it is not implemented by this project's email provider switch**.
-Nodemailer is a transport library, not a free mailbox/provider. Gmail app
-passwords require [Google 2-Step Verification](https://support.google.com/mail/answer/185833),
-and native Node SMTP support cannot be assumed to work unchanged in Workers.
-Choosing it requires a separately tested transport and the same durable
-uncertain-send safeguards; setting `EMAIL_PROVIDER=gmail` today is unsupported.
+**P2-05/P2-07 real delivery acceptance remains open** until an explicitly
+authorized test to an owner-controlled inbox confirms receipt. Mocked provider
+success, native TLS/EHLO, and SMTP acceptance are different evidence. Neither
+adding credentials nor running the test suite authorizes a real test email.
 
 ## Owner API
 
@@ -67,7 +98,7 @@ States are `queued`, `preparing`, `ready`, `sending`, `retry_wait`, `accepted`, 
 
 Resend receives the same `Idempotency-Key` and the same stored payload on bounded transient/network retries. Its documented key retention is 24 hours; HireFlow stops automatic retries after a conservative 23-hour window or three attempts. An interrupted SendGrid request never receives a blind automatic retry because the first write may have succeeded. Uncertain outcomes become `needs_action` with provider-dashboard instructions. Provider errors are classified without saving raw error bodies, keys, email addresses or request payloads in public status metadata.
 
-An HTTP success sets `accepted_at`, provider message ID where available, and the compatibility `weekly_reports.email_sent_at`. This means **accepted by the provider**. If a verified `email.sent`/`processed` event arrives first, its event timestamp fills missing acceptance timestamps for the exact original report version; existing HTTP acceptance timestamps remain unchanged. A delivered or bounced event alone does not fabricate this timestamp. Signed provider events separately populate `delivery_status`, `delivery_status_at`, `receipt_received_at` and, only for a verified delivered event, `delivered_at`. The internal queue `state` remains separate: an accepted request can subsequently be delayed, bounced or complained about. `delivery_evidence` identifies signed webhook evidence versus API acceptance. A provider-delivered event means acceptance by the recipient mail server; it does not establish inbox placement, display or reading by the owner. Actual P2 inbox-receipt acceptance still needs the explicitly authorized human check above.
+For Resend/SendGrid, an HTTP success sets `accepted_at`, provider message ID where available, and the compatibility `weekly_reports.email_sent_at`. This means **accepted by the provider**. If a verified `email.sent`/`processed` event arrives first, its event timestamp fills missing acceptance timestamps for the exact original report version; existing HTTP acceptance timestamps remain unchanged. A delivered or bounced event alone does not fabricate this timestamp. Signed provider events separately populate `delivery_status`, `delivery_status_at`, `receipt_received_at` and, only for a verified delivered event, `delivered_at`. The internal queue `state` remains separate: an accepted request can subsequently be delayed, bounced or complained about. `delivery_evidence` identifies signed webhook evidence versus API acceptance. A provider-delivered event means acceptance by the recipient mail server; it does not establish inbox placement, display or reading by the owner. Actual P2 inbox-receipt acceptance still needs the explicitly authorized human check above.
 
 The source and payload keys are owner-private lifecycle references. Migration `0017` increments workspace revisions for delivery mutations, blocks artifact publication after a retention tombstone, and prevents binding/hash rotation. Backups exclude mail payloads and delivery authority; scoped deletion/reference checks protect in-flight source files and reject account deletion during `sending`. Pending requests expire after 30 days. Accepted outcome records and their immutable references remain until scoped account deletion; no untested automatic mail-record purge runs in production.
 

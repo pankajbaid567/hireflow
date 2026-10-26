@@ -6,9 +6,9 @@ import { classifyProviderError } from './provider_health';
 import { files } from './files';
 
 export const MAX_UPLOAD = 3 * 1024 * 1024;
-export async function readJson(request: Request): Promise<Row> {
+export async function readJson(request: Request,limit=100000): Promise<Row> {
   if (!request.headers.get('content-type')?.startsWith('application/json')) throw new ApiError(415, 'Send application/json');
-  const value = await boundedBody(request, 100000);
+  const value = await boundedBody(request, limit);
   try {
     const body = JSON.parse(new TextDecoder().decode(value));
     if (!body || Array.isArray(body) || typeof body !== 'object') throw new Error();

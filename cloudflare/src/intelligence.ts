@@ -53,6 +53,7 @@ function customSkillsIn(source: string, skills: string[]): string[] {
 function canonical(skill: string): string {
   return canonicalNames.get(skill.trim().toLowerCase()) || skill.trim();
 }
+export {canonical as canonicalSkill};
 export function extractSkills(source: string): string[] {
   const found = new Set<string>();
   skillPattern.lastIndex = 0;

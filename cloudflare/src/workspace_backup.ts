@@ -59,6 +59,11 @@ async function captureSnapshot(env: Env, owner: number, profileVersion: number):
   for (const row of result.tables.applications || []) row.confirmed_review_id = null;
   for (const row of result.tables.resumes || []) row.profile_snapshot = JSON.stringify(safeProfile(row.profile_snapshot));
   for (const row of result.tables.prep_guide_exports || []) row.input_snapshot = '{}';
+  for (const row of result.tables.shortlists || []) {
+    if(Object.hasOwn(row,'input_snapshot'))row.input_snapshot='{}';
+    for(const field of ['lease_token','lease_expires_at','dispatched_at'])if(Object.hasOwn(row,field))row[field]=null;
+    if(['queued','running'].includes(row.state)){row.state='failed';row.failure_reason='Unfinished hiring analysis was archived without execution authority. Create a fresh shortlist from the original applicant facts.';}
+  }
   if (encode(result).length > BACKUP_LIMITS.metadata) throw new ApiError(422, 'Workspace metadata exceeds the bounded export size.');
   return result;
 }
@@ -192,6 +197,10 @@ async function deletionPreview(request: Request, env: Env, owner: number): Promi
   const active = await first(env, "SELECT (SELECT count(*) FROM applications WHERE user_id=? AND status IN ('confirmed','applying'))+(SELECT count(*) FROM workspace_backups WHERE user_id=? AND state IN ('queued','running'))+(SELECT count(*) FROM workspace_deletions WHERE user_id=? AND state IN ('queued','deleting')) AS n", owner, owner, owner);
   if (active!.n) throw new ApiError(409, 'Cancel queued submissions and wait for active submissions/exports before deleting the workspace.');
   const user = await first(env, 'SELECT profile_version FROM users WHERE id=?', owner), snapshot = await captureSnapshot(env, owner, user!.profile_version);
+  if(await first(env,"SELECT name FROM sqlite_master WHERE type='table' AND name='hiring_email_deliveries'")){
+    const activeMail=await first(env,"SELECT id FROM hiring_email_deliveries WHERE user_id=? AND state='sending' LIMIT 1",owner);
+    if(activeMail)throw new ApiError(409,'Wait for the active hiring email delivery before deleting the workspace.');
+  }
   const keys = artifactKeys(snapshot, true).map(a => a.source_key);
   const archived = await all(env, 'SELECT snapshot_key AS k FROM workspace_backups WHERE user_id=? UNION SELECT manifest_key FROM workspace_backups WHERE user_id=? UNION SELECT f.object_key FROM workspace_backup_files f JOIN workspace_backups b ON b.id=f.backup_id WHERE b.user_id=?', owner, owner, owner);
   keys.push(...archived.map(row => row.k).filter((key): key is string => typeof key === 'string'));
@@ -209,10 +218,11 @@ async function deletionPreview(request: Request, env: Env, owner: number): Promi
   if ((await first(env, 'SELECT revision FROM workspace_revisions WHERE user_id=?', owner))?.revision !== revision) throw new ApiError(409, 'Workspace changed while preparing the preview. Request it again.');
   const nonce = crypto.randomUUID() + crypto.randomUUID(), id = crypto.randomUUID(), until = expires(300000);
   const existingTables = new Set((await all(env, "SELECT name FROM sqlite_master WHERE type='table'")).map(row => row.name));
-  const direct = ['sessions','session_transfers','account_owners','account_passkeys','account_challenges','account_recovery_keys','discovery_runs','discovery_cycles','weekly_schedules','weekly_schedule_runs','workspace_reminders','email_deliveries','operation_events'].filter(table => existingTables.has(table));
+  const direct = ['sessions','session_transfers','account_owners','account_passkeys','account_challenges','account_recovery_keys','discovery_runs','discovery_cycles','weekly_schedules','weekly_schedule_runs','workspace_reminders','email_deliveries','hiring_email_deliveries','operation_events'].filter(table => existingTables.has(table));
   const indirect = ['outbox','resume_preparations','automation_checkpoints','prep_refreshes'].filter(table => existingTables.has(table));
   const counters = [...direct.map(table => `(SELECT count(*) FROM ${table} WHERE user_id=?) AS ${table}`), ...indirect.map(table => `(SELECT count(*) FROM ${table} t JOIN applications a ON a.id=t.application_id WHERE a.user_id=?) AS ${table}`)];
   if(existingTables.has('email_receipt_events'))counters.push('(SELECT count(*) FROM email_receipt_events r JOIN email_deliveries d ON d.id=r.delivery_id WHERE d.user_id=?) AS email_receipt_events');
+  if(existingTables.has('hiring_email_events'))counters.push('(SELECT count(*) FROM hiring_email_events r JOIN hiring_email_deliveries d ON d.id=r.delivery_id WHERE d.user_id=?) AS hiring_email_events');
   const additional = counters.length ? await first(env, `SELECT ${counters.join(',')}`, ...counters.map(() => owner)) : {};
   const preview = { profile_version: user!.profile_version, revision, counts: { ...Object.fromEntries(Object.entries(snapshot.tables).map(([t, rows]) => [t, rows!.length])), ...additional }, artifacts_to_remove: removable.length, shared_artifacts_retained: shared.size, includes_submitted_history: (snapshot.tables.applications || []).some(a => !!a.applied_at), warning: 'This permanently removes this workspace, including its submitted history, PDFs, reports and saved authentication. Export and download anything you need first.' };
   await run(env, 'INSERT INTO workspace_deletions(id,user_id,profile_version,revision,session_hash,nonce_hash,expires_at,state,preview_json,files_json,created_at) VALUES(?,?,?,?,?,?,?,\'preview\',?,?,?)', id, owner, user!.profile_version, revision, await sessionHash(request), await digest(nonce), until, JSON.stringify(preview), JSON.stringify(removable), now());
@@ -355,7 +365,9 @@ export async function restoreWorkspaceArchive(
     if (name === 'applications' && !jobs.has(row.job_id)) throw new ApiError(422, 'Archive job references are inconsistent.');
     if (row.guide_id !== undefined && (!guides.has(row.guide_id) || snapshot.tables.prep_guides!.find(guide => guide.id === row.guide_id)?.application_id !== row.application_id)) throw new ApiError(422, 'Archive guide references are inconsistent.');
   }
-  const isolationTables = [...new Set([...columns.keys(), 'sessions', 'account_owners', 'account_passkeys', 'account_recovery_keys', 'submission_reviews', 'outbox'])];
+  const present=new Set((await all(env,"SELECT name FROM sqlite_master WHERE type='table'")).map(row=>String(row.name)));
+  const authorityTables=['sessions','session_transfers','account_owners','account_passkeys','account_challenges','account_recovery_keys','submission_reviews','outbox','automation_checkpoints','resume_preparations','discovery_runs','discovery_cycles','weekly_schedules','weekly_schedule_runs','workspace_reminders','prep_refreshes','email_deliveries','email_receipt_events','hiring_email_deliveries','hiring_email_events','login_attempts','operation_events'];
+  const isolationTables = [...new Set([...columns.keys(), ...authorityTables.filter(table=>present.has(table))])];
   const empty = await env.DB.batch<Row>(isolationTables.map(table => env.DB.prepare(`SELECT count(*) AS n FROM ${table}`)));
   if (empty.some(row => row.results[0].n)) throw new ApiError(409, 'Restore requires a completely empty, isolated destination database.');
   const restoreId = crypto.randomUUID(), pathMap = new Map<string, string>(), created: string[] = [];
@@ -395,6 +407,11 @@ export async function restoreWorkspaceArchive(
       if (name === 'users') { row.id = 1; row.profile_version = Number(row.profile_version) + 1; row.master_profile = JSON.stringify(remapValue(safeProfile(row.master_profile))); }
       if (name === 'resumes') { row.object_key = pathMap.get(original.object_key); row.profile_snapshot = JSON.stringify(remapValue(safeProfile(row.profile_snapshot))); }
       if (name === 'weekly_reports') { row.html_path = pathMap.get(original.html_path); row.content = JSON.stringify(remapValue(parsed(row.content, {}))); }
+      if(name==='shortlists'){
+        if(Object.hasOwn(row,'input_snapshot'))row.input_snapshot='{}';
+        for(const field of ['lease_token','lease_expires_at','dispatched_at'])if(Object.hasOwn(row,field))row[field]=null;
+        if(['queued','running'].includes(row.state)){row.state='failed';row.failure_reason='Restored unfinished hiring analysis without execution authority. Create a new shortlist.';}
+      }
       if (name === 'prep_guide_exports') {
         row.guide_id = guides.get(original.guide_id); row.input_snapshot = '{}'; row.dispatched_at = null; row.started_at = null;
         row.html_key = pathMap.get(original.html_key) || `prep-guides/1/restored_${restoreId}_${row.id}.html`;

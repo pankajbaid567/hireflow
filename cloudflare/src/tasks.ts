@@ -1,5 +1,7 @@
 import { fillApplication } from './automation';
 import {processEmailDelivery,recoverEmailDeliveries} from './email_delivery';
+import {processHiringShortlist,recoverHiringShortlists} from './hiring';
+import {processHiringEmail,recoverHiringEmails} from './hiring_email';
 import {processDiscovery,recoverDiscovery} from './discovery_tasks';
 import {processDiscoveryCycle,recoverDiscoveryCycles} from './discovery_cycles';
 import {processPrepExport,recoverPrepExports} from './prep_exports';
@@ -21,13 +23,15 @@ import { browserDailyBudgetSeconds, submissionDelayMs, newOperationContext, reco
 
 export async function processTask(env: Env, message: Message<Task>) {
   const task = message.body;
+  if(task?.kind==='hiring_score'){if(Number.isSafeInteger(task.shortlist_id)&&task.shortlist_id>0)await processHiringShortlist(env,task.shortlist_id);message.ack();return;}
+  if(task?.kind==='hiring_email'){if(typeof task.delivery_id==='string')await processHiringEmail(env,task.delivery_id);message.ack();return;}
   if(task?.kind==='email_delivery'){if(typeof task.delivery_id==='string')await processEmailDelivery(env,task.delivery_id);message.ack();return;}
   if(task?.kind==='workspace_backup'||task?.kind==='workspace_delete'){const result=task.kind==='workspace_backup'?await processWorkspaceBackup(env,task.id):await processWorkspaceDeletion(env,task.id);if(result.requeue)await env.APPLICATION_QUEUE.send(task,{delaySeconds:2});message.ack();return;}
   if(task?.kind==='weekly_schedule'){await processWeeklySchedule(env,task.run_id);message.ack();return;}
   if(task?.kind==='discovery_cycle'){if(typeof task.cycle_id==='string')await processDiscoveryCycle(env,task.cycle_id);message.ack();return;}
   if(task?.kind==='prep_export'){if(typeof task.export_id==='string')await processPrepExport(env,task.export_id);message.ack();return;}
   if(task?.kind==='plan'){if(Number.isSafeInteger(task.application_id)&&task.application_id>0&&typeof task.token==='string')await processPlanTask(env,task.application_id,task.token);message.ack();return;}
-  if(task?.kind==='maintenance'){await scheduledRecovery(env);await cleanupAccountSecurity(env);await pruneOperations(env);await pruneSemanticCache(env);await recoverDiscovery(env);await recoverPlanWork(env);await recoverPrepExports(env);await recoverEmailDeliveries(env);await recoverPrepRefreshes(env);await recoverDiscoveryCycles(env);await recoverWeeklySchedules(env);for(const pending of await pendingWorkspaceLifecycleTasks(env))await env.APPLICATION_QUEUE.send(pending);message.ack();return;}
+  if(task?.kind==='maintenance'){await scheduledRecovery(env);await cleanupAccountSecurity(env);await pruneOperations(env);await pruneSemanticCache(env);await recoverDiscovery(env);await recoverPlanWork(env);await recoverPrepExports(env);await recoverEmailDeliveries(env);await recoverHiringShortlists(env);await recoverHiringEmails(env);await recoverPrepRefreshes(env);await recoverDiscoveryCycles(env);await recoverWeeklySchedules(env);for(const pending of await pendingWorkspaceLifecycleTasks(env))await env.APPLICATION_QUEUE.send(pending);message.ack();return;}
   if(task?.kind==='discover'){if(/^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/.test(task.discovery_id))await processDiscovery(env,task.discovery_id);message.ack();return;}
   if (!task || !Number.isSafeInteger(task.application_id) || !['apply','prep'].includes(task.kind)) { message.ack(); return; }
   const application = await first(env, `${applicationQuery} WHERE a.id=?`, task.application_id);

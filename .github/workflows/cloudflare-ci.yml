@@ -2,10 +2,10 @@ name: Cloudflare CI
 
 on:
   pull_request:
-    paths: ['cloudflare/**', 'frontend/**', 'evals/**', 'scripts/run_ai_evaluation.mjs', 'scripts/evaluate_prep_quality.mjs', 'scripts/verify_cloudflare_dashboard.mjs', 'scripts/deploy_cloudflare_pages.mjs', '.github/workflows/cloudflare-ci.yml']
+    paths: ['cloudflare/**', 'frontend/**', 'evals/**', 'scripts/run_ai_evaluation.mjs', 'scripts/evaluate_prep_quality.mjs', 'scripts/evaluate_reranker.mjs', 'scripts/verify_cloudflare_dashboard.mjs', 'scripts/deploy_cloudflare_pages.mjs', '.github/workflows/cloudflare-ci.yml']
   push:
     branches: [main, dev]
-    paths: ['cloudflare/**', 'frontend/**', 'evals/**', 'scripts/run_ai_evaluation.mjs', 'scripts/evaluate_prep_quality.mjs', 'scripts/verify_cloudflare_dashboard.mjs', 'scripts/deploy_cloudflare_pages.mjs', '.github/workflows/cloudflare-ci.yml']
+    paths: ['cloudflare/**', 'frontend/**', 'evals/**', 'scripts/run_ai_evaluation.mjs', 'scripts/evaluate_prep_quality.mjs', 'scripts/evaluate_reranker.mjs', 'scripts/verify_cloudflare_dashboard.mjs', 'scripts/deploy_cloudflare_pages.mjs', '.github/workflows/cloudflare-ci.yml']
 
 jobs:
   test-worker:
@@ -36,6 +36,10 @@ jobs:
         run: node ../scripts/run_ai_evaluation.mjs
       - name: Check evidence and question duplication regression
         run: node ../scripts/evaluate_prep_quality.mjs
+      - name: Reproduce frozen reranker experiment without provider calls
+        run: |
+          node ../scripts/evaluate_reranker.mjs --output /tmp/hireflow-reranker-report.json --model /tmp/hireflow-reranker-model.json
+          cmp /tmp/hireflow-reranker-model.json ../evals/reranker_v1/results/model.json
       - name: Exercise persistent local discovery and resume without external calls
         run: |
           node -e "require('node:fs').writeFileSync('/tmp/hireflow-profile.json',JSON.stringify({name:'Local CI',email:'ci@example.com',mode:'internship',skills:['Python']}),{mode:0o600})"

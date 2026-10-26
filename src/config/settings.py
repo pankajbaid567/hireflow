@@ -35,6 +35,10 @@ class Settings(BaseSettings):
     email_provider: str = "sendgrid"
     sendgrid_api_key: str | None = None
     resend_api_key: str | None = None
+    gmail_user: str | None = None
+    gmail_app_password: str | None = None
+    gmail_allowed_recipients: str = ""
+    gmail_daily_attempt_limit: int = 10
     from_email: str = "hireflow@example.com"
     public_base_url: str = "http://localhost:8000"
     local_storage_path: str = "data"

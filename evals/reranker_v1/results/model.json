@@ -1,0 +1,42 @@
+{
+  "version": "hireflow-reranker-v1",
+  "policy_sha256": "15411534f0ac179b6e529311f6a9d884385e78033566e590d5627d9617915f45",
+  "corpus_sha256": "c5a169eedc5b8bfe25fdbfb557ac4d87e4ac0b54a04d5ae01ccf2b6bfd484cc3",
+  "vectors_sha256": "fef471861f91d3dcf53f5e243536fb33906e4e8df8d22c4af054a59f7a823491",
+  "training_sha256": "db491694c203842a389443a53a6c0f9ade059bcd90daebeff423a00702d8f2b1",
+  "feature_names": [
+    "lexical_score",
+    "technical_score",
+    "semantic_cosine",
+    "technical_x_semantic"
+  ],
+  "fit_config": {
+    "objective": "query-normalized pairwise logistic loss plus L2/2 * squared weight norm",
+    "initial_weights": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "iterations": 1200,
+    "learning_rate": 0.2,
+    "l2": 0.01,
+    "intercept": false,
+    "hyperparameter_search": false,
+    "feature_standardization": false,
+    "tie_break": "ascending within-query candidate id; ids are never features"
+  },
+  "weights": [
+    0.6089125216957292,
+    1.5222813042393255,
+    1.1364233011550302,
+    2.2712442975837623
+  ],
+  "iterations": 1200,
+  "pairs": 70,
+  "training_queries": 28,
+  "initial_loss": 0.6931471805599445,
+  "final_loss": 0.3067145322616158,
+  "score_semantics": "Uncalibrated ordering score; neither application eligibility nor hiring probability.",
+  "production_enabled": false
+}

@@ -77,6 +77,14 @@ async function exportArchive() {
   return { id, manifest, snapshot, manifestBytes, snapshotBytes, hash: result.manifest_hash };
 }
 async function restore(bundle: Awaited<ReturnType<typeof exportArchive>>) { destination = await runtime(true); return call(destination, '/_test/restore', { manifest: [...bundle.manifestBytes], snapshot: [...bundle.snapshotBytes], hash: bundle.hash }); }
+async function hiringSnapshot(id:number,owner=10,state='completed'){
+  const html='<h1>Private applicant-provided Python evidence</h1>',reportHash=hash(html);
+  await db.prepare('INSERT INTO shortlists(id,user_id,jd_text,candidates,applicant_count,state,input_snapshot,report_data,report_html,report_hash,lease_token,lease_expires_at,dispatched_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)').bind(id,owner,'Python internship','[]',1,state,'{"applicants":[{"name":"Private candidate"}]}','{"evidence":"applicant-provided"}',html,reportHash,'synthetic-lease','2099-01-01','2026-10-01').run();
+  return reportHash;
+}
+async function hiringMail(id:string,shortlistId:number,reportHash:string,state='queued'){
+  await db.prepare('INSERT INTO hiring_email_deliveries(id,user_id,shortlist_id,recipient,sender,report_hash,payload,payload_hash,message_id,state,created_at,expires_at) VALUES(?,10,?,?,?,?,?,?,?,?,?,?)').bind(id,shortlistId,'team@example.com','synthetic@gmail.com',reportHash,'{"private_payload":"not-restorable"}',hash('payload'),`<${id}@hireflow.invalid>`,state,'2026-10-01','2099-01-01').run();
+}
 
 describe('private coordinated workspace archives', () => {
   it('exports only the authenticated owner and protects each manifest/document route', async () => {
@@ -118,6 +126,24 @@ describe('private coordinated workspace archives', () => {
     destination = await runtime(true); const target = await destination.getD1Database('DB'); await target.prepare("INSERT INTO users(name,email,mode) VALUES('Existing','existing@example.com','job')").run();
     const before = archiveReads; expect((await call(destination, '/_test/restore', body)).status).toBe(409); expect(archiveReads).toBe(before);
     expect((await target.prepare('SELECT name FROM users').first<any>())!.name).toBe('Existing');
+  });
+
+  it('preserves completed hiring reports but strips queued analysis and SMTP execution authority from a real archive',async()=>{
+    const reportHash=await hiringSnapshot(501);await hiringSnapshot(502,10,'queued');await hiringMail('hiring-private',501,reportHash);
+    const backup=await exportArchive(),serialized=JSON.stringify(backup.snapshot);
+    expect(serialized).not.toContain('not-restorable');expect(serialized).not.toContain('synthetic-lease');
+    const archived=backup.snapshot.tables.shortlists;expect(archived.find((row:any)=>row.id===502)).toMatchObject({state:'failed',input_snapshot:'{}',lease_token:null});
+    const result=await restore(backup);expect(result.status,await result.clone().text()).toBe(200);const target=await destination!.getD1Database('DB');
+    const rows=(await target.prepare('SELECT user_id,state,input_snapshot,report_html,lease_token,dispatched_at FROM shortlists ORDER BY id').all<any>()).results;
+    expect(rows[0]).toMatchObject({user_id:1,state:'completed',report_html:'<h1>Private applicant-provided Python evidence</h1>',lease_token:null,dispatched_at:null});expect(rows[1]).toMatchObject({user_id:1,state:'failed',input_snapshot:'{}'});
+    for(const name of ['hiring_email_deliveries','hiring_email_events'])expect((await target.prepare(`SELECT count(*) AS n FROM ${name}`).first<any>())!.n).toBe(0);
+  });
+
+  it('rejects a destination with leftover execution-related counters before copying archived private files',async()=>{
+    const backup=await exportArchive();destination=await runtime(true);const target=await destination.getD1Database('DB');
+    await target.prepare("INSERT INTO login_attempts(key,attempts,window_start) VALUES('retained-authority',1,1)").run();
+    const before=archiveReads,response=await call(destination,'/_test/restore',{manifest:[...backup.manifestBytes],snapshot:[...backup.snapshotBytes],hash:backup.hash});
+    expect(response.status).toBe(409);expect(archiveReads).toBe(before);expect((await (await destination.getR2Bucket('FILES')).list()).objects).toHaveLength(0);
   });
 
   it('rejects oversized artifact catalogs before reading files and rejects large metadata before materializing it', async () => {
@@ -211,6 +237,14 @@ describe('private coordinated workspace archives', () => {
 });
 
 describe('explicit scoped deletion and conservative retention', () => {
+  it('blocks an active hiring send and invalidates deletion when new private delivery evidence arrives',async()=>{
+    await db.prepare("UPDATE applications SET status='planned' WHERE id=1002").run();const reportHash=await hiringSnapshot(501);await hiringMail('hiring-in-flight',501,reportHash,'sending');
+    const blocked=await call(source,'/account/deletion-preview',{});expect(blocked.status).toBe(409);expect(await blocked.text()).toContain('active hiring email');
+    await db.prepare("UPDATE hiring_email_deliveries SET state='accepted' WHERE id='hiring-in-flight'").run();
+    const preview=await(await call(source,'/account/deletion-preview',{})).json() as any;expect(preview.counts.hiring_email_deliveries).toBe(1);expect(preview.counts.hiring_email_events).toBe(2);
+    await db.prepare("INSERT INTO hiring_email_events(delivery_id,state,reason,created_at) VALUES('hiring-in-flight','accepted','Private later evidence','2026-10-02')").run();
+    expect((await call(source,'/account/delete',{id:preview.id,nonce:preview.nonce,profile_version:preview.profile_version,confirmation:'DELETE MY WORKSPACE'})).status).toBe(409);
+  });
   it('binds the preview nonce to owner, session and workspace revision; active submissions block deletion', async () => {
     expect((await call(source, '/account/deletion-preview', {})).status).toBe(409);
     await db.prepare("UPDATE applications SET status='planned' WHERE id=1002").run();

@@ -1,4 +1,4 @@
-export interface Env extends Omit<CloudflareBindings, 'APPLICATION_QUEUE' | 'SUBMISSION_DELAY_SECONDS' | 'OPERATIONS_RETENTION_DAYS' | 'AI' | 'SEMANTIC_MATCHING_ENABLED' | 'SEMANTIC_DAILY_TEXT_BUDGET' | 'PLAN_WORK_IN_QUEUE' | 'DISCOVERY_SHARED_GUARDS' | 'DISCOVERY_DAILY_SEARCH_BUDGET' | 'DISCOVERY_DAILY_DETAIL_BUDGET' | 'DYNAMIC_SOURCE_ENABLED' | 'DYNAMIC_SOURCE_HOSTS'> {
+export interface Env extends Omit<CloudflareBindings, 'APPLICATION_QUEUE' | 'SUBMISSION_DELAY_SECONDS' | 'OPERATIONS_RETENTION_DAYS' | 'AI' | 'SEMANTIC_MATCHING_ENABLED' | 'SEMANTIC_DAILY_TEXT_BUDGET' | 'PLAN_WORK_IN_QUEUE' | 'DISCOVERY_SHARED_GUARDS' | 'DISCOVERY_DAILY_SEARCH_BUDGET' | 'DISCOVERY_DAILY_DETAIL_BUDGET' | 'DYNAMIC_SOURCE_ENABLED' | 'DYNAMIC_SOURCE_HOSTS' | 'GMAIL_DAILY_ATTEMPT_LIMIT'> {
   FILES?: R2Bucket;
   APPLICATION_QUEUE: Queue<Task>;
   ACCESS_CODE: string;
@@ -11,6 +11,10 @@ export interface Env extends Omit<CloudflareBindings, 'APPLICATION_QUEUE' | 'SUB
   SENDGRID_API_KEY?: string;
   RESEND_WEBHOOK_SECRET?: string;
   SENDGRID_WEBHOOK_PUBLIC_KEY?: string;
+  GMAIL_USER?: string;
+  GMAIL_APP_PASSWORD?: string;
+  GMAIL_ALLOWED_RECIPIENTS?: string;
+  GMAIL_DAILY_ATTEMPT_LIMIT?: string;
   DYNAMIC_SOURCE_ENABLED?: string;
   DYNAMIC_SOURCE_HOSTS?: string;
   WEBAUTHN_RP_ID?: string;
@@ -25,7 +29,7 @@ export interface Env extends Omit<CloudflareBindings, 'APPLICATION_QUEUE' | 'SUB
   OPERATIONS_RETENTION_DAYS?: string;
   OPERATION_CONTEXT?: {correlation_id: string; user_id?: number; cycle_id?: string};
 }
-export type Task = { application_id: number; kind: 'apply' | 'prep'; review_id?: string; refresh_token?: string; } | {kind:'discover';discovery_id:string} | {kind:'maintenance'} | {kind:'plan';application_id:number;token:string} | {kind:'prep_export';export_id:string} | {kind:'discovery_cycle';cycle_id:string} | {kind:'weekly_schedule';run_id:string} | {kind:'workspace_backup';id:string} | {kind:'workspace_delete';id:string} | {kind:'email_delivery';delivery_id:string};
+export type Task = { application_id: number; kind: 'apply' | 'prep'; review_id?: string; refresh_token?: string; } | {kind:'discover';discovery_id:string} | {kind:'maintenance'} | {kind:'plan';application_id:number;token:string} | {kind:'prep_export';export_id:string} | {kind:'discovery_cycle';cycle_id:string} | {kind:'weekly_schedule';run_id:string} | {kind:'workspace_backup';id:string} | {kind:'workspace_delete';id:string} | {kind:'email_delivery';delivery_id:string} | {kind:'hiring_score';shortlist_id:number} | {kind:'hiring_email';delivery_id:string};
 export type Row = Record<string, any>;
 export class ApiError extends Error {
   constructor(public status: number, message: string) { super(message); }

@@ -3,6 +3,7 @@ import {ApiError,type Env,type Row,parsed} from './types';
 import {all,first,run} from './storage';
 import {files} from './files';
 import {digest} from './auth';
+import {gmailReadiness,gmailRecipientAllowed,sendGmailMessage,type GmailMessage} from './gmail_transport';
 
 const escape=(s:unknown)=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
 const leaseMs=120_000,retentionMs=30*86400_000,maxAttempts=3;
@@ -12,13 +13,14 @@ const uncertain='The provider outcome is uncertain. Check the email provider das
 const ownerChanged='Email delivery cancelled because the owner email or scheduled delivery consent changed.';
 type Consent={schedule_run_id?:string;schedule_version?:number};
 export function emailReadiness(env:Env){
- const provider=env.EMAIL_PROVIDER||'resend',configured=['resend','sendgrid'].includes(provider),key=provider==='resend'?env.RESEND_API_KEY:env.SENDGRID_API_KEY;
+ const provider=env.EMAIL_PROVIDER||'resend',configured=['resend','sendgrid','gmail'].includes(provider),key=provider==='resend'?env.RESEND_API_KEY:env.SENDGRID_API_KEY;
+ if(provider==='gmail'){const gmail=gmailReadiness(env);return{ready:gmail.ready,provider,reason:gmail.ready?null:gmail.reason,delivery_evidence:'Gmail SMTP acceptance is recorded separately; Gmail has no signed delivery webhook here. Check the intended inbox to verify receipt.'};}
  const sender=String(env.FROM_EMAIL||'').trim(),validSender=/^[^\s<>@]+@[^\s<>@]+\.[^\s<>@]+$/.test(sender)&&!/(?:@example\.(?:com|org|net)|@localhost)$/i.test(sender);
  const ready=Boolean(configured&&key&&validSender);
  return{ready,provider:configured?provider:null,reason:ready?null:'Configure the selected email provider key and a verified FROM_EMAIL address. Provider/domain verification must be checked in its dashboard.',delivery_evidence:'Provider acceptance is recorded separately; a verified delivery event establishes recipient mail server acceptance, not inbox placement or reading.'};
 }
-function configuration(env:Env){const readiness=emailReadiness(env);if(!readiness.ready)throw new ApiError(503,readiness.reason!);return{provider:readiness.provider!,sender:String(env.FROM_EMAIL).trim()};}
-export function deliveryMetadata(row:Row){return{id:row.id,report_id:row.report_id,status:row.state,state:row.state,delivery_status:row.delivery_status??null,delivery_status_at:row.delivery_status_at??null,receipt_received_at:row.receipt_received_at??null,delivery_evidence:row.delivery_status?'signed_provider_webhook':row.accepted_at?'provider_api_acceptance':'none',provider:row.provider,created_at:row.created_at,attempts:row.attempts,attachment_count:row.attachment_count,linked_count:row.linked_count,accepted_at:row.accepted_at,delivered_at:row.delivered_at,provider_message_id:row.provider_message_id,failure_reason:row.failure_reason,next_attempt_at:row.next_attempt_at,status_url:`/report/${row.user_id}/email-deliveries/${row.id}`};}
+function configuration(env:Env){const readiness=emailReadiness(env);if(!readiness.ready)throw new ApiError(503,readiness.reason!);return{provider:readiness.provider!,sender:String(readiness.provider==='gmail'?env.GMAIL_USER:env.FROM_EMAIL).trim()};}
+export function deliveryMetadata(row:Row){return{id:row.id,report_id:row.report_id,status:row.state,state:row.state,delivery_status:row.delivery_status??null,delivery_status_at:row.delivery_status_at??null,receipt_received_at:row.receipt_received_at??null,delivery_evidence:row.delivery_status?'signed_provider_webhook':row.accepted_at?row.provider==='gmail'?'smtp_server_acceptance':'provider_api_acceptance':'none',provider:row.provider,created_at:row.created_at,attempts:row.attempts,attachment_count:row.attachment_count,linked_count:row.linked_count,accepted_at:row.accepted_at,delivered_at:row.delivered_at,provider_message_id:row.provider_message_id,failure_reason:row.failure_reason,next_attempt_at:row.next_attempt_at,status_url:`/report/${row.user_id}/email-deliveries/${row.id}`};}
 export async function emailDeliveryStatus(env:Env,owner:number,id:string){const row=await first(env,'SELECT * FROM email_deliveries WHERE id=? AND user_id=?',id,owner);if(!row)throw new ApiError(404,'Email delivery not found');return deliveryMetadata(row);}
 async function dispatch(env:Env,row:Row){try{const delay=Math.max(0,Math.min(300,Math.ceil((Date.parse(row.next_attempt_at||'')-Date.now())/1000)||0));await env.APPLICATION_QUEUE.send({kind:'email_delivery',delivery_id:row.id},{delaySeconds:delay});await run(env,"UPDATE email_deliveries SET dispatched_at=? WHERE id=? AND state IN ('queued','ready','retry_wait')",new Date().toISOString(),row.id);}catch{/* The durable row is recovered by maintenance. */}}
 async function consentValid(env:Env,row:Row,requireBinding=true){
@@ -42,6 +44,7 @@ export async function enqueueReportEmail(env:Env,owner:number,consent:Consent={}
   env.DB.prepare('SELECT * FROM weekly_reports WHERE user_id=? ORDER BY week_start_date DESC,id DESC LIMIT 1').bind(owner),
  ]),user=snapshot[0].results[0] as Row|undefined,report=snapshot[1].results[0] as Row|undefined;
  if(!user)throw new ApiError(404,'Profile not found');if(!report)throw new ApiError(404,'No weekly report generated yet');
+ if(config.provider==='gmail'&&!gmailRecipientAllowed(env,user.email))throw new ApiError(403,'Gmail delivery is restricted to the sender or an operator-configured private recipient allowlist. Use an approved workspace email before requesting delivery.');
  let row=await first(env,'SELECT * FROM email_deliveries WHERE user_id=? AND report_key=? AND provider=? AND recipient=?',owner,report.html_path,config.provider,user.email);
  if(row){row=await bindScheduledDelivery(env,owner,row,consent);if(['queued','ready','retry_wait'].includes(row.state)&&!row.dispatched_at&&await consentValid(env,row))await dispatch(env,row);return deliveryMetadata(row);}
  const content=parsed<Row>(report.content,{}),apps=Array.isArray(content.applications)?content.applications.slice(0,100):[],ids=apps.map((a:Row)=>Number(a.id)).filter(Number.isSafeInteger);
@@ -69,7 +72,7 @@ async function buildPayload(env:Env,row:Row){
  for(const source of snapshot.sources||[]){const file=await files(env).get(source.key);if(!file)throw new Error('missing');if(bytes+file.size>128*1024||attachments.length>=10){links.push(`<li><a href="${escape(snapshot.base+source.url)}">${escape(source.filename)}</a> (sign in to download)</li>`);continue;}bytes+=file.size;attachments.push({filename:source.filename,content:base64(new Uint8Array(await file.arrayBuffer())),type:'application/pdf',disposition:'attachment'});}
  // A random delivery UUID is sufficient for webhook correlation. Never place
  // candidate details or profile IDs in provider tags/custom arguments.
- const html=await report.text()+(links.length?`<p>Additional versioned PDFs are available in your private workspace:</p><ul>${links.join('')}</ul>`:''),payload=row.provider==='resend'?{from:row.sender,to:[row.recipient],subject:row.subject,html,attachments:attachments.map(a=>({filename:a.filename,content:a.content})),tags:[{name:'hireflow_delivery_id',value:row.id}]}:{personalizations:[{to:[{email:row.recipient}]}],from:{email:row.sender},subject:row.subject,content:[{type:'text/html',value:html}],attachments,custom_args:{hireflow_delivery_id:row.id}};
+ const html=await report.text()+(links.length?`<p>Additional versioned PDFs are available in your private workspace:</p><ul>${links.join('')}</ul>`:''),payload=row.provider==='gmail'?{from:row.sender,to:row.recipient,subject:row.subject,html,attachments:attachments.map(a=>({filename:a.filename,content:a.content})),messageId:`<${row.id}@hireflow.invalid>`,date:row.created_at}:row.provider==='resend'?{from:row.sender,to:[row.recipient],subject:row.subject,html,attachments:attachments.map(a=>({filename:a.filename,content:a.content})),tags:[{name:'hireflow_delivery_id',value:row.id}]}:{personalizations:[{to:[{email:row.recipient}]}],from:{email:row.sender},subject:row.subject,content:[{type:'text/html',value:html}],attachments,custom_args:{hireflow_delivery_id:row.id}};
  const serialized=JSON.stringify(payload),hash=await digest(serialized);if(new TextEncoder().encode(serialized).byteLength>512000)throw new Error('oversized');
  await files(env).put(row.payload_key,serialized,{httpMetadata:{contentType:'application/json'}});
  return{hash,attachmentCount:attachments.length,linkedCount:links.length};
@@ -105,6 +108,16 @@ export async function processEmailDelivery(env:Env,id:string){
    AND NOT EXISTS(SELECT 1 FROM workspace_deletions d WHERE d.user_id=email_deliveries.user_id AND d.state IN ('queued','deleting'))
    AND (schedule_run_id IS NULL OR EXISTS(SELECT 1 FROM weekly_schedule_runs r JOIN weekly_schedules s ON s.user_id=r.user_id JOIN users u ON u.id=r.user_id WHERE r.id=email_deliveries.schedule_run_id AND r.user_id=email_deliveries.user_id AND r.schedule_version=email_deliveries.schedule_version AND r.email_delivery_id=email_deliveries.id AND s.version=email_deliveries.schedule_version AND s.enabled=1 AND s.email_opt_in=1 AND r.state IN ('running','waiting','completed') AND u.profile_version=r.profile_version)) RETURNING *`,new Date().toISOString(),id,token,new Date().toISOString(),maxAttempts);
   if(!claimed){await finish(env,row,'cancelled',ownerChanged);return;}row=claimed;
+  if(row.provider==='gmail'){
+   const payload=parsed<GmailMessage|null>(body,null);
+   if(!payload||payload.from!==row.sender||payload.to!==row.recipient||payload.subject!==row.subject||payload.messageId!==`<${row.id}@hireflow.invalid>`){await finish(env,row,'failed','The Gmail payload failed its immutable delivery binding check. No SMTP connection was opened.');return;}
+   const outcome=await sendGmailMessage(env,payload);
+   if(outcome.state!=='accepted'){await finish(env,row,outcome.state==='uncertain'?'needs_action':'failed',outcome.failure_reason,outcome.provider_status);return;}
+   const accepted=new Date().toISOString();await env.DB.batch([
+    env.DB.prepare("UPDATE weekly_reports SET email_sent_at=?,email_failure_reason=NULL WHERE id=? AND user_id=? AND html_path=? AND EXISTS(SELECT 1 FROM email_deliveries WHERE id=? AND state='sending' AND lease_token=?)").bind(accepted,row.report_id,row.user_id,row.report_key,id,token),
+    env.DB.prepare("UPDATE email_deliveries SET state='accepted',accepted_at=?,finished_at=?,provider_message_id=?,provider_status=?,failure_reason=NULL,lease_token=NULL,lease_expires_at=NULL WHERE id=? AND state='sending' AND lease_token=?").bind(accepted,accepted,outcome.provider_message_id,outcome.provider_status,id,token),
+   ]);return;
+  }
   let response:Response;
   try{response=await fetch(row.provider==='resend'?'https://api.resend.com/emails':'https://api.sendgrid.com/v3/mail/send',{method:'POST',headers:{Authorization:`Bearer ${row.provider==='resend'?env.RESEND_API_KEY:env.SENDGRID_API_KEY}`,'Content-Type':'application/json',...(row.provider==='resend'?{'Idempotency-Key':row.idempotency_key}:{})},body,signal:AbortSignal.timeout(20_000)});}catch{if(row.provider==='resend')await retry(env,row,'The provider outcome is uncertain. Retrying this exact payload with the same idempotency key.');else await finish(env,row,'needs_action',uncertain);return;}
   if(!response.ok){const status=response.status;await response.body?.cancel();if(row.provider==='resend'&&(status===429||status>=500||status===409)){await retry(env,row,'Email provider temporarily unavailable. Only the original immutable payload will be retried.',status);return;}await finish(env,row,status>=500?'needs_action':'failed',status>=500?uncertain:'The email provider rejected the message. Check the verified sender and provider account configuration.',status);return;}
@@ -117,7 +130,7 @@ export async function processEmailDelivery(env:Env,id:string){
 }
 export async function recoverEmailDeliveries(env:Env){
  const now=new Date().toISOString(),safeBefore=new Date(Date.now()-idempotencyWindow).toISOString();
- await run(env,"UPDATE email_deliveries SET state='needs_action',failure_reason=?,finished_at=?,lease_token=NULL,lease_expires_at=NULL WHERE state='sending' AND lease_expires_at<=? AND (provider='sendgrid' OR first_attempt_at<=? OR attempts>=?)",uncertain,now,now,safeBefore,maxAttempts);
+ await run(env,"UPDATE email_deliveries SET state='needs_action',failure_reason=?,finished_at=?,lease_token=NULL,lease_expires_at=NULL WHERE state='sending' AND lease_expires_at<=? AND (provider IN ('sendgrid','gmail') OR first_attempt_at<=? OR attempts>=?)",uncertain,now,now,safeBefore,maxAttempts);
  await run(env,"UPDATE email_deliveries SET state='retry_wait',failure_reason='Interrupted provider request. Retrying the identical payload with its original idempotency key.',next_attempt_at=?,lease_token=NULL,lease_expires_at=NULL,dispatched_at=NULL WHERE state='sending' AND provider='resend' AND lease_expires_at<=? AND first_attempt_at>? AND attempts<?",now,now,safeBefore,maxAttempts);
  await run(env,"UPDATE email_deliveries SET state=CASE WHEN payload_hash IS NULL THEN 'queued' ELSE 'ready' END,lease_token=NULL,lease_expires_at=NULL,dispatched_at=NULL WHERE state IN ('preparing','ready') AND lease_expires_at<=?",now);
  await run(env,"UPDATE email_deliveries SET state='failed',failure_reason='Email delivery request expired. Generate a fresh report before requesting delivery.',finished_at=? WHERE state IN ('queued','preparing','ready','retry_wait') AND expires_at<=?",now,now);

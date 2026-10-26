@@ -50,8 +50,11 @@ The API's configured variables are:
 | `DISCOVERY_DAILY_SEARCH_BUDGET` / `DISCOVERY_DAILY_DETAIL_BUDGET` | `25` / `400` across guarded callers |
 | `DYNAMIC_SOURCE_ENABLED` | `true`; optional public JavaScript fallback after a valid static read |
 | `DYNAMIC_SOURCE_HOSTS` | `hireflow-dashboard.pages.dev` only; owned synthetic source, no wildcard or implicit subdomains |
-| `EMAIL_PROVIDER` | Configured integration selection; `resend` currently |
-| `FROM_EMAIL` | Currently a placeholder, **not a verified sender** |
+| `EMAIL_PROVIDER` | `gmail` selected; `resend` and `sendgrid` remain supported |
+| `GMAIL_USER`, `GMAIL_APP_PASSWORD` | Private Worker secrets; sender derives from this Gmail account |
+| `GMAIL_ALLOWED_RECIPIENTS` | Optional private team-recipient list; default Gmail self-only |
+| `GMAIL_DAILY_ATTEMPT_LIMIT` | Shared weekly/hiring limit, default 10, bounded 1–20 per UTC day |
+| `FROM_EMAIL` | Resend/SendGrid only; ignored by Gmail |
 
 Pages build configuration:
 
@@ -88,7 +91,7 @@ every pending migration: `0002` adds transfers; `0003` adds draft leases and
 tailoring metadata; `0004` adds account/passkey/recovery tables, session metadata
 and source-bound atomic transfers; `0005` adds private automation checkpoints;
 `0006` adds immutable answer/PDF review authorization; `0007` adds operational
-telemetry/diagnostics; `0008` adds source-backed listing facts, historical snapshots and review invalidation; `0009` adds private semantic cache/usage and matching metadata; `0010` adds the bounded operations-request index; `0011` adds durable owner-scoped discovery tickets; `0012` extends score/PDF leases with dispatch, kind, captured versions, bounded attempts and interrupted-upload cleanup. P2 adds `0013` discovery cycles/public read budgets, `0014` private guide export versions, `0015` weekly draft schedules, `0016` coordinated workspace lifecycle, `0017` immutable email delivery tickets, `0018` explicit prep refresh leases and `0019` signed email receipt history. All are applied on the recorded baseline. Applied migrations remain immutable; repairs need a new forward migration. Apply pending migrations before code publication.
+telemetry/diagnostics; `0008` adds source-backed listing facts, historical snapshots and review invalidation; `0009` adds private semantic cache/usage and matching metadata; `0010` adds the bounded operations-request index; `0011` adds durable owner-scoped discovery tickets; `0012` extends score/PDF leases with dispatch, kind, captured versions, bounded attempts and interrupted-upload cleanup. P2 adds `0013` discovery cycles/public read budgets, `0014` private guide export versions, `0015` weekly draft schedules, `0016` coordinated workspace lifecycle, `0017` immutable email delivery tickets, `0018` explicit prep refresh leases and `0019` signed email receipt history. P3 adds `0020` (Gmail enum, existing receipt/schedule preservation and shared SMTP allowance) and `0021` (private hiring reports/delivery history). Applied migrations remain immutable; repairs need a new forward migration. Apply pending migrations before code publication.
 Back up D1 first; deployment does not copy local database contents. Existing
 sessions survive `0004`, but old unbound transfer links require reminting.
 
@@ -192,7 +195,7 @@ CAPTCHAs are detected, not solved. Expired listings, unsupported/missing form st
 
 ## Reports and email gap
 
-Reports collect cycle applications, states/reasons, exact resume versions, standalone guide exports, match summaries and study priorities. HTML reports and downloads remain private. **Actual production email delivery is not configured or verified.** Set a supported `RESEND_API_KEY` or `SENDGRID_API_KEY` and a provider-verified `FROM_EMAIL` before an explicitly authorized send. The placeholder sender is rejected. A durable delivery ticket separates queued, provider-accepted and confirmed delivery states; signed Resend/SendGrid receipts preserve distinct timestamps and reject untrusted/replayed events. Those isolated cryptographic tests are not real inbox evidence. The owner's Gmail-versus-Resend setup choice and an authorized real receipt test remain pending; no Gmail sending adapter is claimed. The [free Resend self-demo setup](email-delivery.md#free-setup-without-sendgrid) can send to the Resend account's own inbox without buying a domain. Uncertain sends cannot be blindly repeated. Report generation alone does not send email. The opt-in [weekly scheduler](p2-discovery-scheduler.md) prepares drafts and reminders, with separately opted-in email after configuration. It never authorizes applications. See [P2 verification](p2-verification.md) for measured release evidence and remaining external setup.
+Reports collect cycle applications, status/reasons, exact resume versions, standalone guide exports and study priorities. HTML/downloads remain private. Gmail + Nodemailer is implemented with fixed TLS, two private Gmail settings, a shared ten-attempt daily app limit and a self-only default recipient policy. Optional private operator-authorized team recipients require explicit report/recipient review in `/hiring`. Existing Resend/SendGrid support and signed receipts remain intact. SMTP/API acceptance is not inbox evidence; no actual Gmail login or email has been performed. Follow [email setup](email-delivery.md) and [P3 evidence](p3-verification.md). Report generation alone does not send email, and scheduling never authorizes an application.
 
 ## Free-tier limits
 
@@ -241,7 +244,7 @@ node scripts/verify_cloudflare_dashboard.mjs
 
 The last script uses isolated D1/file storage, real React/Chromium, and a test-only queue hook with remote employer submission disabled. It checks structured edits, private PDFs, preparation/report views, mobile layout, restored sessions and logout. Servers are disposed afterward. Default tests do not send real email.
 
-Recorded local release gates passed **706 Worker tests** (four opt-in skipped), **390 Python tests** (three opt-in skipped) and **152 frontend tests**, including five deployment-guard regressions. Typecheck, dry run, frozen evaluation and preparation gates pass. Their exact source, remote CI and production outcomes are recorded in [P2 verification](p2-verification.md).
+Recorded local release gates passed **774 Worker tests** (four opt-in skipped), **407 Python tests** (three opt-in skipped) and **157 frontend tests**, including five deployment-guard regressions. Typecheck, dry run, frozen evaluation and preparation gates pass. Their exact source, remote CI and production outcomes are recorded in [P2 verification](p2-verification.md).
 
 ## Release verification
 

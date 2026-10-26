@@ -61,7 +61,13 @@ are recorded in [P2 verification](docs/p2-verification.md).
 
 The Worker uses **six-factor hybrid matching**: genuine Workers AI BGE embeddings contribute only 20% of the technical factor, with private versioned D1 vectors and a visible lexical fallback. The separate Python plan path supports real BGE/FAISS when explicitly enabled. On the frozen synthetic heldout benchmark, hybrid nDCG@3 was **0.9511 versus 0.6991** for lexical matching; these are authored relevance labels, not hiring outcomes. [Evaluation and limitations](docs/ai-evaluation.md) include factuality, source support, error analysis and actual-model provenance. Groq selects existing facts/projects for resume tailoring; immutable PDFs retain method, model and profile version.
 
-Automatic submission supports suitable public native forms with up to eight recognizable steps and encrypted completed-step checkpoints. Unknown controls, login walls and uncertain submissions require manual action; arbitrary employer portals are not certified. See the [compatibility matrix](docs/portal-compatibility.md). There is no blanket guarantee that a listing can be applied to automatically. **Production email is not configured:** SendGrid/Resend sending and signed receipt handling exist, but a provider key, verified sender and authorized inbox test are still needed. The owner's Gmail-versus-Resend setup choice remains pending; no Gmail sending adapter or real delivery is claimed.
+Automatic submission supports suitable public native forms with up to eight recognizable steps and encrypted completed-step checkpoints. Unknown controls, login walls and uncertain submissions require manual action; arbitrary employer portals are not certified. See the [compatibility matrix](docs/portal-compatibility.md). There is no blanket guarantee that a listing can be applied to automatically. **Gmail + Nodemailer is implemented** with two private Gmail settings, fixed TLS, a shared daily attempt allowance and explicit recipient/report review. Existing Resend/SendGrid support remains available. Gmail credentials and an authorized real inbox test are still needed; no actual email delivery is claimed. See [setup](docs/email-delivery.md) and [P3 verification](docs/p3-verification.md).
+
+The optional [hiring dashboard](https://hireflow-dashboard.pages.dev/hiring)
+provides private JSON/CSV shortlists, source-attributed applicant facts, immutable
+HTML reports and reviewed Gmail team delivery. A separate
+[learned reranker experiment](docs/reranker-experiment.md) tied the existing
+hybrid, so its frozen adoption gate failed and production ranking stays unchanged.
 
 ## Existing workspace migration
 
@@ -115,7 +121,7 @@ npm run check --prefix cloudflare
 venv/bin/python -m pytest tests/ -v
 ```
 
-Recorded local release gates: **390 Python, 706 Worker and 152 frontend tests
+Recorded local release gates: **407 Python, 774 Worker and 157 frontend tests
 passed**, with three Python and four Worker opt-in tests skipped. Frontend
 coverage includes five Pages deployment-guard regressions. Typecheck, Pages
 build, Worker dry run and isolated React/Worker/D1/private-file browser E2E

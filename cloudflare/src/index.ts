@@ -4,7 +4,8 @@ import { all, first, run, userById, applicationQuery, historicalListing } from '
 import { checkAccessCode, logout, requireUser, sessionUser, startSession } from './auth';
 import { readJson, saveProfile } from './profile';
 import { addJobs, confirmPlan, getPlan, swapPlan, refreshMatches } from './plans';
-import { scoreMatch } from './intelligence';
+import {createShortlist,listShortlists,getShortlist,shortlistHtml} from './hiring';
+import {enqueueHiringEmail,getHiringEmail,hiringEmailReadiness} from './hiring_email';
 import { emailReport, generateReport, latestReport } from './reports';
 import {emailReadiness,emailDeliveryStatus} from './email_delivery';
 import {receiveEmailWebhook} from './email_webhooks';
@@ -174,21 +175,21 @@ async function route(request: Request, env: Env): Promise<Response> {
     }
   }
   if(path==='/hiring/shortlist'&&method==='POST') {
-    const owner=await requireUser(request,env); const data=await readJson(request);
-    if(typeof data.jd_text!=='string'||!data.jd_text.trim()||data.jd_text.length>30000) throw new ApiError(422,'Provide a job description up to 30000 characters');
-    const applicants=typeof data.applicants==='string'?parseCsv(data.applicants):data.applicants;
-    if(!Array.isArray(applicants)||applicants.length>200) throw new ApiError(422,'Provide up to 200 applicants as JSON or CSV');
-    const size=number(String(data.shortlist_size??20),20,200);
-    const scored=applicants.map((a:Row,i:number)=>{
-      if(!a||typeof a.name!=='string') throw new ApiError(422,'Every applicant needs a name');
-      const profile={...a,skills:typeof a.skills==='string'?a.skills.split(/[;,|]/).map((s:string)=>s.trim()):a.skills||[]};
-      if(!Array.isArray(profile.skills)) throw new ApiError(422,'Applicant skills must be a list');
-      const match=scoreMatch(profile,{title:data.jd_text.split('\n')[0],description:data.jd_text});
-      return {...a,score:match.score,matched_skills:match.matched,skill_gaps:match.gaps,input_index:i};
-    }).sort((a,b)=>b.score-a.score||a.input_index-b.input_index);
-    const shortlist=scored.filter(a=>a.matched_skills.length).slice(0,size).map(({input_index,...a})=>a);
-    const result=await run(env,'INSERT INTO shortlists(user_id,jd_text,candidates,applicant_count) VALUES(?,?,?,?)',owner,data.jd_text,JSON.stringify(shortlist),applicants.length);
-    return json({id:result.meta.last_row_id,shortlist,applicant_count:applicants.length,shortlisted_count:shortlist.length,summary:`Selected ${shortlist.length} of ${applicants.length} applicants with matching JD skills.`});
+    const owner=await requireUser(request,env),result=await createShortlist(env,owner,await readJson(request,200000));
+    return json(result,result.state==='queued'?202:200);
+  }
+  if(path==='/hiring/email-readiness'&&method==='GET') {await requireUser(request,env);return json(hiringEmailReadiness(env));}
+  if(path==='/hiring/shortlists'&&method==='GET') {
+    const owner=await requireUser(request,env);return json(await listShortlists(env,owner,number(url.searchParams.get('page'),1),number(url.searchParams.get('page_size'),20,100)));
+  }
+  if((match=path.match(/^\/hiring\/email-deliveries\/([a-f0-9-]{36})$/))&&method==='GET') {
+    return json(await getHiringEmail(env,await requireUser(request,env),match[1]));
+  }
+  if((match=path.match(/^\/hiring\/shortlists\/(\d+)(?:\/(report\.html|email))?$/))) {
+    const owner=await requireUser(request,env),id=number(match[1]);
+    if(method==='GET'&&!match[2])return json(await getShortlist(env,owner,id));
+    if(method==='GET'&&match[2]==='report.html')return shortlistHtml(env,owner,id);
+    if(method==='POST'&&match[2]==='email')return json(await enqueueHiringEmail(env,owner,id,await readJson(request)),202);
   }
   throw new ApiError(404,'Not found');
 }

@@ -9,6 +9,62 @@ from src.pipelines.match_scorer import compute_match_score
 JD = "AI Engineer Intern - LangChain, Python, RAG required"
 
 
+def test_hiring_project_technologies_have_exact_evidence_and_no_protected_facts():
+    candidate = {"name": "Source Candidate", "skills": ["Python"], "projects": [{"name": "Campus Assistant", "description": "A supervised retrieval demo.", "technologies": ["LangChain", "RAG"]}], "education": [{"degree": "B.Tech student", "institution": "Source College"}], "age": 70, "gender": "PROTECTED_SENTINEL"}
+    result = HiringShortlistAgent().shortlist(JD, [candidate])
+    selected = result["shortlist"][0]
+    assert selected["facts"]["education"][0]["institution"] == "Source College"
+    assert selected["facts"]["experience_years"] is None
+    source = next(item for item in selected["evidence"] if item["skill"] == "rag")["sources"][0]
+    assert source["quote"] == "RAG"
+    assert source["source_path"] == "applicants[0].projects[0].technologies[1]"
+    assert "PROTECTED_SENTINEL" not in str(result)
+    assert "verify" in result["decision_policy"].lower()
+
+
+def test_hiring_json_csv_structured_facts_and_alias_sources():
+    import csv
+    import io
+    import json
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["name", "skills", "experience_years", "projects"])
+    writer.writerow(["Candidate, A", "Python", "0", json.dumps([{"name": "App", "technologies": ["RAG"]}])])
+    result = HiringShortlistAgent().shortlist(JD, output.getvalue())
+    assert result["shortlist"][0]["name"] == "Candidate, A"
+    assert result["shortlist"][0]["facts"]["experience_years"] == 0
+    assert result["shortlist"][0]["facts"]["projects"][0]["name"] == "App"
+
+
+@pytest.mark.parametrize("applicants", ["name,name\nA,B", "name,skills\nA,Python,extra", [{"name": "Bad", "skills": [], "experience_years": -1}], [{"name": "Bad", "skills": [], "projects": [{}]}]])
+def test_hiring_rejects_incomplete_or_malformed_evidence(applicants):
+    with pytest.raises(ValueError):
+        HiringShortlistAgent().shortlist(JD, applicants)
+
+
+def test_private_hiring_reports_deny_cross_owner_and_legacy_access(api_client, db_session):
+    first = api_client.post('/profile', json={"name": "Owner One", "email": "hiring-one@example.com", "mode": "job"})
+    first_cookie = first.headers['set-cookie'].split(';')[0]
+    response = api_client.post('/hiring/shortlist', json={"jd_text": JD, "applicants": [{"name": "<script>candidate</script>", "skills": ["Python"]}]})
+    assert response.status_code == 200
+    report_id = response.json()['id']
+    stored = db_session.get(Shortlist, report_id)
+    assert stored.user_id == first.json()['id']
+    page = api_client.get('/hiring/shortlists?page_size=1').json()
+    assert page['total'] == 1
+    html = api_client.get(f'/hiring/shortlists/{report_id}/report.html')
+    assert '&lt;script&gt;candidate&lt;/script&gt;' in html.text
+    assert "default-src 'none'" in html.headers['content-security-policy']
+    api_client.post('/profile', json={"name": "Owner Two", "email": "hiring-two@example.com", "mode": "job"})
+    assert api_client.get(f'/hiring/shortlists/{report_id}').status_code == 404
+    assert api_client.get(f'/hiring/shortlists/{report_id}/report.html').status_code == 404
+    assert api_client.get('/hiring/shortlists').json()['items'] == []
+    assert api_client.get(f'/hiring/shortlists/{report_id}', headers={'Cookie': first_cookie}).status_code == 200
+    legacy = Shortlist(jd_text=JD, candidates={"shortlist": [], "summary": "Legacy"}, applicant_count=0)
+    db_session.add(legacy); db_session.commit()
+    assert api_client.get(f'/hiring/shortlists/{legacy.id}', headers={'Cookie': first_cookie}).status_code == 404
+
+
 def test_shortlist_top_n_matches_issue_example():
     result = HiringShortlistAgent().shortlist(
         JD,

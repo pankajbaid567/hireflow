@@ -1,0 +1,3186 @@
+{
+  "version": "hireflow-reranker-v1",
+  "created_at": "2026-10-26T20:12:25.794Z",
+  "policy_sha256": "15411534f0ac179b6e529311f6a9d884385e78033566e590d5627d9617915f45",
+  "model_sha256": "033a1093f96c3bf7ccc5d4e9c1e2a02c0e42a6fb06f2781260104fe5657c1418",
+  "provenance": {
+    "corpus_sha256": "c5a169eedc5b8bfe25fdbfb557ac4d87e4ac0b54a04d5ae01ccf2b6bfd484cc3",
+    "vectors_sha256": "fef471861f91d3dcf53f5e243536fb33906e4e8df8d22c4af054a59f7a823491",
+    "vector_model": "BAAI/bge-small-en-v1.5",
+    "vector_revision": "5c38ec7c405ec4b44b94cc5a9bb96e735b38267a",
+    "pooling": "cls",
+    "dimensions": 384,
+    "label_source": "Repository-authored synthetic relevance labels, not independent human judgments or hiring outcomes. Existing heldout labels and baseline metrics were previously published; this is reused heldout evaluation, not a new blind test.",
+    "feature_source_hashes": {
+      "cloudflare/src/intelligence.ts": "ddaa14fd96af9e03b544508956d82d5bcc9289cffcb828dd477760e6cb5778d0",
+      "cloudflare/src/semantic_matching.ts": "d91f00402d8c035d29f4a09a75bc726166aa7fca2dced9465be172b4936a127e",
+      "evals/reranker_v1/reranker.ts": "88e52cc83f518bb1bd5e2d27448c50afbfb7de5a3846d8597a0acc4cce86d321",
+      "evals/reranker_v1/evaluate.ts": "54cb0ed8387f6019f8ee8758f31822b2d4cfb97ea029fea7ca980701867cfafe"
+    },
+    "published_baseline_order_and_ndcg_parity": true
+  },
+  "split": {
+    "original_dev_queries": 28,
+    "original_dev_candidates": 140,
+    "training_queries": 28,
+    "training_candidates": 84,
+    "training_grade_counts": {
+      "0": 42,
+      "1": 0,
+      "2": 28,
+      "3": 14
+    },
+    "heldout_queries": 20,
+    "heldout_candidates": 100,
+    "training_primary_domains": 14,
+    "heldout_primary_domains": 10,
+    "profile_input_overlap": 0,
+    "post_embargo_job_input_overlap": 0,
+    "post_embargo_first_sentence_overlap": 0,
+    "excluded_candidates": [
+      {
+        "query_id": "rank-library-internship",
+        "candidate_id": 1,
+        "reason": "shared_first_description_sentence"
+      },
+      {
+        "query_id": "rank-library-internship",
+        "candidate_id": 3,
+        "reason": "shared_job_input"
+      },
+      {
+        "query_id": "rank-library-job",
+        "candidate_id": 2,
+        "reason": "shared_job_input"
+      },
+      {
+        "query_id": "rank-library-job",
+        "candidate_id": 5,
+        "reason": "shared_first_description_sentence"
+      },
+      {
+        "query_id": "rank-inventory-internship",
+        "candidate_id": 2,
+        "reason": "shared_job_input"
+      },
+      {
+        "query_id": "rank-inventory-internship",
+        "candidate_id": 5,
+        "reason": "shared_first_description_sentence"
+      },
+      {
+        "query_id": "rank-inventory-job",
+        "candidate_id": 1,
+        "reason": "shared_job_input"
+      },
+      {
+        "query_id": "rank-inventory-job",
+        "candidate_id": 4,
+        "reason": "shared_first_description_sentence"
+      },
+      {
+        "query_id": "rank-appointments-internship",
+        "candidate_id": 1,
+        "reason": "shared_job_input"
+      },
+      {
+        "query_id": "rank-appointments-internship",
+        "candidate_id": 4,
+        "reason": "shared_first_description_sentence"
+      },
+      {
+        "query_id": "rank-appointments-job",
+        "candidate_id": 3,
+        "reason": "shared_first_description_sentence"
+      },
+      {
+        "query_id": "rank-appointments-job",
+        "candidate_id": 5,
+        "reason": "shared_job_input"
+      },
+      {
+        "query_id": "rank-sports-internship",
+        "candidate_id": 3,
+        "reason": "shared_first_description_sentence"
+      },
+      {
+        "query_id": "rank-sports-internship",
+        "candidate_id": 5,
+        "reason": "shared_job_input"
+      },
+      {
+        "query_id": "rank-sports-job",
+        "candidate_id": 2,
+        "reason": "shared_first_description_sentence"
+      },
+      {
+        "query_id": "rank-sports-job",
+        "candidate_id": 4,
+        "reason": "shared_job_input"
+      },
+      {
+        "query_id": "rank-agriculture-internship",
+        "candidate_id": 2,
+        "reason": "shared_first_description_sentence"
+      },
+      {
+        "query_id": "rank-agriculture-internship",
+        "candidate_id": 4,
+        "reason": "shared_job_input"
+      },
+      {
+        "query_id": "rank-agriculture-job",
+        "candidate_id": 1,
+        "reason": "shared_first_description_sentence"
+      },
+      {
+        "query_id": "rank-agriculture-job",
+        "candidate_id": 3,
+        "reason": "shared_job_input"
+      },
+      {
+        "query_id": "rank-travel-internship",
+        "candidate_id": 1,
+        "reason": "shared_first_description_sentence"
+      },
+      {
+        "query_id": "rank-travel-internship",
+        "candidate_id": 3,
+        "reason": "shared_job_input"
+      },
+      {
+        "query_id": "rank-travel-job",
+        "candidate_id": 2,
+        "reason": "shared_job_input"
+      },
+      {
+        "query_id": "rank-travel-job",
+        "candidate_id": 5,
+        "reason": "shared_first_description_sentence"
+      },
+      {
+        "query_id": "rank-music-internship",
+        "candidate_id": 2,
+        "reason": "shared_job_input"
+      },
+      {
+        "query_id": "rank-music-internship",
+        "candidate_id": 5,
+        "reason": "shared_first_description_sentence"
+      },
+      {
+        "query_id": "rank-music-job",
+        "candidate_id": 1,
+        "reason": "shared_job_input"
+      },
+      {
+        "query_id": "rank-music-job",
+        "candidate_id": 4,
+        "reason": "shared_first_description_sentence"
+      },
+      {
+        "query_id": "rank-delivery-internship",
+        "candidate_id": 1,
+        "reason": "shared_job_input"
+      },
+      {
+        "query_id": "rank-delivery-internship",
+        "candidate_id": 2,
+        "reason": "shared_first_description_sentence"
+      },
+      {
+        "query_id": "rank-delivery-job",
+        "candidate_id": 1,
+        "reason": "shared_first_description_sentence"
+      },
+      {
+        "query_id": "rank-delivery-job",
+        "candidate_id": 5,
+        "reason": "shared_job_input"
+      },
+      {
+        "query_id": "rank-banking-internship",
+        "candidate_id": 1,
+        "reason": "shared_first_description_sentence"
+      },
+      {
+        "query_id": "rank-banking-internship",
+        "candidate_id": 5,
+        "reason": "shared_job_input"
+      },
+      {
+        "query_id": "rank-banking-job",
+        "candidate_id": 4,
+        "reason": "shared_job_input"
+      },
+      {
+        "query_id": "rank-banking-job",
+        "candidate_id": 5,
+        "reason": "shared_first_description_sentence"
+      },
+      {
+        "query_id": "rank-weather-internship",
+        "candidate_id": 4,
+        "reason": "shared_job_input"
+      },
+      {
+        "query_id": "rank-weather-internship",
+        "candidate_id": 5,
+        "reason": "shared_first_description_sentence"
+      },
+      {
+        "query_id": "rank-weather-job",
+        "candidate_id": 3,
+        "reason": "shared_job_input"
+      },
+      {
+        "query_id": "rank-weather-job",
+        "candidate_id": 4,
+        "reason": "shared_first_description_sentence"
+      },
+      {
+        "query_id": "rank-accessibility-internship",
+        "candidate_id": 3,
+        "reason": "shared_job_input"
+      },
+      {
+        "query_id": "rank-accessibility-internship",
+        "candidate_id": 4,
+        "reason": "shared_first_description_sentence"
+      },
+      {
+        "query_id": "rank-accessibility-job",
+        "candidate_id": 2,
+        "reason": "shared_job_input"
+      },
+      {
+        "query_id": "rank-accessibility-job",
+        "candidate_id": 3,
+        "reason": "shared_first_description_sentence"
+      },
+      {
+        "query_id": "rank-education-internship",
+        "candidate_id": 2,
+        "reason": "shared_job_input"
+      },
+      {
+        "query_id": "rank-education-internship",
+        "candidate_id": 3,
+        "reason": "shared_first_description_sentence"
+      },
+      {
+        "query_id": "rank-education-job",
+        "candidate_id": 1,
+        "reason": "shared_job_input"
+      },
+      {
+        "query_id": "rank-education-job",
+        "candidate_id": 2,
+        "reason": "shared_first_description_sentence"
+      },
+      {
+        "query_id": "rank-security-internship",
+        "candidate_id": 1,
+        "reason": "shared_job_input"
+      },
+      {
+        "query_id": "rank-security-internship",
+        "candidate_id": 2,
+        "reason": "shared_first_description_sentence"
+      },
+      {
+        "query_id": "rank-security-job",
+        "candidate_id": 1,
+        "reason": "shared_first_description_sentence"
+      },
+      {
+        "query_id": "rank-security-job",
+        "candidate_id": 5,
+        "reason": "shared_job_input"
+      },
+      {
+        "query_id": "rank-vision-internship",
+        "candidate_id": 1,
+        "reason": "shared_first_description_sentence"
+      },
+      {
+        "query_id": "rank-vision-internship",
+        "candidate_id": 5,
+        "reason": "shared_job_input"
+      },
+      {
+        "query_id": "rank-vision-job",
+        "candidate_id": 4,
+        "reason": "shared_job_input"
+      },
+      {
+        "query_id": "rank-vision-job",
+        "candidate_id": 5,
+        "reason": "shared_first_description_sentence"
+      }
+    ],
+    "dropped_queries": [],
+    "heldout_labels_used_for_fit": false,
+    "hyperparameter_search": false,
+    "other_task_labels_used": false
+  },
+  "features": [
+    "lexical_score",
+    "technical_score",
+    "semantic_cosine",
+    "technical_x_semantic"
+  ],
+  "model": {
+    "version": "hireflow-reranker-v1",
+    "policy_sha256": "15411534f0ac179b6e529311f6a9d884385e78033566e590d5627d9617915f45",
+    "corpus_sha256": "c5a169eedc5b8bfe25fdbfb557ac4d87e4ac0b54a04d5ae01ccf2b6bfd484cc3",
+    "vectors_sha256": "fef471861f91d3dcf53f5e243536fb33906e4e8df8d22c4af054a59f7a823491",
+    "training_sha256": "db491694c203842a389443a53a6c0f9ade059bcd90daebeff423a00702d8f2b1",
+    "feature_names": [
+      "lexical_score",
+      "technical_score",
+      "semantic_cosine",
+      "technical_x_semantic"
+    ],
+    "fit_config": {
+      "objective": "query-normalized pairwise logistic loss plus L2/2 * squared weight norm",
+      "initial_weights": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "iterations": 1200,
+      "learning_rate": 0.2,
+      "l2": 0.01,
+      "intercept": false,
+      "hyperparameter_search": false,
+      "feature_standardization": false,
+      "tie_break": "ascending within-query candidate id; ids are never features"
+    },
+    "weights": [
+      0.6089125216957292,
+      1.5222813042393255,
+      1.1364233011550302,
+      2.2712442975837623
+    ],
+    "iterations": 1200,
+    "pairs": 70,
+    "training_queries": 28,
+    "initial_loss": 0.6931471805599445,
+    "final_loss": 0.3067145322616158,
+    "score_semantics": "Uncalibrated ordering score; neither application eligibility nor hiring probability.",
+    "production_enabled": false
+  },
+  "metrics": {
+    "heldout": {
+      "lexical": {
+        "recall_at_1": 0.3,
+        "ndcg_at_1": 0.5142857142857142,
+        "recall_at_3": 0.8,
+        "ndcg_at_3": 0.6991111082908141
+      },
+      "hybrid": {
+        "recall_at_1": 0.5,
+        "ndcg_at_1": 1,
+        "recall_at_3": 1,
+        "ndcg_at_3": 0.9511414153592698
+      },
+      "learned": {
+        "recall_at_1": 0.5,
+        "ndcg_at_1": 1,
+        "recall_at_3": 1,
+        "ndcg_at_3": 0.9511414153592698
+      }
+    },
+    "development_descriptive_only": {
+      "lexical": {
+        "recall_at_1": 0.2857142857142857,
+        "ndcg_at_1": 0.4795918367346939,
+        "recall_at_3": 0.7857142857142857,
+        "ndcg_at_3": 0.6776190445973008
+      },
+      "hybrid": {
+        "recall_at_1": 0.5,
+        "ndcg_at_1": 1,
+        "recall_at_3": 1,
+        "ndcg_at_3": 0.9674098137375499
+      },
+      "learned": {
+        "recall_at_1": 0.5,
+        "ndcg_at_1": 1,
+        "recall_at_3": 1,
+        "ndcg_at_3": 0.963607504889457
+      }
+    }
+  },
+  "slices": {
+    "listing_mode": {
+      "internship": {
+        "queries": 10,
+        "metrics": {
+          "lexical": {
+            "recall_at_1": 0.3,
+            "ndcg_at_1": 0.5142857142857143,
+            "recall_at_3": 0.8,
+            "ndcg_at_3": 0.6991111082908141
+          },
+          "hybrid": {
+            "recall_at_1": 0.5,
+            "ndcg_at_1": 1,
+            "recall_at_3": 1,
+            "ndcg_at_3": 0.9585555562606298
+          },
+          "learned": {
+            "recall_at_1": 0.5,
+            "ndcg_at_1": 1,
+            "recall_at_3": 1,
+            "ndcg_at_3": 0.9585555562606298
+          }
+        }
+      },
+      "job": {
+        "queries": 10,
+        "metrics": {
+          "lexical": {
+            "recall_at_1": 0.3,
+            "ndcg_at_1": 0.5142857142857142,
+            "recall_at_3": 0.8,
+            "ndcg_at_3": 0.6991111082908141
+          },
+          "hybrid": {
+            "recall_at_1": 0.5,
+            "ndcg_at_1": 1,
+            "recall_at_3": 1,
+            "ndcg_at_3": 0.9437272744579095
+          },
+          "learned": {
+            "recall_at_1": 0.5,
+            "ndcg_at_1": 1,
+            "recall_at_3": 1,
+            "ndcg_at_3": 0.9437272744579095
+          }
+        }
+      }
+    },
+    "primary_domain": {
+      "astronomy": {
+        "queries": 2,
+        "metrics": {
+          "lexical": {
+            "recall_at_1": 0.5,
+            "ndcg_at_1": 1,
+            "recall_at_3": 1,
+            "ndcg_at_3": 1
+          },
+          "hybrid": {
+            "recall_at_1": 0.5,
+            "ndcg_at_1": 1,
+            "recall_at_3": 1,
+            "ndcg_at_3": 0.9467676761267002
+          },
+          "learned": {
+            "recall_at_1": 0.5,
+            "ndcg_at_1": 1,
+            "recall_at_3": 1,
+            "ndcg_at_3": 0.9467676761267002
+          }
+        }
+      },
+      "civic": {
+        "queries": 2,
+        "metrics": {
+          "lexical": {
+            "recall_at_1": 0.5,
+            "ndcg_at_1": 0.7142857142857143,
+            "recall_at_3": 0.75,
+            "ndcg_at_3": 0.6932828286033166
+          },
+          "hybrid": {
+            "recall_at_1": 0.5,
+            "ndcg_at_1": 1,
+            "recall_at_3": 1,
+            "ndcg_at_3": 0.9467676761267002
+          },
+          "learned": {
+            "recall_at_1": 0.5,
+            "ndcg_at_1": 1,
+            "recall_at_3": 1,
+            "ndcg_at_3": 0.9467676761267002
+          }
+        }
+      },
+      "commerce": {
+        "queries": 2,
+        "metrics": {
+          "lexical": {
+            "recall_at_1": 0.25,
+            "ndcg_at_1": 0.2857142857142857,
+            "recall_at_3": 0.5,
+            "ndcg_at_3": 0.4328282860331658
+          },
+          "hybrid": {
+            "recall_at_1": 0.5,
+            "ndcg_at_1": 1,
+            "recall_at_3": 1,
+            "ndcg_at_3": 1
+          },
+          "learned": {
+            "recall_at_1": 0.5,
+            "ndcg_at_1": 1,
+            "recall_at_3": 1,
+            "ndcg_at_3": 1
+          }
+        }
+      },
+      "documents": {
+        "queries": 2,
+        "metrics": {
+          "lexical": {
+            "recall_at_1": 0,
+            "ndcg_at_1": 0.07142857142857142,
+            "recall_at_3": 0.75,
+            "ndcg_at_3": 0.5544949421237185
+          },
+          "hybrid": {
+            "recall_at_1": 0.5,
+            "ndcg_at_1": 1,
+            "recall_at_3": 1,
+            "ndcg_at_3": 0.9258585909863987
+          },
+          "learned": {
+            "recall_at_1": 0.5,
+            "ndcg_at_1": 1,
+            "recall_at_3": 1,
+            "ndcg_at_3": 0.9258585909863987
+          }
+        }
+      },
+      "energy": {
+        "queries": 2,
+        "metrics": {
+          "lexical": {
+            "recall_at_1": 0.25,
+            "ndcg_at_1": 0.2857142857142857,
+            "recall_at_3": 0.5,
+            "ndcg_at_3": 0.4328282860331658
+          },
+          "hybrid": {
+            "recall_at_1": 0.5,
+            "ndcg_at_1": 1,
+            "recall_at_3": 1,
+            "ndcg_at_3": 0.9733838380633502
+          },
+          "learned": {
+            "recall_at_1": 0.5,
+            "ndcg_at_1": 1,
+            "recall_at_3": 1,
+            "ndcg_at_3": 0.9733838380633502
+          }
+        }
+      },
+      "games": {
+        "queries": 2,
+        "metrics": {
+          "lexical": {
+            "recall_at_1": 0.25,
+            "ndcg_at_1": 0.5,
+            "recall_at_3": 1,
+            "ndcg_at_3": 0.8149494846938693
+          },
+          "hybrid": {
+            "recall_at_1": 0.5,
+            "ndcg_at_1": 1,
+            "recall_at_3": 1,
+            "ndcg_at_3": 0.9467676761267002
+          },
+          "learned": {
+            "recall_at_1": 0.5,
+            "ndcg_at_1": 1,
+            "recall_at_3": 1,
+            "ndcg_at_3": 0.9467676761267002
+          }
+        }
+      },
+      "marine": {
+        "queries": 2,
+        "metrics": {
+          "lexical": {
+            "recall_at_1": 0.5,
+            "ndcg_at_1": 1,
+            "recall_at_3": 1,
+            "ndcg_at_3": 1
+          },
+          "hybrid": {
+            "recall_at_1": 0.5,
+            "ndcg_at_1": 1,
+            "recall_at_3": 1,
+            "ndcg_at_3": 0.9733838380633502
+          },
+          "learned": {
+            "recall_at_1": 0.5,
+            "ndcg_at_1": 1,
+            "recall_at_3": 1,
+            "ndcg_at_3": 0.9733838380633502
+          }
+        }
+      },
+      "nonprofit": {
+        "queries": 2,
+        "metrics": {
+          "lexical": {
+            "recall_at_1": 0.25,
+            "ndcg_at_1": 0.5,
+            "recall_at_3": 1,
+            "ndcg_at_3": 0.8149494846938693
+          },
+          "hybrid": {
+            "recall_at_1": 0.5,
+            "ndcg_at_1": 1,
+            "recall_at_3": 1,
+            "ndcg_at_3": 0.9467676761267002
+          },
+          "learned": {
+            "recall_at_1": 0.5,
+            "ndcg_at_1": 1,
+            "recall_at_3": 1,
+            "ndcg_at_3": 0.9467676761267002
+          }
+        }
+      },
+      "transit": {
+        "queries": 2,
+        "metrics": {
+          "lexical": {
+            "recall_at_1": 0,
+            "ndcg_at_1": 0.07142857142857142,
+            "recall_at_3": 0.75,
+            "ndcg_at_3": 0.5544949421237185
+          },
+          "hybrid": {
+            "recall_at_1": 0.5,
+            "ndcg_at_1": 1,
+            "recall_at_3": 1,
+            "ndcg_at_3": 0.9467676761267002
+          },
+          "learned": {
+            "recall_at_1": 0.5,
+            "ndcg_at_1": 1,
+            "recall_at_3": 1,
+            "ndcg_at_3": 0.9467676761267002
+          }
+        }
+      },
+      "warehouse": {
+        "queries": 2,
+        "metrics": {
+          "lexical": {
+            "recall_at_1": 0.5,
+            "ndcg_at_1": 0.7142857142857143,
+            "recall_at_3": 0.75,
+            "ndcg_at_3": 0.6932828286033166
+          },
+          "hybrid": {
+            "recall_at_1": 0.5,
+            "ndcg_at_1": 1,
+            "recall_at_3": 1,
+            "ndcg_at_3": 0.9049495058460971
+          },
+          "learned": {
+            "recall_at_1": 0.5,
+            "ndcg_at_1": 1,
+            "recall_at_3": 1,
+            "ndcg_at_3": 0.9049495058460971
+          }
+        }
+      }
+    },
+    "demographic": "Not measurable. No demographic annotations or representative populations; these job-related slices do not establish demographic fairness."
+  },
+  "comparison": {
+    "heldout_ndcg_at_3_delta": 0,
+    "domain_cluster_bootstrap_95": {
+      "unit": "primary domain (both modes together)",
+      "domains": 10,
+      "samples": 2000,
+      "seed": 2718,
+      "lower": 0,
+      "upper": 0,
+      "note": "Descriptive percentile bootstrap on ten synthetic domains; not independent real-world uncertainty."
+    },
+    "wins": 0,
+    "ties": 10,
+    "losses": 0
+  },
+  "error_analysis": {
+    "count_unit": "queries with at least one such ordering; labels define direct=3, adjacent=2, generic=1, irrelevant/absent stack=0",
+    "by_method": {
+      "lexical": {
+        "below_threshold_above_relevant": 12,
+        "direct_below_adjacent": 4,
+        "adjacent_below_generic": 4,
+        "irrelevant_in_top3": 12
+      },
+      "hybrid": {
+        "below_threshold_above_relevant": 3,
+        "direct_below_adjacent": 0,
+        "adjacent_below_generic": 0,
+        "irrelevant_in_top3": 16
+      },
+      "learned": {
+        "below_threshold_above_relevant": 3,
+        "direct_below_adjacent": 0,
+        "adjacent_below_generic": 0,
+        "irrelevant_in_top3": 16
+      }
+    },
+    "per_query": [
+      {
+        "id": "rank-astronomy-internship",
+        "group": "astronomy",
+        "mode": "internship",
+        "methods": {
+          "lexical": {
+            "recall_at_1": 0.5,
+            "recall_at_3": 1,
+            "ndcg_at_1": 1,
+            "ndcg_at_3": 1,
+            "order": [
+              2,
+              3,
+              4,
+              5,
+              1
+            ],
+            "grades": [
+              3,
+              2,
+              1,
+              0,
+              0
+            ]
+          },
+          "hybrid": {
+            "recall_at_1": 0.5,
+            "recall_at_3": 1,
+            "ndcg_at_1": 1,
+            "ndcg_at_3": 0.9467676761267002,
+            "order": [
+              2,
+              3,
+              5,
+              4,
+              1
+            ],
+            "grades": [
+              3,
+              2,
+              0,
+              1,
+              0
+            ]
+          },
+          "learned": {
+            "recall_at_1": 0.5,
+            "recall_at_3": 1,
+            "ndcg_at_1": 1,
+            "ndcg_at_3": 0.9467676761267002,
+            "order": [
+              2,
+              3,
+              5,
+              4,
+              1
+            ],
+            "grades": [
+              3,
+              2,
+              0,
+              1,
+              0
+            ]
+          }
+        },
+        "candidates": [
+          {
+            "id": 1,
+            "relevance": 0,
+            "features": [
+              0.325,
+              0,
+              0.793331372111038,
+              0
+            ]
+          },
+          {
+            "id": 2,
+            "relevance": 3,
+            "features": [
+              0.725,
+              1,
+              0.8969879282211303,
+              0.8969879282211303
+            ]
+          },
+          {
+            "id": 3,
+            "relevance": 2,
+            "features": [
+              0.725,
+              1,
+              0.8169896349652563,
+              0.8169896349652563
+            ]
+          },
+          {
+            "id": 4,
+            "relevance": 1,
+            "features": [
+              0.725,
+              1,
+              0.7734381700153202,
+              0.7734381700153202
+            ]
+          },
+          {
+            "id": 5,
+            "relevance": 0,
+            "features": [
+              0.725,
+              1,
+              0.786077278465169,
+              0.786077278465169
+            ]
+          }
+        ]
+      },
+      {
+        "id": "rank-astronomy-job",
+        "group": "astronomy",
+        "mode": "job",
+        "methods": {
+          "lexical": {
+            "recall_at_1": 0.5,
+            "recall_at_3": 1,
+            "ndcg_at_1": 1,
+            "ndcg_at_3": 1,
+            "order": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ],
+            "grades": [
+              3,
+              2,
+              1,
+              0,
+              0
+            ]
+          },
+          "hybrid": {
+            "recall_at_1": 0.5,
+            "recall_at_3": 1,
+            "ndcg_at_1": 1,
+            "ndcg_at_3": 0.9467676761267002,
+            "order": [
+              1,
+              2,
+              4,
+              3,
+              5
+            ],
+            "grades": [
+              3,
+              2,
+              0,
+              1,
+              0
+            ]
+          },
+          "learned": {
+            "recall_at_1": 0.5,
+            "recall_at_3": 1,
+            "ndcg_at_1": 1,
+            "ndcg_at_3": 0.9467676761267002,
+            "order": [
+              1,
+              2,
+              4,
+              3,
+              5
+            ],
+            "grades": [
+              3,
+              2,
+              0,
+              1,
+              0
+            ]
+          }
+        },
+        "candidates": [
+          {
+            "id": 1,
+            "relevance": 3,
+            "features": [
+              0.65,
+              1,
+              0.8911786981958199,
+              0.8911786981958199
+            ]
+          },
+          {
+            "id": 2,
+            "relevance": 2,
+            "features": [
+              0.65,
+              1,
+              0.816661863746813,
+              0.816661863746813
+            ]
+          },
+          {
+            "id": 3,
+            "relevance": 1,
+            "features": [
+              0.65,
+              1,
+              0.7472837769849495,
+              0.7472837769849495
+            ]
+          },
+          {
+            "id": 4,
+            "relevance": 0,
+            "features": [
+              0.65,
+              1,
+              0.7718741076238592,
+              0.7718741076238592
+            ]
+          },
+          {
+            "id": 5,
+            "relevance": 0,
+            "features": [
+              0.25,
+              0,
+              0.7889607286594458,
+              0
+            ]
+          }
+        ]
+      },
+      {
+        "id": "rank-civic-internship",
+        "group": "civic",
+        "mode": "internship",
+        "methods": {
+          "lexical": {
+            "recall_at_1": 0.5,
+            "recall_at_3": 1,
+            "ndcg_at_1": 1,
+            "ndcg_at_3": 1,
+            "order": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ],
+            "grades": [
+              3,
+              2,
+              1,
+              0,
+              0
+            ]
+          },
+          "hybrid": {
+            "recall_at_1": 0.5,
+            "recall_at_3": 1,
+            "ndcg_at_1": 1,
+            "ndcg_at_3": 0.9467676761267002,
+            "order": [
+              1,
+              2,
+              4,
+              3,
+              5
+            ],
+            "grades": [
+              3,
+              2,
+              0,
+              1,
+              0
+            ]
+          },
+          "learned": {
+            "recall_at_1": 0.5,
+            "recall_at_3": 1,
+            "ndcg_at_1": 1,
+            "ndcg_at_3": 0.9467676761267002,
+            "order": [
+              1,
+              2,
+              4,
+              3,
+              5
+            ],
+            "grades": [
+              3,
+              2,
+              0,
+              1,
+              0
+            ]
+          }
+        },
+        "candidates": [
+          {
+            "id": 1,
+            "relevance": 3,
+            "features": [
+              0.725,
+              1,
+              0.8663426261794474,
+              0.8663426261794474
+            ]
+          },
+          {
+            "id": 2,
+            "relevance": 2,
+            "features": [
+              0.725,
+              1,
+              0.7905592252200844,
+              0.7905592252200844
+            ]
+          },
+          {
+            "id": 3,
+            "relevance": 1,
+            "features": [
+              0.725,
+              1,
+              0.755178470644085,
+              0.755178470644085
+            ]
+          },
+          {
+            "id": 4,
+            "relevance": 0,
+            "features": [
+              0.725,
+              1,
+              0.7629623606885348,
+              0.7629623606885348
+            ]
+          },
+          {
+            "id": 5,
+            "relevance": 0,
+            "features": [
+              0.325,
+              0,
+              0.7377584402373187,
+              0
+            ]
+          }
+        ]
+      },
+      {
+        "id": "rank-civic-job",
+        "group": "civic",
+        "mode": "job",
+        "methods": {
+          "lexical": {
+            "recall_at_1": 0.5,
+            "recall_at_3": 0.5,
+            "ndcg_at_1": 0.42857142857142855,
+            "ndcg_at_3": 0.38656565720663316,
+            "order": [
+              1,
+              2,
+              3,
+              5,
+              4
+            ],
+            "grades": [
+              2,
+              1,
+              0,
+              3,
+              0
+            ]
+          },
+          "hybrid": {
+            "recall_at_1": 0.5,
+            "recall_at_3": 1,
+            "ndcg_at_1": 1,
+            "ndcg_at_3": 0.9467676761267002,
+            "order": [
+              5,
+              1,
+              3,
+              2,
+              4
+            ],
+            "grades": [
+              3,
+              2,
+              0,
+              1,
+              0
+            ]
+          },
+          "learned": {
+            "recall_at_1": 0.5,
+            "recall_at_3": 1,
+            "ndcg_at_1": 1,
+            "ndcg_at_3": 0.9467676761267002,
+            "order": [
+              5,
+              1,
+              3,
+              2,
+              4
+            ],
+            "grades": [
+              3,
+              2,
+              0,
+              1,
+              0
+            ]
+          }
+        },
+        "candidates": [
+          {
+            "id": 1,
+            "relevance": 2,
+            "features": [
+              0.65,
+              1,
+              0.7756787710928581,
+              0.7756787710928581
+            ]
+          },
+          {
+            "id": 2,
+            "relevance": 1,
+            "features": [
+              0.65,
+              1,
+              0.7210966869182817,
+              0.7210966869182817
+            ]
+          },
+          {
+            "id": 3,
+            "relevance": 0,
+            "features": [
+              0.65,
+              1,
+              0.7268968347533341,
+              0.7268968347533341
+            ]
+          },
+          {
+            "id": 4,
+            "relevance": 0,
+            "features": [
+              0.25,
+              0,
+              0.7379935744414519,
+              0
+            ]
+          },
+          {
+            "id": 5,
+            "relevance": 3,
+            "features": [
+              0.65,
+              1,
+              0.865219420528626,
+              0.865219420528626
+            ]
+          }
+        ]
+      },
+      {
+        "id": "rank-energy-internship",
+        "group": "energy",
+        "mode": "internship",
+        "methods": {
+          "lexical": {
+            "recall_at_1": 0.5,
+            "recall_at_3": 0.5,
+            "ndcg_at_1": 0.42857142857142855,
+            "ndcg_at_3": 0.38656565720663316,
+            "order": [
+              1,
+              2,
+              3,
+              5,
+              4
+            ],
+            "grades": [
+              2,
+              1,
+              0,
+              3,
+              0
+            ]
+          },
+          "hybrid": {
+            "recall_at_1": 0.5,
+            "recall_at_3": 1,
+            "ndcg_at_1": 1,
+            "ndcg_at_3": 1,
+            "order": [
+              5,
+              1,
+              2,
+              3,
+              4
+            ],
+            "grades": [
+              3,
+              2,
+              1,
+              0,
+              0
+            ]
+          },
+          "learned": {
+            "recall_at_1": 0.5,
+            "recall_at_3": 1,
+            "ndcg_at_1": 1,
+            "ndcg_at_3": 1,
+            "order": [
+              5,
+              1,
+              2,
+              3,
+              4
+            ],
+            "grades": [
+              3,
+              2,
+              1,
+              0,
+              0
+            ]
+          }
+        },
+        "candidates": [
+          {
+            "id": 1,
+            "relevance": 2,
+            "features": [
+              0.725,
+              1,
+              0.8071354717259168,
+              0.8071354717259168
+            ]
+          },
+          {
+            "id": 2,
+            "relevance": 1,
+            "features": [
+              0.725,
+              1,
+              0.7627730868187823,
+              0.7627730868187823
+            ]
+          },
+          {
+            "id": 3,
+            "relevance": 0,
+            "features": [
+              0.725,
+              1,
+              0.7350866060530336,
+              0.7350866060530336
+            ]
+          },
+          {
+            "id": 4,
+            "relevance": 0,
+            "features": [
+              0.325,
+              0,
+              0.7682394023369903,
+              0
+            ]
+          },
+          {
+            "id": 5,
+            "relevance": 3,
+            "features": [
+              0.725,
+              1,
+              0.8955572753743876,
+              0.8955572753743876
+            ]
+          }
+        ]
+      },
+      {
+        "id": "rank-energy-job",
+        "group": "energy",
+        "mode": "job",
+        "methods": {
+          "lexical": {
+            "recall_at_1": 0,
+            "recall_at_3": 0.5,
+            "ndcg_at_1": 0.14285714285714285,
+            "ndcg_at_3": 0.47909091485969846,
+            "order": [
+              1,
+              2,
+              4,
+              5,
+              3
+            ],
+            "grades": [
+              1,
+              0,
+              3,
+              2,
+              0
+            ]
+          },
+          "hybrid": {
+            "recall_at_1": 0.5,
+            "recall_at_3": 1,
+            "ndcg_at_1": 1,
+            "ndcg_at_3": 0.9467676761267002,
+            "order": [
+              4,
+              5,
+              2,
+              1,
+              3
+            ],
+            "grades": [
+              3,
+              2,
+              0,
+              1,
+              0
+            ]
+          },
+          "learned": {
+            "recall_at_1": 0.5,
+            "recall_at_3": 1,
+            "ndcg_at_1": 1,
+            "ndcg_at_3": 0.9467676761267002,
+            "order": [
+              4,
+              5,
+              2,
+              1,
+              3
+            ],
+            "grades": [
+              3,
+              2,
+              0,
+              1,
+              0
+            ]
+          }
+        },
+        "candidates": [
+          {
+            "id": 1,
+            "relevance": 1,
+            "features": [
+              0.65,
+              1,
+              0.7390519234280458,
+              0.7390519234280458
+            ]
+          },
+          {
+            "id": 2,
+            "relevance": 0,
+            "features": [
+              0.65,
+              1,
+              0.7447797023913689,
+              0.7447797023913689
+            ]
+          },
+          {
+            "id": 3,
+            "relevance": 0,
+            "features": [
+              0.25,
+              0,
+              0.7653230367693731,
+              0
+            ]
+          },
+          {
+            "id": 4,
+            "relevance": 3,
+            "features": [
+              0.65,
+              1,
+              0.8901125229252794,
+              0.8901125229252794
+            ]
+          },
+          {
+            "id": 5,
+            "relevance": 2,
+            "features": [
+              0.65,
+              1,
+              0.7934182502492082,
+              0.7934182502492082
+            ]
+          }
+        ]
+      },
+      {
+        "id": "rank-documents-internship",
+        "group": "documents",
+        "mode": "internship",
+        "methods": {
+          "lexical": {
+            "recall_at_1": 0,
+            "recall_at_3": 0.5,
+            "ndcg_at_1": 0.14285714285714285,
+            "ndcg_at_3": 0.47909091485969846,
+            "order": [
+              1,
+              2,
+              4,
+              5,
+              3
+            ],
+            "grades": [
+              1,
+              0,
+              3,
+              2,
+              0
+            ]
+          },
+          "hybrid": {
+            "recall_at_1": 0.5,
+            "recall_at_3": 1,
+            "ndcg_at_1": 1,
+            "ndcg_at_3": 0.9467676761267002,
+            "order": [
+              4,
+              5,
+              2,
+              1,
+              3
+            ],
+            "grades": [
+              3,
+              2,
+              0,
+              1,
+              0
+            ]
+          },
+          "learned": {
+            "recall_at_1": 0.5,
+            "recall_at_3": 1,
+            "ndcg_at_1": 1,
+            "ndcg_at_3": 0.9467676761267002,
+            "order": [
+              4,
+              5,
+              2,
+              1,
+              3
+            ],
+            "grades": [
+              3,
+              2,
+              0,
+              1,
+              0
+            ]
+          }
+        },
+        "candidates": [
+          {
+            "id": 1,
+            "relevance": 1,
+            "features": [
+              0.725,
+              1,
+              0.7580876902535251,
+              0.7580876902535251
+            ]
+          },
+          {
+            "id": 2,
+            "relevance": 0,
+            "features": [
+              0.725,
+              1,
+              0.7768386578430894,
+              0.7768386578430894
+            ]
+          },
+          {
+            "id": 3,
+            "relevance": 0,
+            "features": [
+              0.325,
+              0,
+              0.7058234332165879,
+              0
+            ]
+          },
+          {
+            "id": 4,
+            "relevance": 3,
+            "features": [
+              0.725,
+              1,
+              0.8485361935102991,
+              0.8485361935102991
+            ]
+          },
+          {
+            "id": 5,
+            "relevance": 2,
+            "features": [
+              0.725,
+              1,
+              0.7798927546602965,
+              0.7798927546602965
+            ]
+          }
+        ]
+      },
+      {
+        "id": "rank-documents-job",
+        "group": "documents",
+        "mode": "job",
+        "methods": {
+          "lexical": {
+            "recall_at_1": 0,
+            "recall_at_3": 1,
+            "ndcg_at_1": 0,
+            "ndcg_at_3": 0.6298989693877386,
+            "order": [
+              1,
+              3,
+              4,
+              5,
+              2
+            ],
+            "grades": [
+              0,
+              3,
+              2,
+              1,
+              0
+            ]
+          },
+          "hybrid": {
+            "recall_at_1": 0.5,
+            "recall_at_3": 1,
+            "ndcg_at_1": 1,
+            "ndcg_at_3": 0.9049495058460971,
+            "order": [
+              3,
+              1,
+              4,
+              5,
+              2
+            ],
+            "grades": [
+              3,
+              0,
+              2,
+              1,
+              0
+            ]
+          },
+          "learned": {
+            "recall_at_1": 0.5,
+            "recall_at_3": 1,
+            "ndcg_at_1": 1,
+            "ndcg_at_3": 0.9049495058460971,
+            "order": [
+              3,
+              1,
+              4,
+              5,
+              2
+            ],
+            "grades": [
+              3,
+              0,
+              2,
+              1,
+              0
+            ]
+          }
+        },
+        "candidates": [
+          {
+            "id": 1,
+            "relevance": 0,
+            "features": [
+              0.65,
+              1,
+              0.7877012154182044,
+              0.7877012154182044
+            ]
+          },
+          {
+            "id": 2,
+            "relevance": 0,
+            "features": [
+              0.25,
+              0,
+              0.709294870775835,
+              0
+            ]
+          },
+          {
+            "id": 3,
+            "relevance": 3,
+            "features": [
+              0.65,
+              1,
+              0.8559309440161251,
+              0.8559309440161251
+            ]
+          },
+          {
+            "id": 4,
+            "relevance": 2,
+            "features": [
+              0.65,
+              1,
+              0.7562584609070593,
+              0.7562584609070593
+            ]
+          },
+          {
+            "id": 5,
+            "relevance": 1,
+            "features": [
+              0.65,
+              1,
+              0.724665650579073,
+              0.724665650579073
+            ]
+          }
+        ]
+      },
+      {
+        "id": "rank-games-internship",
+        "group": "games",
+        "mode": "internship",
+        "methods": {
+          "lexical": {
+            "recall_at_1": 0,
+            "recall_at_3": 1,
+            "ndcg_at_1": 0,
+            "ndcg_at_3": 0.6298989693877386,
+            "order": [
+              1,
+              3,
+              4,
+              5,
+              2
+            ],
+            "grades": [
+              0,
+              3,
+              2,
+              1,
+              0
+            ]
+          },
+          "hybrid": {
+            "recall_at_1": 0.5,
+            "recall_at_3": 1,
+            "ndcg_at_1": 1,
+            "ndcg_at_3": 0.9467676761267002,
+            "order": [
+              3,
+              4,
+              1,
+              5,
+              2
+            ],
+            "grades": [
+              3,
+              2,
+              0,
+              1,
+              0
+            ]
+          },
+          "learned": {
+            "recall_at_1": 0.5,
+            "recall_at_3": 1,
+            "ndcg_at_1": 1,
+            "ndcg_at_3": 0.9467676761267002,
+            "order": [
+              3,
+              4,
+              1,
+              5,
+              2
+            ],
+            "grades": [
+              3,
+              2,
+              0,
+              1,
+              0
+            ]
+          }
+        },
+        "candidates": [
+          {
+            "id": 1,
+            "relevance": 0,
+            "features": [
+              0.725,
+              1,
+              0.7631195292257614,
+              0.7631195292257614
+            ]
+          },
+          {
+            "id": 2,
+            "relevance": 0,
+            "features": [
+              0.325,
+              0,
+              0.728441773086823,
+              0
+            ]
+          },
+          {
+            "id": 3,
+            "relevance": 3,
+            "features": [
+              0.725,
+              1,
+              0.8546663093216531,
+              0.8546663093216531
+            ]
+          },
+          {
+            "id": 4,
+            "relevance": 2,
+            "features": [
+              0.725,
+              1,
+              0.816215686678903,
+              0.816215686678903
+            ]
+          },
+          {
+            "id": 5,
+            "relevance": 1,
+            "features": [
+              0.725,
+              1,
+              0.7607114833313318,
+              0.7607114833313318
+            ]
+          }
+        ]
+      },
+      {
+        "id": "rank-games-job",
+        "group": "games",
+        "mode": "job",
+        "methods": {
+          "lexical": {
+            "recall_at_1": 0.5,
+            "recall_at_3": 1,
+            "ndcg_at_1": 1,
+            "ndcg_at_3": 1,
+            "order": [
+              2,
+              3,
+              4,
+              5,
+              1
+            ],
+            "grades": [
+              3,
+              2,
+              1,
+              0,
+              0
+            ]
+          },
+          "hybrid": {
+            "recall_at_1": 0.5,
+            "recall_at_3": 1,
+            "ndcg_at_1": 1,
+            "ndcg_at_3": 0.9467676761267002,
+            "order": [
+              2,
+              3,
+              5,
+              4,
+              1
+            ],
+            "grades": [
+              3,
+              2,
+              0,
+              1,
+              0
+            ]
+          },
+          "learned": {
+            "recall_at_1": 0.5,
+            "recall_at_3": 1,
+            "ndcg_at_1": 1,
+            "ndcg_at_3": 0.9467676761267002,
+            "order": [
+              2,
+              3,
+              5,
+              4,
+              1
+            ],
+            "grades": [
+              3,
+              2,
+              0,
+              1,
+              0
+            ]
+          }
+        },
+        "candidates": [
+          {
+            "id": 1,
+            "relevance": 0,
+            "features": [
+              0.25,
+              0,
+              0.7215348330758353,
+              0
+            ]
+          },
+          {
+            "id": 2,
+            "relevance": 3,
+            "features": [
+              0.65,
+              1,
+              0.8571352240994186,
+              0.8571352240994186
+            ]
+          },
+          {
+            "id": 3,
+            "relevance": 2,
+            "features": [
+              0.65,
+              1,
+              0.7939860366752377,
+              0.7939860366752377
+            ]
+          },
+          {
+            "id": 4,
+            "relevance": 1,
+            "features": [
+              0.65,
+              1,
+              0.7254574815162738,
+              0.7254574815162738
+            ]
+          },
+          {
+            "id": 5,
+            "relevance": 0,
+            "features": [
+              0.65,
+              1,
+              0.7446455531757747,
+              0.7446455531757747
+            ]
+          }
+        ]
+      },
+      {
+        "id": "rank-marine-internship",
+        "group": "marine",
+        "mode": "internship",
+        "methods": {
+          "lexical": {
+            "recall_at_1": 0.5,
+            "recall_at_3": 1,
+            "ndcg_at_1": 1,
+            "ndcg_at_3": 1,
+            "order": [
+              2,
+              3,
+              4,
+              5,
+              1
+            ],
+            "grades": [
+              3,
+              2,
+              1,
+              0,
+              0
+            ]
+          },
+          "hybrid": {
+            "recall_at_1": 0.5,
+            "recall_at_3": 1,
+            "ndcg_at_1": 1,
+            "ndcg_at_3": 1,
+            "order": [
+              2,
+              3,
+              4,
+              5,
+              1
+            ],
+            "grades": [
+              3,
+              2,
+              1,
+              0,
+              0
+            ]
+          },
+          "learned": {
+            "recall_at_1": 0.5,
+            "recall_at_3": 1,
+            "ndcg_at_1": 1,
+            "ndcg_at_3": 1,
+            "order": [
+              2,
+              3,
+              4,
+              5,
+              1
+            ],
+            "grades": [
+              3,
+              2,
+              1,
+              0,
+              0
+            ]
+          }
+        },
+        "candidates": [
+          {
+            "id": 1,
+            "relevance": 0,
+            "features": [
+              0.325,
+              0,
+              0.7770841698378395,
+              0
+            ]
+          },
+          {
+            "id": 2,
+            "relevance": 3,
+            "features": [
+              0.725,
+              1,
+              0.8869521964880177,
+              0.8869521964880177
+            ]
+          },
+          {
+            "id": 3,
+            "relevance": 2,
+            "features": [
+              0.725,
+              1,
+              0.8527560543624199,
+              0.8527560543624199
+            ]
+          },
+          {
+            "id": 4,
+            "relevance": 1,
+            "features": [
+              0.725,
+              1,
+              0.761441052464916,
+              0.761441052464916
+            ]
+          },
+          {
+            "id": 5,
+            "relevance": 0,
+            "features": [
+              0.725,
+              1,
+              0.7539352322324437,
+              0.7539352322324437
+            ]
+          }
+        ]
+      },
+      {
+        "id": "rank-marine-job",
+        "group": "marine",
+        "mode": "job",
+        "methods": {
+          "lexical": {
+            "recall_at_1": 0.5,
+            "recall_at_3": 1,
+            "ndcg_at_1": 1,
+            "ndcg_at_3": 1,
+            "order": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ],
+            "grades": [
+              3,
+              2,
+              1,
+              0,
+              0
+            ]
+          },
+          "hybrid": {
+            "recall_at_1": 0.5,
+            "recall_at_3": 1,
+            "ndcg_at_1": 1,
+            "ndcg_at_3": 0.9467676761267002,
+            "order": [
+              1,
+              2,
+              4,
+              3,
+              5
+            ],
+            "grades": [
+              3,
+              2,
+              0,
+              1,
+              0
+            ]
+          },
+          "learned": {
+            "recall_at_1": 0.5,
+            "recall_at_3": 1,
+            "ndcg_at_1": 1,
+            "ndcg_at_3": 0.9467676761267002,
+            "order": [
+              1,
+              2,
+              4,
+              3,
+              5
+            ],
+            "grades": [
+              3,
+              2,
+              0,
+              1,
+              0
+            ]
+          }
+        },
+        "candidates": [
+          {
+            "id": 1,
+            "relevance": 3,
+            "features": [
+              0.65,
+              1,
+              0.8777865339184321,
+              0.8777865339184321
+            ]
+          },
+          {
+            "id": 2,
+            "relevance": 2,
+            "features": [
+              0.65,
+              1,
+              0.8314114451227118,
+              0.8314114451227118
+            ]
+          },
+          {
+            "id": 3,
+            "relevance": 1,
+            "features": [
+              0.65,
+              1,
+              0.7341138474217171,
+              0.7341138474217171
+            ]
+          },
+          {
+            "id": 4,
+            "relevance": 0,
+            "features": [
+              0.65,
+              1,
+              0.7519980591566124,
+              0.7519980591566124
+            ]
+          },
+          {
+            "id": 5,
+            "relevance": 0,
+            "features": [
+              0.25,
+              0,
+              0.7745859221431352,
+              0
+            ]
+          }
+        ]
+      },
+      {
+        "id": "rank-warehouse-internship",
+        "group": "warehouse",
+        "mode": "internship",
+        "methods": {
+          "lexical": {
+            "recall_at_1": 0.5,
+            "recall_at_3": 1,
+            "ndcg_at_1": 1,
+            "ndcg_at_3": 1,
+            "order": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ],
+            "grades": [
+              3,
+              2,
+              1,
+              0,
+              0
+            ]
+          },
+          "hybrid": {
+            "recall_at_1": 0.5,
+            "recall_at_3": 1,
+            "ndcg_at_1": 1,
+            "ndcg_at_3": 0.9049495058460971,
+            "order": [
+              1,
+              4,
+              2,
+              3,
+              5
+            ],
+            "grades": [
+              3,
+              0,
+              2,
+              1,
+              0
+            ]
+          },
+          "learned": {
+            "recall_at_1": 0.5,
+            "recall_at_3": 1,
+            "ndcg_at_1": 1,
+            "ndcg_at_3": 0.9049495058460971,
+            "order": [
+              1,
+              4,
+              2,
+              3,
+              5
+            ],
+            "grades": [
+              3,
+              0,
+              2,
+              1,
+              0
+            ]
+          }
+        },
+        "candidates": [
+          {
+            "id": 1,
+            "relevance": 3,
+            "features": [
+              0.725,
+              1,
+              0.870389056909597,
+              0.870389056909597
+            ]
+          },
+          {
+            "id": 2,
+            "relevance": 2,
+            "features": [
+              0.725,
+              1,
+              0.7958947429805191,
+              0.7958947429805191
+            ]
+          },
+          {
+            "id": 3,
+            "relevance": 1,
+            "features": [
+              0.725,
+              1,
+              0.770169122339086,
+              0.770169122339086
+            ]
+          },
+          {
+            "id": 4,
+            "relevance": 0,
+            "features": [
+              0.725,
+              1,
+              0.8016282824342311,
+              0.8016282824342311
+            ]
+          },
+          {
+            "id": 5,
+            "relevance": 0,
+            "features": [
+              0.325,
+              0,
+              0.7150169631280231,
+              0
+            ]
+          }
+        ]
+      },
+      {
+        "id": "rank-warehouse-job",
+        "group": "warehouse",
+        "mode": "job",
+        "methods": {
+          "lexical": {
+            "recall_at_1": 0.5,
+            "recall_at_3": 0.5,
+            "ndcg_at_1": 0.42857142857142855,
+            "ndcg_at_3": 0.38656565720663316,
+            "order": [
+              1,
+              2,
+              3,
+              5,
+              4
+            ],
+            "grades": [
+              2,
+              1,
+              0,
+              3,
+              0
+            ]
+          },
+          "hybrid": {
+            "recall_at_1": 0.5,
+            "recall_at_3": 1,
+            "ndcg_at_1": 1,
+            "ndcg_at_3": 0.9049495058460971,
+            "order": [
+              5,
+              3,
+              1,
+              2,
+              4
+            ],
+            "grades": [
+              3,
+              0,
+              2,
+              1,
+              0
+            ]
+          },
+          "learned": {
+            "recall_at_1": 0.5,
+            "recall_at_3": 1,
+            "ndcg_at_1": 1,
+            "ndcg_at_3": 0.9049495058460971,
+            "order": [
+              5,
+              3,
+              1,
+              2,
+              4
+            ],
+            "grades": [
+              3,
+              0,
+              2,
+              1,
+              0
+            ]
+          }
+        },
+        "candidates": [
+          {
+            "id": 1,
+            "relevance": 2,
+            "features": [
+              0.65,
+              1,
+              0.775301685269659,
+              0.775301685269659
+            ]
+          },
+          {
+            "id": 2,
+            "relevance": 1,
+            "features": [
+              0.65,
+              1,
+              0.7403821843445252,
+              0.7403821843445252
+            ]
+          },
+          {
+            "id": 3,
+            "relevance": 0,
+            "features": [
+              0.65,
+              1,
+              0.7925124391842241,
+              0.7925124391842241
+            ]
+          },
+          {
+            "id": 4,
+            "relevance": 0,
+            "features": [
+              0.25,
+              0,
+              0.7038877281824093,
+              0
+            ]
+          },
+          {
+            "id": 5,
+            "relevance": 3,
+            "features": [
+              0.65,
+              1,
+              0.8669313735123377,
+              0.8669313735123377
+            ]
+          }
+        ]
+      },
+      {
+        "id": "rank-commerce-internship",
+        "group": "commerce",
+        "mode": "internship",
+        "methods": {
+          "lexical": {
+            "recall_at_1": 0.5,
+            "recall_at_3": 0.5,
+            "ndcg_at_1": 0.42857142857142855,
+            "ndcg_at_3": 0.38656565720663316,
+            "order": [
+              1,
+              2,
+              3,
+              5,
+              4
+            ],
+            "grades": [
+              2,
+              1,
+              0,
+              3,
+              0
+            ]
+          },
+          "hybrid": {
+            "recall_at_1": 0.5,
+            "recall_at_3": 1,
+            "ndcg_at_1": 1,
+            "ndcg_at_3": 1,
+            "order": [
+              5,
+              1,
+              2,
+              3,
+              4
+            ],
+            "grades": [
+              3,
+              2,
+              1,
+              0,
+              0
+            ]
+          },
+          "learned": {
+            "recall_at_1": 0.5,
+            "recall_at_3": 1,
+            "ndcg_at_1": 1,
+            "ndcg_at_3": 1,
+            "order": [
+              5,
+              1,
+              2,
+              3,
+              4
+            ],
+            "grades": [
+              3,
+              2,
+              1,
+              0,
+              0
+            ]
+          }
+        },
+        "candidates": [
+          {
+            "id": 1,
+            "relevance": 2,
+            "features": [
+              0.725,
+              1,
+              0.7864843495295051,
+              0.7864843495295051
+            ]
+          },
+          {
+            "id": 2,
+            "relevance": 1,
+            "features": [
+              0.725,
+              1,
+              0.7487116442165249,
+              0.7487116442165249
+            ]
+          },
+          {
+            "id": 3,
+            "relevance": 0,
+            "features": [
+              0.725,
+              1,
+              0.7275623739170853,
+              0.7275623739170853
+            ]
+          },
+          {
+            "id": 4,
+            "relevance": 0,
+            "features": [
+              0.325,
+              0,
+              0.7172475205403758,
+              0
+            ]
+          },
+          {
+            "id": 5,
+            "relevance": 3,
+            "features": [
+              0.725,
+              1,
+              0.8514571013829566,
+              0.8514571013829566
+            ]
+          }
+        ]
+      },
+      {
+        "id": "rank-commerce-job",
+        "group": "commerce",
+        "mode": "job",
+        "methods": {
+          "lexical": {
+            "recall_at_1": 0,
+            "recall_at_3": 0.5,
+            "ndcg_at_1": 0.14285714285714285,
+            "ndcg_at_3": 0.47909091485969846,
+            "order": [
+              1,
+              2,
+              4,
+              5,
+              3
+            ],
+            "grades": [
+              1,
+              0,
+              3,
+              2,
+              0
+            ]
+          },
+          "hybrid": {
+            "recall_at_1": 0.5,
+            "recall_at_3": 1,
+            "ndcg_at_1": 1,
+            "ndcg_at_3": 1,
+            "order": [
+              4,
+              5,
+              1,
+              2,
+              3
+            ],
+            "grades": [
+              3,
+              2,
+              1,
+              0,
+              0
+            ]
+          },
+          "learned": {
+            "recall_at_1": 0.5,
+            "recall_at_3": 1,
+            "ndcg_at_1": 1,
+            "ndcg_at_3": 1,
+            "order": [
+              4,
+              5,
+              1,
+              2,
+              3
+            ],
+            "grades": [
+              3,
+              2,
+              1,
+              0,
+              0
+            ]
+          }
+        },
+        "candidates": [
+          {
+            "id": 1,
+            "relevance": 1,
+            "features": [
+              0.65,
+              1,
+              0.724031666217606,
+              0.724031666217606
+            ]
+          },
+          {
+            "id": 2,
+            "relevance": 0,
+            "features": [
+              0.65,
+              1,
+              0.6993178453864478,
+              0.6993178453864478
+            ]
+          },
+          {
+            "id": 3,
+            "relevance": 0,
+            "features": [
+              0.25,
+              0,
+              0.7165007582837616,
+              0
+            ]
+          },
+          {
+            "id": 4,
+            "relevance": 3,
+            "features": [
+              0.65,
+              1,
+              0.8430324370961011,
+              0.8430324370961011
+            ]
+          },
+          {
+            "id": 5,
+            "relevance": 2,
+            "features": [
+              0.65,
+              1,
+              0.7776136106170168,
+              0.7776136106170168
+            ]
+          }
+        ]
+      },
+      {
+        "id": "rank-transit-internship",
+        "group": "transit",
+        "mode": "internship",
+        "methods": {
+          "lexical": {
+            "recall_at_1": 0,
+            "recall_at_3": 0.5,
+            "ndcg_at_1": 0.14285714285714285,
+            "ndcg_at_3": 0.47909091485969846,
+            "order": [
+              1,
+              2,
+              4,
+              5,
+              3
+            ],
+            "grades": [
+              1,
+              0,
+              3,
+              2,
+              0
+            ]
+          },
+          "hybrid": {
+            "recall_at_1": 0.5,
+            "recall_at_3": 1,
+            "ndcg_at_1": 1,
+            "ndcg_at_3": 0.9467676761267002,
+            "order": [
+              4,
+              5,
+              2,
+              1,
+              3
+            ],
+            "grades": [
+              3,
+              2,
+              0,
+              1,
+              0
+            ]
+          },
+          "learned": {
+            "recall_at_1": 0.5,
+            "recall_at_3": 1,
+            "ndcg_at_1": 1,
+            "ndcg_at_3": 0.9467676761267002,
+            "order": [
+              4,
+              5,
+              2,
+              1,
+              3
+            ],
+            "grades": [
+              3,
+              2,
+              0,
+              1,
+              0
+            ]
+          }
+        },
+        "candidates": [
+          {
+            "id": 1,
+            "relevance": 1,
+            "features": [
+              0.725,
+              1,
+              0.7550280687863085,
+              0.7550280687863085
+            ]
+          },
+          {
+            "id": 2,
+            "relevance": 0,
+            "features": [
+              0.725,
+              1,
+              0.7924811701726108,
+              0.7924811701726108
+            ]
+          },
+          {
+            "id": 3,
+            "relevance": 0,
+            "features": [
+              0.325,
+              0,
+              0.7691079862444212,
+              0
+            ]
+          },
+          {
+            "id": 4,
+            "relevance": 3,
+            "features": [
+              0.725,
+              1,
+              0.8889950103184712,
+              0.8889950103184712
+            ]
+          },
+          {
+            "id": 5,
+            "relevance": 2,
+            "features": [
+              0.725,
+              1,
+              0.8130941349549614,
+              0.8130941349549614
+            ]
+          }
+        ]
+      },
+      {
+        "id": "rank-transit-job",
+        "group": "transit",
+        "mode": "job",
+        "methods": {
+          "lexical": {
+            "recall_at_1": 0,
+            "recall_at_3": 1,
+            "ndcg_at_1": 0,
+            "ndcg_at_3": 0.6298989693877386,
+            "order": [
+              1,
+              3,
+              4,
+              5,
+              2
+            ],
+            "grades": [
+              0,
+              3,
+              2,
+              1,
+              0
+            ]
+          },
+          "hybrid": {
+            "recall_at_1": 0.5,
+            "recall_at_3": 1,
+            "ndcg_at_1": 1,
+            "ndcg_at_3": 0.9467676761267002,
+            "order": [
+              3,
+              4,
+              1,
+              5,
+              2
+            ],
+            "grades": [
+              3,
+              2,
+              0,
+              1,
+              0
+            ]
+          },
+          "learned": {
+            "recall_at_1": 0.5,
+            "recall_at_3": 1,
+            "ndcg_at_1": 1,
+            "ndcg_at_3": 0.9467676761267002,
+            "order": [
+              3,
+              4,
+              1,
+              5,
+              2
+            ],
+            "grades": [
+              3,
+              2,
+              0,
+              1,
+              0
+            ]
+          }
+        },
+        "candidates": [
+          {
+            "id": 1,
+            "relevance": 0,
+            "features": [
+              0.65,
+              1,
+              0.7874069667831358,
+              0.7874069667831358
+            ]
+          },
+          {
+            "id": 2,
+            "relevance": 0,
+            "features": [
+              0.25,
+              0,
+              0.7612329893463327,
+              0
+            ]
+          },
+          {
+            "id": 3,
+            "relevance": 3,
+            "features": [
+              0.65,
+              1,
+              0.8712638023994288,
+              0.8712638023994288
+            ]
+          },
+          {
+            "id": 4,
+            "relevance": 2,
+            "features": [
+              0.65,
+              1,
+              0.8040474059862318,
+              0.8040474059862318
+            ]
+          },
+          {
+            "id": 5,
+            "relevance": 1,
+            "features": [
+              0.65,
+              1,
+              0.7300663595892757,
+              0.7300663595892757
+            ]
+          }
+        ]
+      },
+      {
+        "id": "rank-nonprofit-internship",
+        "group": "nonprofit",
+        "mode": "internship",
+        "methods": {
+          "lexical": {
+            "recall_at_1": 0,
+            "recall_at_3": 1,
+            "ndcg_at_1": 0,
+            "ndcg_at_3": 0.6298989693877386,
+            "order": [
+              1,
+              3,
+              4,
+              5,
+              2
+            ],
+            "grades": [
+              0,
+              3,
+              2,
+              1,
+              0
+            ]
+          },
+          "hybrid": {
+            "recall_at_1": 0.5,
+            "recall_at_3": 1,
+            "ndcg_at_1": 1,
+            "ndcg_at_3": 0.9467676761267002,
+            "order": [
+              3,
+              4,
+              1,
+              5,
+              2
+            ],
+            "grades": [
+              3,
+              2,
+              0,
+              1,
+              0
+            ]
+          },
+          "learned": {
+            "recall_at_1": 0.5,
+            "recall_at_3": 1,
+            "ndcg_at_1": 1,
+            "ndcg_at_3": 0.9467676761267002,
+            "order": [
+              3,
+              4,
+              1,
+              5,
+              2
+            ],
+            "grades": [
+              3,
+              2,
+              0,
+              1,
+              0
+            ]
+          }
+        },
+        "candidates": [
+          {
+            "id": 1,
+            "relevance": 0,
+            "features": [
+              0.725,
+              1,
+              0.7682636767770163,
+              0.7682636767770163
+            ]
+          },
+          {
+            "id": 2,
+            "relevance": 0,
+            "features": [
+              0.325,
+              0,
+              0.7136883382767214,
+              0
+            ]
+          },
+          {
+            "id": 3,
+            "relevance": 3,
+            "features": [
+              0.725,
+              1,
+              0.8776506091030102,
+              0.8776506091030102
+            ]
+          },
+          {
+            "id": 4,
+            "relevance": 2,
+            "features": [
+              0.725,
+              1,
+              0.7888006503389344,
+              0.7888006503389344
+            ]
+          },
+          {
+            "id": 5,
+            "relevance": 1,
+            "features": [
+              0.725,
+              1,
+              0.7627854465482332,
+              0.7627854465482332
+            ]
+          }
+        ]
+      },
+      {
+        "id": "rank-nonprofit-job",
+        "group": "nonprofit",
+        "mode": "job",
+        "methods": {
+          "lexical": {
+            "recall_at_1": 0.5,
+            "recall_at_3": 1,
+            "ndcg_at_1": 1,
+            "ndcg_at_3": 1,
+            "order": [
+              2,
+              3,
+              4,
+              5,
+              1
+            ],
+            "grades": [
+              3,
+              2,
+              1,
+              0,
+              0
+            ]
+          },
+          "hybrid": {
+            "recall_at_1": 0.5,
+            "recall_at_3": 1,
+            "ndcg_at_1": 1,
+            "ndcg_at_3": 0.9467676761267002,
+            "order": [
+              2,
+              3,
+              5,
+              4,
+              1
+            ],
+            "grades": [
+              3,
+              2,
+              0,
+              1,
+              0
+            ]
+          },
+          "learned": {
+            "recall_at_1": 0.5,
+            "recall_at_3": 1,
+            "ndcg_at_1": 1,
+            "ndcg_at_3": 0.9467676761267002,
+            "order": [
+              2,
+              3,
+              5,
+              4,
+              1
+            ],
+            "grades": [
+              3,
+              2,
+              0,
+              1,
+              0
+            ]
+          }
+        },
+        "candidates": [
+          {
+            "id": 1,
+            "relevance": 0,
+            "features": [
+              0.25,
+              0,
+              0.7275874934126219,
+              0
+            ]
+          },
+          {
+            "id": 2,
+            "relevance": 3,
+            "features": [
+              0.65,
+              1,
+              0.8935133411092845,
+              0.8935133411092845
+            ]
+          },
+          {
+            "id": 3,
+            "relevance": 2,
+            "features": [
+              0.65,
+              1,
+              0.7516613131681489,
+              0.7516613131681489
+            ]
+          },
+          {
+            "id": 4,
+            "relevance": 1,
+            "features": [
+              0.65,
+              1,
+              0.7187579084645965,
+              0.7187579084645965
+            ]
+          },
+          {
+            "id": 5,
+            "relevance": 0,
+            "features": [
+              0.65,
+              1,
+              0.7423998395366274,
+              0.7423998395366274
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "timing": {
+    "source": "Local Node wall clock; cached scalar features only, excluding vector generation, source fetching, Worker CPU and cold startup",
+    "node": "v22.23.4",
+    "platform": "darwin",
+    "architecture": "arm64",
+    "cpu": "Apple M3",
+    "feature_build_ms": 9.425125000000001,
+    "fit_ms": 11.707250000000002,
+    "rerank": {
+      "lexical": {
+        "samples": 10000,
+        "candidates_per_query": 5,
+        "p50_ms": 0.0002919999999946299,
+        "p95_ms": 0.0004579999999947404,
+        "p99_ms": 0.0005000000000023874
+      },
+      "hybrid": {
+        "samples": 10000,
+        "candidates_per_query": 5,
+        "p50_ms": 0.0002500000000011937,
+        "p95_ms": 0.0002920000000017353,
+        "p99_ms": 0.00037499999999823785
+      },
+      "learned": {
+        "samples": 10000,
+        "candidates_per_query": 5,
+        "p50_ms": 0.0007500000000035811,
+        "p95_ms": 0.0009159999999965862,
+        "p99_ms": 0.0009999999999976694
+      }
+    }
+  },
+  "cost": {
+    "new_model_inference_requests": 0,
+    "new_embedding_requests": 0,
+    "search_requests": 0,
+    "hosted_cost_usd": 0,
+    "cloudflare_requests": 0,
+    "local_compute_cost_usd": null,
+    "upstream_vectors": "Previously generated local CPU BGE outputs; reused with pinned model/revision/input hashes. Fresh inference cost is not remeasured."
+  },
+  "decision": {
+    "state": "not_adopted",
+    "numerical_gates": {
+      "heldout_ndcg_gain": false,
+      "heldout_recall_at_1": true,
+      "heldout_recall_at_3": true,
+      "mode_ndcg_regression": true,
+      "domain_ndcg_regression": true,
+      "cached_rerank_latency": true,
+      "bounded_fit": true
+    },
+    "numerical_gates_passed": false,
+    "independent_real_validation_passed": false,
+    "production_changes": 0,
+    "reason": "Predeclared numerical adoption gates fail; independent real relevance validation is also absent. Keep the production hybrid unchanged."
+  },
+  "limitations": [
+    "Only 48 repository-authored synthetic queries, with 28 development/20 reused-heldout and five candidates each. Effective heldout units are ten primary domains.",
+    "The published heldout is excluded from fitting/tuning, but is not a newly blind benchmark. This is not hiring-outcome evidence.",
+    "First-sentence/exact-input embargo removes literal job reuse; template structure, general skills and some domain concepts still cross the dataset. No claim of semantic independence.",
+    "The embargo removes every generic grade-1 training row. The resulting incomplete grade coverage weakens generalization; heldout candidates and labels remain unchanged.",
+    "Pairwise labels and domains are synthetic and narrow; no applicant demographic fairness or Indian employment-market validity is established.",
+    "No reranking feature vector includes raw candidate identity or a learned embedding-dimension coefficient. Job-related text embeddings can nevertheless retain indirect demographic proxies in real data.",
+    "Local cached latency is not Cloudflare CPU, live inference, source throughput or concurrent production capacity."
+  ]
+}

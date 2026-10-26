@@ -30,6 +30,9 @@ jobs:
       SERPAPI_API_KEY: ''
       SENDGRID_API_KEY: ''
       RESEND_API_KEY: ''
+      GMAIL_USER: ''
+      GMAIL_APP_PASSWORD: ''
+      GMAIL_ALLOWED_RECIPIENTS: ''
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

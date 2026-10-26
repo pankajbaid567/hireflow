@@ -174,6 +174,24 @@ try {
   await page.reload({ waitUntil: 'networkidle' });
   await page.getByRole('link', { name: 'Open weekly report', exact: true }).waitFor();
   assert.equal((await (await context.request.get(`${dashboard}/api/session`)).json()).authenticated, true);
+  await navigation.getByRole('link',{name:'Hiring shortlist',exact:true}).click();
+  await page.getByLabel('Role title',{exact:true}).fill('Synthetic AI internship');
+  await page.getByLabel('Job description',{exact:true}).fill('AI engineering internship: Python, LangChain and RAG. Build a supervised retrieval project with tests.');
+  await page.getByLabel('Shortlist size',{exact:true}).fill('2');
+  await page.getByRole('button',{name:'Load synthetic sample',exact:true}).click();
+  const creation=page.waitForResponse(response=>response.url().endsWith('/api/hiring/shortlist')&&response.request().method()==='POST');
+  await page.getByRole('button',{name:'Create shortlist',exact:true}).click();
+  const hiring=await(await creation).json();assert.equal(hiring.state,'completed');assert.equal(hiring.shortlisted_count,2);assert.equal(hiring.applicant_count,3);
+  // Exercise the actual queue dispatcher as well as the synchronous local UI
+  // fixture: seed the already-validated snapshot, then run its private task.
+  const queued=await db.prepare("INSERT INTO shortlists(user_id,jd_text,candidates,applicant_count,state,input_snapshot) SELECT user_id,jd_text,'[]',applicant_count,'queued',input_snapshot FROM shortlists WHERE id=? RETURNING id").bind(hiring.id).first();
+  const executed=await mf.dispatchFetch(`${backend}/__test/queue`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:'hiring_score',shortlist_id:queued.id})});assert.equal(executed.status,200);assert.equal((await executed.json()).acknowledged,true);assert.equal((await db.prepare('SELECT state FROM shortlists WHERE id=?').bind(queued.id).first()).state,'completed');
+  await page.reload({waitUntil:'networkidle'});await page.getByRole('button',{name:new RegExp('^Report '+queued.id+' ·')}).click();
+  await page.getByRole('heading',{name:'Your hiring report',exact:true}).waitFor();
+  const hiringLink=page.getByRole('link',{name:'Open private HTML report',exact:true});await hiringLink.waitFor();
+  const hiringUrl=new URL(await hiringLink.getAttribute('href'),dashboard).href,hiringDownload=await context.request.get(hiringUrl);assert.equal(hiringDownload.status(),200);const hiringHtml=await hiringDownload.text();assert.ok(hiringHtml.includes('applicants[0].skills[0]'));assert.ok(hiringHtml.includes('Human')||hiringHtml.includes('human'));assert.ok(hiringDownload.headers()['cache-control'].includes('no-store'));
+  assert.equal(await page.getByRole('button',{name:'Send reviewed hiring report',exact:true}).isDisabled(),true);assert.equal((await db.prepare('SELECT count(*) AS n FROM hiring_email_deliveries').first()).n,0);
+  await page.setViewportSize({width:390,height:844});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);await page.screenshot({path:'/tmp/hireflow-cloudflare-hiring-mobile.png',fullPage:true,animations:'disabled'});await page.setViewportSize({width:1440,height:1000});
   await page.goto(`${dashboard}/profile`, { waitUntil: 'networkidle' });
   await page.getByRole('button', { name: 'Sign out', exact: true }).waitFor();
   await page.setViewportSize({ width: 390, height: 844 });
@@ -186,9 +204,10 @@ try {
   await page.getByText('You have signed out. This browser no longer has access to that profile.', { exact: true }).waitFor();
   assert.equal((await context.request.get(`${dashboard}/api/profile/${ownerId}`)).status(), 401);
   assert.equal((await context.request.get(`${dashboard}/api${application.resume_url}`)).status(), 401);
+  assert.equal((await context.request.get(hiringUrl)).status(),401);
   assert.equal((await (await context.request.get(`${dashboard}/api/session`)).json()).authenticated, false);
   assert.deepEqual(errors, []);
-  const proof = { status: 'passed', checkedAt: new Date().toISOString(), checks: ['private profile/session', 'structured experience/project editor', 'summary/links/compensation/preferences persisted', 'manual job import', 'ranked plan and actual PDF preview', 'immutable per-opportunity resume edit and PDF v2', 'version comparison and exact PDF/answer approval', 'queued cancellation and stale delivery rejection', 'confirmation queue', 'needs_action tracker', 'prep guide', 'private HTML report', 'session reload', 'expanded profile mobile navigation and overflow', 'logout revokes private downloads'], pageErrors: errors, reportHtml: '/tmp/hireflow-cloudflare-report.html', screenshots: ['/tmp/hireflow-cloudflare-desktop.png', '/tmp/hireflow-cloudflare-mobile.png'] };
+  const proof = { status: 'passed', checkedAt: new Date().toISOString(), checks: ['private profile/session', 'structured experience/project editor', 'summary/links/compensation/preferences persisted', 'manual job import', 'ranked plan and actual PDF preview', 'immutable per-opportunity resume edit and PDF v2', 'version comparison and exact PDF/answer approval', 'queued cancellation and stale delivery rejection', 'confirmation queue', 'needs_action tracker', 'prep guide', 'private HTML report', 'session reload', 'hiring JSON intake and source evidence', 'actual hiring Queue dispatcher and private HTML', 'hiring mobile and missing Gmail setup', 'expanded profile mobile navigation and overflow', 'logout revokes private downloads'], pageErrors: errors, reportHtml: '/tmp/hireflow-cloudflare-report.html', screenshots: ['/tmp/hireflow-cloudflare-desktop.png', '/tmp/hireflow-cloudflare-mobile.png'] };
   writeFileSync('/tmp/hireflow-cloudflare-e2e-proof.json', JSON.stringify(proof, null, 2));
   console.log(JSON.stringify(proof, null, 2));
 } finally {
