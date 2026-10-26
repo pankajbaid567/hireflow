@@ -3,6 +3,7 @@ import {readPublicSource,reserveDiscoveryUsage,SourceDeferred} from './source_re
 import { buildEvidencePrepGuide } from './prep_intelligence';
 import { compensationFit, enrichListing, experienceFit, parseCompensation, parseExperience } from './listing_details';
 import { classifyProviderError, recordProviderOutcome, type ProviderName } from './provider_health';
+import { structuredJobLocation } from './structured_location';
 
 type Data = Record<string, any>;
 type JobInput = { title: string; description?: string; listing_type?: string; location?: string; company?: string; required_skills?: string[] | string; required_experience?: Data | string | null; compensation?: Data | string | null; spam_confidence?: number | null };
@@ -592,8 +593,9 @@ async function listingDetails(result: SearchResult, url: string, budget: Budget,
       evidence={kind:'json_ld',url:verifiedUrl};structuredPay=posting.baseSalary || null;declaredSkills=(Array.isArray(posting.skills)?posting.skills:typeof posting.skills==='string'?posting.skills.split(/[,;|\n]/):[]).filter((value:unknown):value is string=>typeof value==='string'&&value.length>0&&value.length<=80).slice(0,50);
       if(declaredSkills.length)description+='\nSkills stated in metadata: '+declaredSkills.join(', ');
       employment = Array.isArray(posting.employmentType) ? posting.employmentType.join(' ') : text(posting.employmentType);
-      const place = Array.isArray(posting.jobLocation) ? posting.jobLocation[0] : posting.jobLocation;
-      location = text(place?.address?.addressLocality || posting.jobLocationType, 300) || location; structured = true;
+      const geography = structuredJobLocation(posting);
+      location = geography.location || location;
+      evidence.location = geography.evidence; structured = true;
     } else {
       // Department/career landing pages are not individual opportunities even
       // when their search snippet mentions a role matching the query.

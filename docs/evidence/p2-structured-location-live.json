@@ -1,0 +1,75 @@
+{
+  "version": "structured-location-live-v1",
+  "checked_at": "2026-10-26T15:07:20.566Z",
+  "runtime": "Actual bundled verifyDiscoveryDetail + discoveryFit in isolated workerd/D1 with shared guards enabled; ordinary 180000-byte Internshala source-reader cap unchanged.",
+  "network": [
+    {
+      "url": "https://internshala.com/internship/detail/work-from-home-gtm-engineer-internship-at-wevsocial1791527193",
+      "method": "GET",
+      "status": 200,
+      "declared_content_length": null
+    }
+  ],
+  "provider_searches": 0,
+  "model_requests": 0,
+  "employer_submissions": 0,
+  "emails": 0,
+  "source_url": "https://internshala.com/internship/detail/work-from-home-gtm-engineer-internship-at-wevsocial1791527193",
+  "verified": true,
+  "source": "Internshala",
+  "provenance": {
+    "kind": "json_ld",
+    "url": "https://internshala.com/internship/detail/work-from-home-gtm-engineer-internship-at-wevsocial1791527193",
+    "location": {
+      "remote": true,
+      "workplaces": [
+        {
+          "locality": "Kolkata",
+          "region": "West Bengal",
+          "country": "India"
+        }
+      ],
+      "applicant_locations": [
+        {
+          "type": "Country",
+          "name": "India"
+        }
+      ],
+      "selected_from": "applicant_location_requirements"
+    },
+    "schema_version": "listing-v1",
+    "fields": {
+      "required_skills": "explicit_skill_mentions",
+      "required_experience": "explicit_experience_text",
+      "selection_process": "verbatim_jd_sentences",
+      "compensation": "structured",
+      "posting_date": "source_reported",
+      "expiry_date": "source_reported"
+    }
+  },
+  "location": "Remote — India",
+  "description_characters": 5610,
+  "description_sha256": "e94631e9acb64a9f395f592fc5829c3fd2cf82c2775bbc5f7c63fccc030850aa",
+  "listing_type": "internship",
+  "posted_date": "2026-10-09T00:00:00.000Z",
+  "expires_at": "2026-11-08T23:59:59.000Z",
+  "fit": {
+    "accepted": true,
+    "reason": "matched_explicit_preferences",
+    "geography": "explicit_location",
+    "skills": [
+      "Python",
+      "JavaScript",
+      "SQL",
+      "React",
+      "Node.js"
+    ]
+  },
+  "trace": [
+    {
+      "stage": "fetch",
+      "host": "internshala.com",
+      "status": 200
+    }
+  ]
+}

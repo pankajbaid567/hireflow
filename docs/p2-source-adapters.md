@@ -46,3 +46,22 @@ The [recorded public-source check](evidence/p2-public-sources.json) ran actual b
 - Internshala returned a public redirect; Wellfound, LinkedIn and Naukri public landing checks returned HTTP 200. These are explicitly **landing-only** observations, not evidence that individual JDs or application forms were extracted. Wellfound's landing response reached the bounded read limit.
 
 These are sampled access/field checks, not source-wide availability, geography precision or automatic application certification. The production 100-target cycle has separate measured evidence. No login or access restriction was bypassed.
+
+## Structured India eligibility regression
+
+The 26 October production pilot exposed a false geography rejection: an
+Internshala listing retained Kolkata but lost its explicit `IN` country and
+remote applicant eligibility. The reader now retains postal and eligibility
+evidence, normalizes explicit `IN` to India, and gives remote applicant
+restrictions precedence over the employer address. It does not infer countries
+from cities or turn a generic remote label into worldwide permission.
+
+The [actual detail check](evidence/p2-structured-location-live.json) used one
+public GET through the real bundled reader in isolated workerd/D1, with the
+unchanged 180,000-byte source limit. It extracted a 5,610-character JD, source
+posting/expiry dates, and `Remote — India`; the actual geography/skill policy
+accepted it. This made zero Tavily/model calls and no applications or emails.
+Thirteen regression cases include US-only eligibility despite an India office,
+on-site US work, Puerto Rico, unknown remote geography, multiple explicit
+countries and untrusted country names. This proves that specific reader fix,
+not a 100-result production discovery pool.
