@@ -2,10 +2,10 @@ name: Frontend CI
 
 on:
   pull_request:
-    paths: ['frontend/**', '.github/workflows/frontend-ci.yml']
+    paths: ['frontend/**', 'scripts/deploy_cloudflare_pages.mjs', '.github/workflows/frontend-ci.yml']
   push:
     branches: [main, dev]
-    paths: ['frontend/**', '.github/workflows/frontend-ci.yml']
+    paths: ['frontend/**', 'scripts/deploy_cloudflare_pages.mjs', '.github/workflows/frontend-ci.yml']
 
 jobs:
   test-and-build:

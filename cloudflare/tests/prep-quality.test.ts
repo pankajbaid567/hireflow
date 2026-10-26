@@ -63,6 +63,23 @@ describe('P2 evidence-aware preparation',()=>{
   const good=localPrepQuestions({},appointment,adapters());expect(validatePrepQuestions(good,{},appointment,adapters())).not.toBeNull();
   expect(validatePrepQuestions(good.map((q,index)=>index? q:{...q,question:'You have 10 years of Python experience coordinating clinic appointments; explain your work.'}),{},appointment,adapters())).toBeNull();
  });
+ it.each([
+  'During a previous side project you had to convince a group of early users to accept a Python booking flow for clinic appointments and patient booking slots. How did you handle their feedback?',
+  'You were once part of a small team that had to launch a marketing automation script for clinic appointments and patient booking slots. How did you coordinate the Python work?',
+ ])('rejects unestablished candidate history despite concrete JD vocabulary: %s',question=>{
+  const good=localPrepQuestions({},appointment,adapters()),index=good.findIndex(item=>item.category==='behavioral');
+  expect(validatePrepQuestions(good,{},appointment,adapters())).not.toBeNull();
+  expect(validatePrepQuestions(good.map((item,position)=>position===index?{...item,question}:item),{},appointment,adapters())).toBeNull();
+ });
+ it.each([
+  'Suppose during a previous side project you had to coordinate clinic appointments and patient booking slots using Python. How would you investigate conflicting feedback?',
+  'Imagine you were once part of a team coordinating clinic appointments and patient booking slots with Python. How would you test a booking conflict?',
+  'If during a past project you were asked to coordinate clinic appointments and patient booking slots using Python, what feedback would you request?',
+  'Describe a project you actually worked on that used Python to coordinate clinic appointments and patient booking slots. What feedback changed your decision?',
+ ])('accepts hypothetical scenarios and requests for actual work without assuming candidate history: %s',question=>{
+  const good=localPrepQuestions({},appointment,adapters()),index=good.findIndex(item=>item.category==='behavioral');
+  expect(validatePrepQuestions(good.map((item,position)=>position===index?{...item,question}:item),{},appointment,adapters())).not.toBeNull();
+ });
  it('reads actual company/career pages, preserves claim citations, rejects unrelated/contradictory facts and dates',async()=>{
   const recent=new Date(Date.now()-7*86400000).toISOString(),old=new Date(Date.now()-120*86400000).toISOString(),future=new Date(Date.now()+86400000).toISOString();
   const pages:Record<string,{text:string;body:string}>={

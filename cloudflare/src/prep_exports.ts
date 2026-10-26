@@ -28,7 +28,7 @@ async function snapshot(env:Env,userId:number,appId:number){
   FROM applications a JOIN users u ON u.id=a.user_id JOIN jobs j ON j.id=a.job_id LEFT JOIN prep_guides g ON g.application_id=a.id WHERE a.id=? AND a.user_id=?`,appId,userId);
  if(!row)throw new ApiError(404,'Application not found');if(!row.guide_id)throw new ApiError(409,'The saved prep guide is not ready yet. Refresh it before exporting.');
  const listing=historicalListing(row);
- const input={renderer_version:1,application_id:appId,company:listing.company,role:listing.title,listing_url:listing.url,guide_id:row.guide_id,guide_revision:row.revision,guide_created_at:row.guide_created_at,
+ const input={renderer_version:2,application_id:appId,company:listing.company,role:listing.title,listing_url:listing.url,guide_id:row.guide_id,guide_revision:row.revision,guide_created_at:row.guide_created_at,
   profile_version:row.profile_version,job_version:listing.facts_version,source_profile_version:row.source_profile_version,source_job_version:row.source_job_version,guide:row.structured_data,company_intel:row.company_intel};
  if(JSON.stringify(input).length>150000)throw new ApiError(413,'The saved guide is too large to export. Shorten its content before exporting.');
  return{input,hash:await digest(JSON.stringify(input))};

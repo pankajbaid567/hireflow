@@ -121,9 +121,11 @@ async function route(request: Request, env: Env): Promise<Response> {
     const id=number(match[1]); const app=await first(env,`${applicationQuery} WHERE a.id=?`,id);
     if(!app) { await requireUser(request,env); throw new ApiError(404,'Application not found'); }
     await requireUser(request,env,app.user_id);
+    // Read refresh state first: completion must never be paired with the previous guide.
+    const refresh=await prepRefreshStatus(env,id);
     const guide=await first(env,'SELECT g.*,(SELECT profile_version FROM users WHERE id=?) AS current_profile_version FROM prep_guides g WHERE application_id=?',app.user_id,id);
     if(!guide) throw new ApiError(404,'Prep guide is not ready yet. Refresh shortly.');
-    return json({...parsed(guide.structured_data,{}),guide_revision:guide.revision,guide_source_profile_version:guide.source_profile_version,guide_source_job_version:guide.source_job_version,guide_stale:guide.source_profile_version!==guide.current_profile_version||guide.source_job_version!==historicalListing(app).facts_version,refresh:await prepRefreshStatus(env,id),company:historicalListing(app).company,role:historicalListing(app).title,company_intel:parsed(guide.company_intel,{})});
+    return json({...parsed(guide.structured_data,{}),guide_revision:guide.revision,guide_source_profile_version:guide.source_profile_version,guide_source_job_version:guide.source_job_version,guide_stale:guide.source_profile_version!==guide.current_profile_version||guide.source_job_version!==historicalListing(app).facts_version,refresh,company:historicalListing(app).company,role:historicalListing(app).title,company_intel:parsed(guide.company_intel,{})});
   }
   if((match=path.match(/^\/applications\/(\d+)$/)) && method==='GET') {
     const id=number(match[1]); await requireUser(request,env,id);

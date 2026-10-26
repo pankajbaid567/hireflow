@@ -2,10 +2,10 @@ name: Cloudflare CI
 
 on:
   pull_request:
-    paths: ['cloudflare/**', 'frontend/**', 'evals/**', 'scripts/run_ai_evaluation.mjs', 'scripts/evaluate_prep_quality.mjs', 'scripts/verify_cloudflare_dashboard.mjs', '.github/workflows/cloudflare-ci.yml']
+    paths: ['cloudflare/**', 'frontend/**', 'evals/**', 'scripts/run_ai_evaluation.mjs', 'scripts/evaluate_prep_quality.mjs', 'scripts/verify_cloudflare_dashboard.mjs', 'scripts/deploy_cloudflare_pages.mjs', '.github/workflows/cloudflare-ci.yml']
   push:
     branches: [main, dev]
-    paths: ['cloudflare/**', 'frontend/**', 'evals/**', 'scripts/run_ai_evaluation.mjs', 'scripts/evaluate_prep_quality.mjs', 'scripts/verify_cloudflare_dashboard.mjs', '.github/workflows/cloudflare-ci.yml']
+    paths: ['cloudflare/**', 'frontend/**', 'evals/**', 'scripts/run_ai_evaluation.mjs', 'scripts/evaluate_prep_quality.mjs', 'scripts/verify_cloudflare_dashboard.mjs', 'scripts/deploy_cloudflare_pages.mjs', '.github/workflows/cloudflare-ci.yml']
 
 jobs:
   test-worker:
@@ -46,5 +46,7 @@ jobs:
         run: node ../scripts/verify_cloudflare_dashboard.mjs
       - name: Build Cloudflare dashboard with its public deployment configuration
         run: npm run build:cloudflare --prefix ../frontend
+      - name: Verify Pages Functions publish layout without deployment
+        run: node ../scripts/deploy_cloudflare_pages.mjs --check-build
       - name: Verify deployment package without publishing
         run: npx wrangler deploy --dry-run

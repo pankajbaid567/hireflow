@@ -3,9 +3,11 @@ import {afterEach,beforeAll,beforeEach,describe,expect,it} from 'vitest';
 import {buildSync} from 'esbuild';
 import {fileURLToPath} from 'node:url';
 import {execFileSync} from 'node:child_process';
+import {createHash} from 'node:crypto';
 import {existsSync,mkdirSync,writeFileSync} from 'node:fs';
 import {Miniflare,convertV4MiniflareOptions} from 'miniflare';
 import {applyTestMigrations} from './migrations';
+import {prepDocument} from '../src/prep_document';
 const root=fileURLToPath(new URL('../',import.meta.url)),access='prep-exports-private-fixture-code',path='/applications/1/prep-guide/exports';
 const proofDir='/tmp/hireflow-prep-export-qa';
 const pdfPython=process.env.HIREFLOW_PDF_PYTHON || (existsSync(`${root}../venv/bin/python`)?`${root}../venv/bin/python`:'python3');
@@ -65,6 +67,20 @@ describe('private versioned standalone prep exports',()=>{
   const original=await complete(),before=await pdf(original);const next=guide();next.questions.push({category:'technical',question:'Explain NEW_REVISION_TOKEN in your Python project.'});await db.prepare('UPDATE prep_guides SET structured_data=? WHERE application_id=1').bind(JSON.stringify(next)).run();
   expect((await json(`${path}/${original.id}`)).stale).toBe(true);expect(await pdf(original)).toEqual(before);
   const updated=await complete();expect(updated.version).toBe(2);expect(updated.source.guide_revision).toBe(2);expect(readPdf(await pdf(updated)).text).toContain('NEW_REVISION_TOKEN');expect((await json(path)).versions).toHaveLength(2);
+ });
+ it('uses the refreshed guide generation time in document metadata, HTML and PDF without rewriting older exports',async()=>{
+  const created='2026-10-26T17:51:00.000Z',generated='2026-10-26T18:04:00.000Z';
+  await db.prepare('UPDATE prep_guides SET created_at=?,structured_data=? WHERE application_id=1').bind(created,JSON.stringify({...guide(),generated_at:created})).run();const original=await complete(),before=await pdf(original);
+  await db.prepare('UPDATE prep_guides SET structured_data=? WHERE application_id=1').bind(JSON.stringify({...guide(),generated_at:generated})).run();expect((await db.prepare('SELECT created_at FROM prep_guides WHERE application_id=1').first<any>())!.created_at).toBe(created);
+  const ticket=await start(),row=(await db.prepare('SELECT input_snapshot FROM prep_guide_exports WHERE id=?').bind(ticket.id).first<any>())!,snapshot=JSON.parse(row.input_snapshot),document=prepDocument(snapshot,ticket.version,'2026-10-26T18:05:00.000Z');expect(document.generated_at).toBe(generated);expect(document.sections[0].paragraphs[0].text).toContain('Generated '+generated);
+  await deliver(ticket.id);const ready=await json(`${path}/${ticket.id}`),html=await(await request(ready.html_url)).text(),bytes=await pdf(ready),reader=readPdf(bytes);expect(html).toContain('Generated '+generated);expect(html).toContain(`Generated ${generated}.</footer>`);expect(reader.text).toContain('Generated '+generated);expect(html).not.toContain('Generated '+created);expect(reader.text).not.toContain('Generated '+created);expect(await pdf(original)).toEqual(before);writeFileSync(`${proofDir}/refreshed-guide.pdf`,bytes,{mode:0o600});
+ });
+ it.each([{name:'legacy guide',value:undefined},{name:'malformed timestamp',value:'not-a-timestamp'},{name:'impossible ISO calendar date',value:'2026-02-30T18:04:00.000Z'}])('preserves the original creation timestamp for a $name',async({value})=>{
+  const created='2026-10-25 09:41:00';await db.prepare('UPDATE prep_guides SET created_at=?,structured_data=? WHERE application_id=1').bind(created,JSON.stringify({...guide(),generated_at:value})).run();const ticket=await start(),row=(await db.prepare('SELECT input_snapshot FROM prep_guide_exports WHERE id=?').bind(ticket.id).first<any>())!,snapshot=JSON.parse(row.input_snapshot);expect(prepDocument(snapshot,ticket.version,'2026-10-26T18:05:00.000Z').generated_at).toBe(created);await deliver(ticket.id);const ready=await json(`${path}/${ticket.id}`),html=await(await request(ready.html_url)).text();expect(html).toContain(`Generated ${created}.</footer>`);expect(readPdf(await pdf(ready)).text).toContain('Generated '+created);
+ });
+ it('creates a corrected renderer version instead of reusing a historical renderer snapshot',async()=>{
+  const ticket=await start(),snapshot=JSON.parse((await db.prepare('SELECT input_snapshot FROM prep_guide_exports WHERE id=?').bind(ticket.id).first<any>())!.input_snapshot);expect(snapshot.renderer_version).toBe(2);await deliver(ticket.id);const original=await json(`${path}/${ticket.id}`),before=await pdf(original);
+  const oldHash=createHash('sha256').update(JSON.stringify({...snapshot,renderer_version:1})).digest('hex');await db.prepare('UPDATE prep_guide_exports SET snapshot_hash=? WHERE id=?').bind(oldHash,original.id).run();const replacement=await start();expect(replacement.id).not.toBe(original.id);expect(replacement.version).toBe(2);await deliver(replacement.id);expect((await json(`${path}/${replacement.id}`)).state).toBe('ready');expect(await pdf(original)).toEqual(before);
  });
  it('keeps generation provenance honest when exporting an old guide for a newer profile',async()=>{
   await db.prepare('UPDATE users SET profile_version=2 WHERE id=1').run();const ready=await complete();expect(ready).toMatchObject({state:'ready',stale:true,source:{profile_version:2,guide_profile_version:1}});expect(readPdf(await pdf(ready)).text).toContain('earlier profile version');

@@ -18,11 +18,19 @@ function show(value:unknown,depth=0):string {if(depth>6)throw new ResumeFormatEr
 const array=(value:unknown):any[]=>Array.isArray(value)?value:[];
 export function safePrepLink(value:unknown):string|undefined {try{return typeof value==='string'?validatePublicUrl(value):undefined;}catch{return undefined;}}
 const evidence=(value:unknown,label='Evidence'):Paragraph[]=>array(Array.isArray(value)?value:value?[value]:[]).map(item=>({text:`${label}: ${show(item)}`,url:safePrepLink(item?.url)}));
+function guideGeneratedAt(value:unknown,fallback:string):string {
+  // Refreshes update guide content without replacing the original D1 row.
+  // Only a valid, explicit ISO timestamp can supersede its legacy creation date.
+  if(typeof value!=='string'||!/^\d{4}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|[+-](?:[01]\d|2[0-3]):[0-5]\d)$/.test(value)||!Number.isFinite(Date.parse(value)))return fallback;
+  const calendar=new Date(value.slice(0,10)+'T00:00:00.000Z');
+  return Number.isFinite(calendar.getTime())&&calendar.toISOString().slice(0,10)===value.slice(0,10)?value:fallback;
+}
 export function prepDocument(snapshot:Row,version:number,exportedAt:string):PrepDocument {
   const guide=parsed<Row>(snapshot.guide,{}),intel=parsed<Row>(snapshot.company_intel,{}),sections:Section[]=[];
+  const generatedAt=guideGeneratedAt(guide.generated_at,snapshot.guide_created_at);
   const section=(title:string,paragraphs:Paragraph[])=>sections.push({title,paragraphs:paragraphs.length?paragraphs:[{text:'No evidence recorded for this section.'}]});
   section('About this guide',[
-    {text:`Generated ${snapshot.guide_created_at}. Exported ${exportedAt}. Export version ${version}.`},
+    {text:`Generated ${generatedAt}. Exported ${exportedAt}. Export version ${version}.`},
     {text:`Guide revision ${snapshot.guide_revision}; captured profile version ${snapshot.profile_version}; listing facts version ${snapshot.job_version}.`},
     {text:`Guide generation profile version: ${snapshot.source_profile_version??'not recorded (legacy guide)'}. Guide generation listing version: ${snapshot.source_job_version??'not recorded (legacy guide)'}.`},
     {text:'Interview rounds are predictions, not a confirmed company process. Resource availability was checked by the guide generator where evidence is available; this export performs no fresh web research.'},
@@ -57,7 +65,7 @@ export function prepDocument(snapshot:Row,version:number,exportedAt:string):Prep
   if(snapshot.source_profile_version==null||snapshot.source_job_version==null)warnings.push({text:'This saved guide predates source-version tracking. Its original generation versions are unknown; the export records the captured workspace versions without inventing missing provenance.'});
   if(snapshot.source_profile_version!=null&&snapshot.source_profile_version!==snapshot.profile_version)warnings.push({text:'The saved guide was generated for an earlier profile version. Review its topics against your current profile; exporting does not regenerate advice.'});
   section('Evidence limits and notes',[...warnings,...(guide.content?[{text:show(guide.content)}]:[]),...(!warnings.length&&!guide.content?[{text:'No additional warnings were recorded for this saved guide.'}]:[])]);
-  const document={title:`${clean(snapshot.company)} - interview preparation`,subtitle:clean(snapshot.role),version,generated_at:snapshot.guide_created_at,exported_at:exportedAt,sections};
+  const document={title:`${clean(snapshot.company)} - interview preparation`,subtitle:clean(snapshot.role),version,generated_at:generatedAt,exported_at:exportedAt,sections};
   if(JSON.stringify(document).length>120000||sections.reduce((sum,s)=>sum+s.paragraphs.length,0)>200)throw new ResumeFormatError('The guide is too large to export safely. Shorten the saved guide; no content was discarded.');
   assertComplexScriptBudget(document);return document;
 }
