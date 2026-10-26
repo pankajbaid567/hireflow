@@ -34,14 +34,80 @@ States are `queued`, `preparing`, `ready`, `sending`, `retry_wait`, `accepted`, 
 
 Resend receives the same `Idempotency-Key` and the same stored payload on bounded transient/network retries. Its documented key retention is 24 hours; HireFlow stops automatic retries after a conservative 23-hour window or three attempts. An interrupted SendGrid request never receives a blind automatic retry because the first write may have succeeded. Uncertain outcomes become `needs_action` with provider-dashboard instructions. Provider errors are classified without saving raw error bodies, keys, email addresses or request payloads in public status metadata.
 
-An HTTP success sets `accepted_at`, provider message ID where available, and the compatibility `weekly_reports.email_sent_at`. This means **accepted by the provider**, not delivered to an inbox. `delivered_at` stays null without a verified delivery event. This implementation does not expose an unsigned webhook or infer delivery from an accepted response; adding authenticated provider webhook verification is a separate follow-up. The dashboard uses this distinction explicitly.
+An HTTP success sets `accepted_at`, provider message ID where available, and the compatibility `weekly_reports.email_sent_at`. This means **accepted by the provider**. If a verified `email.sent`/`processed` event arrives first, its event timestamp fills missing acceptance timestamps for the exact original report version; existing HTTP acceptance timestamps remain unchanged. A delivered or bounced event alone does not fabricate this timestamp. Signed provider events separately populate `delivery_status`, `delivery_status_at`, `receipt_received_at` and, only for a verified delivered event, `delivered_at`. The internal queue `state` remains separate: an accepted request can subsequently be delayed, bounced or complained about. `delivery_evidence` identifies signed webhook evidence versus API acceptance. A provider-delivered event means acceptance by the recipient mail server; it does not establish inbox placement, display or reading by the owner. Actual P2 inbox-receipt acceptance still needs the explicitly authorized human check above.
 
 The source and payload keys are owner-private lifecycle references. Migration `0017` increments workspace revisions for delivery mutations, blocks artifact publication after a retention tombstone, and prevents binding/hash rotation. Backups exclude mail payloads and delivery authority; scoped deletion/reference checks protect in-flight source files and reject account deletion during `sending`. Pending requests expire after 30 days. Accepted outcome records and their immutable references remain until scoped account deletion; no untested automatic mail-record purge runs in production.
 
+## Signed delivery receipts
+
+Apply additive migration `0019_email_receipts.sql` before deploying its receipt
+handler. Previously applied migrations remain unchanged. Provider callbacks use
+the direct API Worker origin and need no HireFlow session cookie:
+
+| Provider | POST route | Worker verification setting |
+| --- | --- | --- |
+| Resend | `/email/webhooks/resend` | Secret `RESEND_WEBHOOK_SECRET` (`whsec_…`) |
+| SendGrid | `/email/webhooks/sendgrid` | `SENDGRID_WEBHOOK_PUBLIC_KEY` (base64 SPKI or PUBLIC KEY PEM, P-256) |
+
+Create the matching webhook in the provider dashboard. For Resend select
+`email.sent`, `email.delivered`, `email.delivery_delayed`, `email.bounced`,
+`email.failed`, `email.suppressed` and `email.complained`; save the signing secret
+privately. For SendGrid select processed, delivered, deferred, bounce, dropped
+and spam-report events, enable **Signed Event Webhook**, save, then copy its
+public verification key. These configurations are independent of the send API
+key. Do not expose either setting through the frontend or commit it to Git.
+Unconfigured receipt verification fails closed with HTTP 503.
+
+Resend HMAC verification uses the exact raw bytes with its signed message ID and
+timestamp. Multiple v1 signatures support secret rotation. SendGrid verification
+uses its signed timestamp plus the exact raw bytes, a P-256 SPKI key and the DER
+ECDSA signature. Requests require a signature timestamp within five minutes,
+JSON without compression, at most **128 KiB**, at most **100 events**, and a
+five-second body-read bound. Re-serializing JSON before verification is not
+permitted. Opens/clicks are ignored and never treated as delivery evidence.
+
+New immutable payloads contain only the random delivery UUID in a Resend tag or
+SendGrid custom argument. Provider receipts must match that captured delivery,
+provider, owner-derived recipient, started send attempt and any already-bound
+message ID. The UUID permits a receipt to arrive before the provider HTTP
+response is saved. Existing untagged Resend sends can match their exact saved
+email ID. SendGrid's API X-Message-ID and webhook sg_message_id differ; the
+reader does not invent a prefix-equivalence rule. Unknown messages receive the
+same generic acknowledgement and cannot alter a workspace.
+
+A transactional private ledger retains event-ID hashes, normalized outcome,
+provider event time, capture time and a content hash, with no raw body, email
+address, diagnostic, IP address or user-agent. Logical retries are deduplicated;
+an identifier reused with conflicting content is rejected. Freshly re-signed
+provider replays remain idempotent. At most 512 receipt records are retained per
+delivery until scoped owner deletion; no automatic receipt-record purge is
+claimed. A new receipt that cannot be captured at that bound returns 503 rather
+than being silently acknowledged. Retry the provider notification, not the email.
+
+Status ordering uses source event time and terminal-outcome rules: sent/delayed
+replays cannot erase delivery or failure; complaints remain visible; a later
+bounce can replace the current delivered status while preserving the original
+`delivered_at` evidence. A verified result stops blind retry after an uncertain
+send. A late API response loses its lease and cannot erase the receipt or update
+a newer report version. Receipt rows cascade with the owned delivery on account
+deletion and are excluded from restorable email/submission authority.
+
+The bounded ledger writes use one D1 transaction batch plus indexed lookups.
+[D1's batch limit policy](https://developers.cloudflare.com/d1/platform/limits/#batch-limits)
+counts a batch as one invocation query, while each statement retains its normal
+size/parameter limits. Functional bounds are not an HTTP CPU-headroom claim.
+
 ## Repeatable checks
 
-`npm test --prefix cloudflare -- --run tests/email-delivery.test.ts tests/reports.test.ts tests/scheduler-discovery.test.ts` exercises actual isolated Worker/D1/R2/Queue operations with synthetic provider endpoints only. Coverage includes duplicate deliveries, exact-byte Resend retry, SendGrid uncertain interruption, expired keys, bounded attempts, setup errors, integrity/missing-file rejection, mixed report exports, ten-attachment/size link fallbacks, owner isolation, owner-email change, deletion races, schedule pause during payload read, queue recovery, revision/tombstone guards and immutable bindings.
+`npm test --prefix cloudflare -- tests/email-delivery.test.ts tests/email-webhooks.test.ts tests/reports.test.ts tests/scheduler-discovery.test.ts` exercises actual isolated Worker/D1/R2/Queue operations with synthetic provider endpoints only. Coverage includes duplicate deliveries, exact-byte Resend retry, SendGrid uncertain interruption, expired keys, bounded attempts, setup errors, integrity/missing-file rejection, mixed report exports, ten-attachment/size link fallbacks, owner isolation, owner-email change, deletion races, schedule pause during payload read, queue recovery, revision/tombstone guards and immutable bindings.
+
+Receipt tests include the published Svix and SendGrid SDK cryptographic vectors,
+exact CRLF preservation, timestamp/signature/raw-body rejection, duplicate and
+concurrent events, recipient/message binding, cross-owner negatives, a receipt
+arriving before the API response, out-of-order delivery/bounce/complaint events,
+the 100-event batch bound, ledger capacity and late receipts after owner deletion.
+They perform no real external email send and cannot establish owner inbox receipt.
 
 `npm test --prefix frontend -- --run src/test/report-email.test.jsx` verifies explicit send controls, setup fallback, polling and accepted-versus-delivered language. Standalone guide PDF structure, extracted text, all-page rendering and clickable link QA are documented in [prep-exports.md](prep-exports.md).
 
-Provider behavior references: [Resend idempotency keys](https://resend.com/docs/dashboard/emails/idempotency-keys), [SendGrid Mail Send](https://www.twilio.com/docs/sendgrid/api-reference/mail-send/mail-send), and [SendGrid response meanings](https://www.twilio.com/docs/sendgrid/api-reference/how-to-use-the-sendgrid-v3-api/responses). Consult current account documentation before enabling a real send.
+Provider behavior references: [Resend idempotency keys](https://resend.com/docs/dashboard/emails/idempotency-keys), [Resend signed requests](https://resend.com/docs/webhooks/verify-webhooks-requests), [Svix manual signature specification](https://docs.svix.com/receiving/verifying-payloads/how-manual), [Resend delivered-event semantics](https://resend.com/docs/webhooks/emails/delivered), [SendGrid signed Event Webhooks](https://www.twilio.com/docs/sendgrid/for-developers/tracking-events/getting-started-event-webhook-security-features), [SendGrid event fields](https://www.twilio.com/docs/sendgrid/for-developers/tracking-events/event), and [SendGrid Mail Send](https://www.twilio.com/docs/sendgrid/api-reference/mail-send/mail-send). Consult current account documentation before enabling a real send.

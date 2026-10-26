@@ -77,6 +77,8 @@
     "BROWSER_ENABLED": "true",
     "EMAIL_PROVIDER": "resend",
     "FROM_EMAIL": "hireflow@example.com",
-    "PLAN_WORK_IN_QUEUE": "true"
+    "PLAN_WORK_IN_QUEUE": "true",
+    "DYNAMIC_SOURCE_ENABLED": "true",
+    "DYNAMIC_SOURCE_HOSTS": "hireflow-dashboard.pages.dev"
   }
 }

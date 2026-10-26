@@ -184,14 +184,14 @@ describe('private coordinated workspace archives', () => {
           assert.deepEqual(history,snapshot.tables.application_status_events.filter(row=>row.application_id===1001).map(({status,reason,created_at})=>({status,reason,created_at})));
           assert.ok(history.length>0);
           for(const artifact of manifest.artifacts){const bytes=await kv.get(mapping.artifact_keys[artifact.source_key],{type:'arrayBuffer'});assert.ok(bytes);assert.equal(createHash('sha256').update(new Uint8Array(bytes)).digest('hex'),artifact.sha256);}
-          const forbidden=['sessions','account_owners','account_passkeys','account_recovery_keys','submission_reviews','outbox','automation_checkpoints','resume_preparations','email_deliveries','weekly_schedules','weekly_schedule_runs','workspace_reminders','discovery_cycles','discovery_candidates','prep_refreshes'];
+          const forbidden=['sessions','account_owners','account_passkeys','account_recovery_keys','submission_reviews','outbox','automation_checkpoints','resume_preparations','email_deliveries','email_receipt_events','weekly_schedules','weekly_schedule_runs','workspace_reminders','discovery_cycles','discovery_candidates','prep_refreshes'];
           for(const table of forbidden)assert.equal((await db.prepare('SELECT count(*) AS n FROM '+table).first()).n,0,table+' must remain empty after restart');
           console.log(JSON.stringify({reopened:true,applications:apps.length,resume_versions:versions.length,preserved_history:history.length,verified_artifacts:manifest.artifacts.length,authority_tables_empty:forbidden.length}));
         }finally{await mf.dispose();}
       `, { mode: 0o600 });
       const reopened = spawnSync(process.execPath, [probe, target, directory], { encoding: 'utf8', timeout: 30000 });
       expect(reopened.status, reopened.stderr).toBe(0);
-      expect(JSON.parse(reopened.stdout)).toMatchObject({ reopened: true, applications: 2, resume_versions: 3, verified_artifacts: backup.manifest.artifacts.length, authority_tables_empty: 15 });
+      expect(JSON.parse(reopened.stdout)).toMatchObject({ reopened: true, applications: 2, resume_versions: 3, verified_artifacts: backup.manifest.artifacts.length, authority_tables_empty: 16 });
       const rejected = spawnSync(process.execPath, [`${root}../scripts/restore_workspace_backup.mjs`, '--run-isolated-restore', '--archive', directory, '--destination', target, '--manifest-sha256', backup.hash], { encoding: 'utf8', timeout: 10000 }); expect(rejected.status).not.toBe(0);
     } finally { rmSync(temp, { recursive: true, force: true }); }
   }, 45000);

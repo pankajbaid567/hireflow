@@ -7,6 +7,7 @@ import { addJobs, confirmPlan, getPlan, swapPlan, refreshMatches } from './plans
 import { scoreMatch } from './intelligence';
 import { emailReport, generateReport, latestReport } from './reports';
 import {emailReadiness,emailDeliveryStatus} from './email_delivery';
+import {receiveEmailWebhook} from './email_webhooks';
 import { processTask } from './tasks';
 import {workspaceBackupRoutes} from './workspace_backup';
 import {schedulerRoutes} from './weekly_scheduler';
@@ -43,6 +44,7 @@ async function route(request: Request, env: Env): Promise<Response> {
   }
   if (method==='GET' && path==='/docs') return json({title:'HireFlow Cloudflare API',authentication:'Create a profile through the dashboard. Private requests require its HttpOnly session cookie. Administrative recovery uses a separate operator credential.',
     endpoints:['POST /profile','GET/PATCH /profile/{id}','POST /session/login','POST /session/logout','GET /session','POST /jobs/{id}','POST /jobs/{id}/discover','GET /weekly-plan/{id}','POST /weekly-plan/{id}/swap','POST /weekly-plan/{id}/confirm','GET /applications/{id}','GET /applications/{application_id}/prep-guide','GET /resumes/{id}','GET /resumes/{id}/{application_id}/download','POST /report/{id}/generate','GET /report/{id}/latest','GET /report/{id}/latest/html','POST /report/{id}/latest/email','POST /hiring/shortlist']});
+  if((match=path.match(/^\/email\/webhooks\/(resend|sendgrid)$/)))return receiveEmailWebhook(request,env,match[1] as 'resend'|'sendgrid');
   const lifecycle=await workspaceBackupRoutes(request,env,async task=>{await env.APPLICATION_QUEUE.send(task);});
   if(lifecycle)return lifecycle;
   const schedule=await schedulerRoutes(request,env);if(schedule)return schedule;

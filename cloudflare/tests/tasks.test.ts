@@ -63,7 +63,7 @@ export default {
 beforeAll(async () => {
   const output = await build({
     stdin: { contents: harness, resolveDir: `${root}tests`, sourcefile: 'tasks-test-runtime.ts', loader: 'js' },
-    bundle: true, format: 'esm', platform: 'browser', target: 'es2022', write: false, logLevel: 'silent', external:['node:*'],
+    bundle: true, format: 'esm', platform: 'browser', target: 'es2022', write: false, logLevel: 'silent', external:['node:*','cloudflare:*'],
     plugins: [{
       name: 'synthetic-external-work',
       setup(builder) {

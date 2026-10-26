@@ -4,7 +4,7 @@ import {all,first,run,userById} from './storage';
 import {addJobs} from './plans';
 import {searchDiscoveryPage,verifyDiscoveryDetail,discoveryCanonicalIdentity,extractSkills} from './intelligence';
 import {canonicalListingUrl,parseExperience} from './listing_details';
-import {SourceDeferred,pruneSourceCache} from './source_reader';
+import {SourceDeferred,pruneSourceCache,discoveryUsageLimit} from './source_reader';
 import {newOperationContext} from './telemetry';
 const definitions:Record<string,{name:string;domains:string[]}>= {
  internshala:{name:'Internshala',domains:['internshala.com']},wellfound:{name:'Wellfound',domains:['wellfound.com']},greenhouse:{name:'Greenhouse',domains:['job-boards.greenhouse.io','boards.greenhouse.io']},lever:{name:'Lever',domains:['jobs.lever.co','jobs.eu.lever.co']},linkedin:{name:'LinkedIn',domains:['linkedin.com']},naukri:{name:'Naukri',domains:['naukri.com']},ashby:{name:'Ashby',domains:['jobs.ashbyhq.com']},
@@ -86,10 +86,18 @@ export async function processDiscoveryCycle(env:Env,id:string){
  const guarded=async()=>Boolean(await first(env,"SELECT id FROM discovery_cycles WHERE id=? AND state='running' AND lease_token=? AND lease_expires_at>? AND expires_at>? AND EXISTS(SELECT 1 FROM users WHERE id=discovery_cycles.user_id AND profile_version=discovery_cycles.profile_version)",id,token,new Date().toISOString(),new Date().toISOString()));
  try{
   if(cycle.verified_count>=cycle.target_count){await run(env,"UPDATE discovery_cycles SET state='completed',finished_at=?,lease_token=NULL WHERE id=? AND lease_token=?",now,id,token);return;}
-  let candidate=await first(env,"SELECT * FROM discovery_candidates WHERE cycle_id=? AND state='pending' AND attempts<3 ORDER BY attempts,created_at,url LIMIT 1",id);
+  let candidate=await first(env,"SELECT * FROM discovery_candidates WHERE cycle_id=? AND state='pending' AND attempts<3 AND (json_extract(evidence_json,'$.deferred_until') IS NULL OR json_extract(evidence_json,'$.deferred_until')<=?) ORDER BY attempts,created_at,url LIMIT 1",id,now);
+  const deferred=!candidate?await first(env,"SELECT MIN(json_extract(evidence_json,'$.deferred_until')) AS until FROM discovery_candidates WHERE cycle_id=? AND state='pending' AND attempts<3 AND json_extract(evidence_json,'$.deferred_until')>?",id,now):null;
   // Search each named source once before a portal can monopolize detail work.
   const firstRound=Math.min(sources.length,queries.length);
-  const needSearch=cycle.query_cursor<queries.length&&cycle.search_calls<cycle.max_searches&&(cycle.query_cursor<firstRound||!candidate);
+  // A partially used shared search allowance must not strand detail candidates
+  // already collected this cycle. This read is advisory: reserveDiscoveryUsage
+  // still atomically admits every actual provider request. Once the pending
+  // details are drained, the normal failed reservation pauses the saved cursor.
+  const preferSearch=cycle.query_cursor<queries.length&&cycle.search_calls<cycle.max_searches&&(cycle.query_cursor<firstRound||!candidate);
+  const searchUsage=candidate&&preferSearch?await first(env,'SELECT searches FROM discovery_daily_usage WHERE day=?',new Date().toISOString().slice(0,10)):null;
+  const searchAvailable=!candidate||!preferSearch||Number(searchUsage?.searches||0)<discoveryUsageLimit(env,'searches');
+  const needSearch=preferSearch&&searchAvailable;
   if(needSearch){
    const query=queries[cycle.query_cursor],source=sources.find(row=>row.id===query.source_id)!;
    // Reserve both the attempt and cursor before the external write. A consumer
@@ -103,6 +111,13 @@ export async function processDiscoveryCycle(env:Env,id:string){
    catch(error){
     if(error instanceof SourceDeferred){
      if(!error.attempted){source.search_calls--;await run(env,"UPDATE discovery_cycles SET search_calls=MAX(0,search_calls-1),query_cursor=MAX(0,query_cursor-1),sources_json=? WHERE id=? AND lease_token=? AND state='running' AND search_calls=? AND query_cursor=?",JSON.stringify(sources),id,token,reserved.search_calls,reserved.query_cursor);}
+     // Another caller can consume the last search after our advisory read.
+     // Drain already saved candidates on the next bounded step before pausing.
+     if(!error.attempted&&candidate&&/^Daily discovery allowance/.test(error.reason)){await scheduleNext(env,cycle,token);return;}
+     // A source's shorter wait can still permit detail work before the shared
+     // search allowance resets. Never sleep the whole cycle until midnight
+     // merely because all currently saved candidates are briefly deferred.
+     if(!error.attempted&&deferred?.until&&/^Daily discovery allowance/.test(error.reason)&&Date.parse(deferred.until)<Date.parse(new Date().toISOString().slice(0,10))+86400000){await scheduleNext(env,cycle,token,Math.max(1,Math.ceil((Date.parse(deferred.until)-Date.now())/1000)));return;}
      throw error;
     }
     source.status='unavailable';await run(env,"UPDATE discovery_cycles SET sources_json=? WHERE id=? AND lease_token=? AND state='running'",JSON.stringify(sources),id,token);await scheduleNext(env,cycle,token,5);return;
@@ -122,15 +137,25 @@ export async function processDiscoveryCycle(env:Env,id:string){
    catch(error){if(error instanceof SourceDeferred){
     // A redirect may already have been fetched before the next domain deferred.
     // Refund only when the trace proves there was no successful earlier read.
-    const zeroRead=!error.attempted&&!trace.some(event=>Number(event.status)>0);
-    await run(env,"UPDATE discovery_candidates SET state=CASE WHEN attempts>=3 AND ? THEN 'error' ELSE 'pending' END,attempts=MAX(0,attempts-?),reason=?,claim_token=NULL WHERE cycle_id=? AND url=? AND claim_token=? AND EXISTS(SELECT 1 FROM discovery_cycles WHERE id=? AND lease_token=? AND state='running')",zeroRead?0:1,zeroRead?1:0,error.reason,id,candidateUrl,token,id,token);
+    const zeroRead=!error.attempted&&!trace.some(event=>Number(event.status)>0&&event.cache!=='hit');
+    const until=new Date(Date.now()+Math.max(1,error.delaySeconds)*1000).toISOString();
+    await run(env,"UPDATE discovery_candidates SET state=CASE WHEN attempts>=3 AND ? THEN 'error' ELSE 'pending' END,attempts=MAX(0,attempts-?),reason=?,evidence_json=?,claim_token=NULL WHERE cycle_id=? AND url=? AND claim_token=? AND EXISTS(SELECT 1 FROM discovery_cycles WHERE id=? AND lease_token=? AND state='running')",zeroRead?0:1,zeroRead?1:0,error.reason,JSON.stringify({deferred_until:until,retry_reason:error.reason.slice(0,200)}),id,candidateUrl,token,id,token);
     if(zeroRead)await run(env,"UPDATE discovery_cycles SET detail_calls=MAX(0,detail_calls-1) WHERE id=? AND lease_token=? AND state='running' AND detail_calls=?",id,token,reserved.detail_calls);
-    throw error;
+    // Each blocked candidate keeps its own retry time. Other hosts and source
+    // queries proceed on subsequent bounded messages instead of waiting for a
+    // long Retry-After from an unrelated portal.
+    await scheduleNext(env,cycle,token);return;
    }throw error;}
    if(!await guarded())return;
    const sourceId=candidate.source_id;const source=sources.find(value=>value.id===sourceId)!;let accepted=false,evidence:Row={};
-   if(job){const fit=discoveryFit(job,profile);accepted=fit.accepted;evidence={...fit,source_kind:job.provenance?.kind,description_chars:job.description.length,canonical_url:job.canonical_url,checked_at:new Date().toISOString(),posted_date:job.posted_date||null,expires_at:job.expires_at||null};rejectedReason=fit.reason;}
+   if(job){const fit=discoveryFit(job,profile);accepted=fit.accepted;evidence={...fit,source_kind:job.provenance?.kind,description_chars:job.description.length,canonical_url:discoveryCanonicalIdentity(job.canonical_url||job.url)||job.canonical_url||job.url,checked_at:new Date().toISOString(),posted_date:job.posted_date||null,expires_at:job.expires_at||null};rejectedReason=fit.reason;}
    else if(trace.some(event=>[403,429,999].includes(event.status))){source.restricted++;source.status='restricted';rejectedReason='source_restricted';}
+   if(job&&accepted){
+    // Different search URLs can redirect to the same canonical full JD. The
+    // target counts distinct verified listings, not successful alias reads.
+    const duplicate=await first(env,"SELECT 1 AS found FROM discovery_candidates WHERE cycle_id=? AND state='verified' AND (job_id=(SELECT id FROM jobs WHERE url=?) OR json_extract(evidence_json,'$.canonical_url')=?) LIMIT 1",id,job.url,evidence.canonical_url);
+    if(duplicate){accepted=false;rejectedReason='duplicate_canonical_listing';evidence={...evidence,accepted:false,reason:rejectedReason};}
+   }
    let imported=0,jobId=null;
    if(job&&accepted){imported=await addJobs(env,cycle.user_id,[job],true,{id,profileVersion:cycle.profile_version,cycle:true,token},true);const saved=await first(env,'SELECT id FROM jobs WHERE url=?',job.url);jobId=saved?.id??null;source.verified++;}
    else source.rejected++;
@@ -143,6 +168,7 @@ export async function processDiscoveryCycle(env:Env,id:string){
   }
   const pending=await first(env,"SELECT COUNT(*) AS n FROM discovery_candidates WHERE cycle_id=? AND state IN ('pending','claimed')",id);
   if(!pending?.n&&cycle.query_cursor<queries.length&&cycle.search_calls<cycle.max_searches){await scheduleNext(env,cycle,token);return;}
+  if(pending?.n&&deferred?.until&&cycle.detail_calls<cycle.max_details){await scheduleNext(env,cycle,token,Math.max(1,Math.ceil((Date.parse(deferred.until)-Date.now())/1000)));return;}
   const reason=cycle.detail_calls>=cycle.max_details?'Configured detail-check budget reached.':cycle.search_calls>=cycle.max_searches?'Configured search budget reached.':'Accessible source candidates exhausted.';
   const precision=await all(env,"SELECT reason,COUNT(*) AS n FROM discovery_candidates WHERE cycle_id=? GROUP BY reason",id);
   await run(env,"UPDATE discovery_cycles SET state='partial',failure_reason=?,finished_at=?,lease_token=NULL,lease_expires_at=NULL,precision_json=? WHERE id=? AND lease_token=?",reason,new Date().toISOString(),JSON.stringify({measured:true,policy:'explicit_mode_skill_experience_geography',candidate_reasons:precision,unknown_fields_retained:true,not_independent_human_precision:true}),id,token);

@@ -54,4 +54,9 @@ describe('structured source location and eligibility',()=>{
     const job=await verifyDiscoveryDetail({} as Env,{url:fixture.url,title:'Python Engineer Intern',company:'Synthetic Employer'});
     expect(job).not.toBeNull();expect(job!.location).toBe(fixture.location);expect(discoveryFit(job!,profile)).toMatchObject({accepted:false,reason:'geography_mismatch'});
   });
+  it.each([{name:'Mumbai, India',accepted:true},{name:'San Francisco, United States',accepted:false}])('retains an explicit Place.name when hydrated microdata has no postal address: $name',async fixture=>{
+    const job=await parse({jobLocation:{'@type':'Place',name:fixture.name}});
+    expect(job.location).toBe(fixture.name);expect(job.provenance.location.workplaces[0].name).toBe(fixture.name);expect(discoveryFit(job,profile).accepted).toBe(fixture.accepted);
+  });
+
 });

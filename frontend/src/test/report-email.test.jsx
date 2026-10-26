@@ -21,4 +21,15 @@ describe('explicit owner report delivery',()=>{
  it('shows safe action failures and retries status reads without resending',async()=>{
   api.getEmailReadiness.mockRejectedValueOnce({response:{data:{detail:'Email setup temporarily unavailable.'}}}).mockResolvedValue({ready:true});render(<ReportEmail userId={7}/>);expect(await screen.findByRole('alert')).toHaveTextContent('Email setup temporarily unavailable.');await userEvent.setup().click(screen.getByRole('button',{name:'Try again'}));expect(await screen.findByRole('button',{name:'Send report to my email'})).toBeEnabled();expect(api.sendReportEmail).not.toHaveBeenCalled();
  });
+ it('refreshes an accepted ticket to show a signed delivery receipt without sending again',async()=>{
+  api.getEmailDelivery.mockResolvedValue({id:'awaiting-receipt',state:'accepted',delivered_at:'2026-10-26T16:01:00Z',delivery_status:'delivered'});
+  render(<ReportEmail userId={7} initialDelivery={{id:'awaiting-receipt',state:'accepted',accepted_at:'2026-10-26T16:00:00Z'}}/>);
+  await userEvent.setup().click(screen.getByRole('button',{name:'Check delivery status'}));
+  expect(await screen.findByText(/^Delivery verified by provider/)).toHaveTextContent('inbox placement is not confirmed');expect(api.getEmailDelivery).toHaveBeenCalledWith(7,'awaiting-receipt');expect(api.sendReportEmail).not.toHaveBeenCalled();
+ });
+ it('keeps a later bounce visible instead of treating an earlier delivery timestamp as current success',async()=>{
+  render(<ReportEmail userId={7} initialDelivery={{id:'bounced',state:'accepted',delivered_at:'2026-10-26T16:01:00Z',delivery_status:'bounced',delivery_status_at:'2026-10-26T16:02:00Z',failure_reason:'Check the recipient address.'}}/>);
+  expect(screen.getByText(/Recipient mail server rejected/)).toBeInTheDocument();expect(screen.queryByText(/^Delivery verified/)).toBeNull();expect(screen.getByRole('button',{name:'Send report to my email'})).toBeDisabled();
+ });
+
 });

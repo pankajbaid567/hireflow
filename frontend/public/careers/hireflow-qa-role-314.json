@@ -1,0 +1,11 @@
+{
+  "title": "Synthetic Python API Engineering Intern",
+  "hiringOrganization": {"@type": "Organization", "name": "HireFlow Synthetic Source QA"},
+  "description": "Synthetic fixture only, not a real vacancy. In this supervised internship example, build Python FastAPI services, validate SQL data and write unit tests for a campus API project. Document an endpoint and explain how you would handle invalid input. This text is public synthetic source evidence for testing JavaScript rendering; nobody should submit an application to this fixture.",
+  "employmentType": "INTERN",
+  "jobLocationType": "TELECOMMUTE",
+  "applicantLocationRequirements": {"@type": "Country", "name": "IN"},
+  "jobLocation": {"@type": "Place", "address": {"@type": "PostalAddress", "addressLocality": "Bengaluru", "addressCountry": "IN"}},
+  "skills": ["Python", "SQL", "FastAPI"],
+  "url": "https://hireflow-dashboard.pages.dev/careers/hireflow-qa-role-314.html"
+}

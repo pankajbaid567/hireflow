@@ -346,7 +346,7 @@ class Budget {
           response=await readPublicSource(this.sourceEnv!,url,init);
         }
       }else response=await boundedFetch(url,{...init,redirect:'manual'},this.remaining(this.deadline===Infinity?15000:7000));
-      this.trace?.({ stage: 'fetch', host, status: response.status });
+      this.trace?.({ stage: 'fetch', host, status: response.status, cache:response.headers.get('X-HireFlow-Source-Cache')||'none' });
       return response;
     } catch (error) {
       this.trace?.({ stage: 'fetch', host, status: 0, category: error instanceof IntelligenceError ? error.category || 'request' : 'request' });
@@ -539,7 +539,7 @@ function sourcedNames(result: SearchResult, url: string): { title: string; compa
   if (!company && /^(jobs\.(?:eu\.)?lever\.co|(?:job-)?boards\.greenhouse\.io|jobs\.ashbyhq\.com)$/.test(parsed.hostname)) company = parsed.pathname.split('/').filter(Boolean)[0] || '';
   return { title: text(title, 300), company: text(company, 300) };
 }
-async function listingDetails(result: SearchResult, url: string, budget: Budget, trace?: (data: DiscoveryTrace) => void): Promise<DiscoveredJob | null> {
+async function listingDetails(result: SearchResult, url: string, budget: Budget, trace?: (data: DiscoveryTrace) => void, env?: Env): Promise<DiscoveredJob | null> {
   const parsed = new URL(url), segments = parsed.pathname.split('/').filter(Boolean), names = sourcedNames(result, url);
   const reject = (reason: string): null => { trace?.({ stage: 'rejected', host: parsed.hostname, reason }); return null; };
   let title = names.title, company = names.company, description = '', location = result.location || '', employment = '', posted = '', validThrough = '';
@@ -581,22 +581,49 @@ async function listingDetails(result: SearchResult, url: string, budget: Budget,
       if (data.createdAt||data.publishedAt||data.first_published) posted = new Date(data.createdAt||data.publishedAt||data.first_published).toISOString();
     } catch { return reject('invalid_ats_response'); }
   } else {
-    const detail = await detailBody(url, budget); if (!detail || !listingUrl(detail.url)) return reject('unavailable_detail');
+    let detail = await detailBody(url, budget); if (!detail || !listingUrl(detail.url)) return reject('unavailable_detail');
     verifiedUrl = listingUrl(detail.url)!;applicationUrl=verifiedUrl;
-    const posting = jobPosting(detail.body);
-    const visible = htmlText(detail.body);
+    let posting = jobPosting(detail.body);
+    let visible = htmlText(detail.body);
+    let renderedMethod:string|null=null;
     if(/\b(?:verify (?:that )?you are human|checking your browser|access to this page has been denied|log ?in to view (?:this|the) job|sign in to view (?:this|the) job|complete (?:the |a )?captcha challenge)\b/i.test(visible.slice(0,12000)))return reject('restricted_source_interstitial');
     if (/\b(?:this (?:vacancy|job|position|role)(?: has)?(?: now)? (?:expired|closed|been filled)|no longer accepting applications|job is no longer available|position has been filled)\b/i.test(visible.slice(0, 16000))) return reject('expired_banner');
+    // Hydrate only explicitly configured public sources after static access and
+    // closure checks. A browser cannot be used to bypass a restricted response.
+    if(env?.DYNAMIC_SOURCE_ENABLED==='true'&&(!posting||htmlText(text(posting.description,60000)).length<100)){
+      const {readDynamicPublicSource,DynamicSourceRejected}=await import('./dynamic_source');
+      try{
+        const rendered=await readDynamicPublicSource(env,verifiedUrl,{timeoutMs:budget.remaining(20000),initialDocument:detail});
+        if(rendered){
+          const final=listingUrl(rendered.headers.get('X-HireFlow-Source-URL')||verifiedUrl);
+          if(!final)return reject('invalid_rendered_listing_url');
+          const body=await rendered.text();posting=jobPosting(body);
+          if(!posting)return reject('missing_rendered_job_fields');
+          detail={url:final,body};verifiedUrl=final;applicationUrl=final;visible=htmlText(body);
+          renderedMethod=rendered.headers.get('X-HireFlow-Dynamic-Method');
+          // Fetch timing and resource counts belong to the attempt trace, not
+          // versioned listing facts that would invalidate an unchanged review.
+          const rendering:DiscoveryTrace={stage:'rendered_source',host:new URL(final).hostname,method:renderedMethod||'unknown',fetched_at:rendered.headers.get('X-HireFlow-Fetched-At')||'',initial_document_reused:rendered.headers.get('X-HireFlow-Rendered-Document-Reused')==='true',browser_close_acknowledged:rendered.headers.get('X-HireFlow-Browser-Close-Acknowledged')==='true'};
+          for(const[header,field]of [['X-HireFlow-Rendered-Native-Reads','native_reads'],['X-HireFlow-Rendered-D1Calls','d1_calls'],['X-HireFlow-Rendered-Bytes','resource_bytes']]){const value=rendered.headers.get(header);if(value&&/^\d{1,8}$/.test(value))rendering[field]=Number(value);}
+          trace?.(rendering);
+        }
+      }catch(error){if(error instanceof SourceDeferred)throw error;if(error instanceof DynamicSourceRejected)return reject('rendered_'+error.code);throw error;}
+    }
     if (posting) {
       title = text(posting.title, 300) || title; company = text(posting.hiringOrganization?.name, 300) || company;
       description = htmlText(text(posting.description, 60000)); posted = text(posting.datePosted) || posted; validThrough = text(posting.validThrough);
-      evidence={kind:'json_ld',url:verifiedUrl};structuredPay=posting.baseSalary || null;declaredSkills=(Array.isArray(posting.skills)?posting.skills:typeof posting.skills==='string'?posting.skills.split(/[,;|\n]/):[]).filter((value:unknown):value is string=>typeof value==='string'&&value.length>0&&value.length<=80).slice(0,50);
+      evidence={kind:renderedMethod?'rendered_json_ld':'json_ld',url:verifiedUrl,...(renderedMethod?{rendered_method:renderedMethod}:{})};structuredPay=posting.baseSalary || null;declaredSkills=(Array.isArray(posting.skills)?posting.skills:typeof posting.skills==='string'?posting.skills.split(/[,;|\n]/):[]).filter((value:unknown):value is string=>typeof value==='string'&&value.length>0&&value.length<=80).slice(0,50);
       if(declaredSkills.length)description+='\nSkills stated in metadata: '+declaredSkills.join(', ');
       employment = Array.isArray(posting.employmentType) ? posting.employmentType.join(' ') : text(posting.employmentType);
       const geography = structuredJobLocation(posting);
       location = geography.location || location;
       evidence.location = geography.evidence; structured = true;
     } else {
+      // A public SPA shell can contain a large navigation/cookie payload. It is
+      // still not a full JD when hydration is unavailable or not permitted.
+      const shell=/\b(?:enable javascript|javascript (?:is )?required|requires javascript|loading (?:the )?(?:job|position|test metadata|opportunit)|please wait)\b/i.test(visible);
+      const jobSections=/\b(?:responsibilities|qualifications|requirements|what you(?: will|'ll) do|about (?:the |this )?(?:role|position)|we are looking for|you will (?:build|develop|work|design)|required skills)\b/i.test(visible);
+      if(shell&&!jobSections)return reject('unsupported_javascript_source');
       // Department/career landing pages are not individual opportunities even
       // when their search snippet mentions a role matching the query.
       if (/\/careers?\//i.test(parsed.pathname) && !/\d|(?:job|req|requisition|opening)[-_]/i.test(parsed.pathname)) return reject('career_directory');
@@ -677,7 +704,7 @@ export async function discoverJobs(env: Env, profile: Data, diagnostics?: Discov
       if (mode === 'internship' && /\b(senior|principal|staff|lead|director|manager)\b/i.test(result.title) && !/\b(intern(?:ship)?|trainee|apprentice)\b/i.test(result.title)) { skipped++; continue; }
       currentSource = pool.summary; const restrictedBefore = pool.summary.restricted;
       try {
-        const job = await listingDetails(result, url, budget, trace);
+        const job = await listingDetails(result, url, budget, trace,env);
         const host = job ? new URL(job.url).hostname.toLowerCase() : '';
         // A redirect to another portal is not a verified listing from this one.
         if (!job || !pool.domains.some(domain => host === domain || host.endsWith(`.${domain}`)) || job.listing_type !== mode || results.some(value => listingIdentity(value.url) === listingIdentity(job.url))) { skipped++; continue; }
@@ -709,6 +736,6 @@ export async function searchDiscoveryPage(env:Env,query:string,domains:string[],
 }
 export async function verifyDiscoveryDetail(env:Env,candidate:{url:string;title:string;company?:string;location?:string},trace?:(data:DiscoveryTrace)=>void){
  const url=listingUrl(candidate.url);if(!url)return null;
- return listingDetails({...candidate,content:''},url,new Budget(Date.now()+20000,trace,env),trace);
+ return listingDetails({...candidate,content:''},url,new Budget(Date.now()+20000,trace,env),trace,env);
 }
 export const discoveryCanonicalIdentity=(raw:string)=>{const url=listingUrl(raw);return url?listingIdentity(url):null;};
