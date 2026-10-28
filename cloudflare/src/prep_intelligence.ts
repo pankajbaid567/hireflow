@@ -27,9 +27,16 @@ const unsafeInstruction=/\b(?:ignore (?:all |the |any )?(?:previous|prior|system
 // turned full descriptions into "sparse" JDs and generated questions about a
 // heading instead of the employer's actual work.
 const sectionLabel=/^(?:(?:about|overview of) (?:the |this )?(?:work from home )?(?:internship|job(?:\/internship)?|role|company|opportunity)|(?:selected )?(?:intern(?:'s|s|s')?|candidate(?:'s|s|s')?)\s+(?:(?:day[- ]to[- ]day|key)\s+)?responsibilities(?:\s+include)?|(?:key |your |primary |main )?(?:responsibilities|duties|requirements|qualifications)|skills? (?:required|needed)|what (?:you(?:'ll| will) do|we (?:offer|are looking for))|who (?:can|should) apply|perks|benefits|stipend|salary|duration|start date|apply by|number of openings)\s*[:.!?]?$/i;
+// These declarations may be important listing facts, but they are not work to
+// perform. Match their wording, not domain words such as "benefits" anywhere.
+const nonDuty=/^(?:synthetic\b.{0,120}\b(?:qa|test|fixture)\s+only\b|(?:this|the)\s+(?:listing|vacancy|job)\s+is\s+(?:for\s+testing\s+only|a\s+synthetic\s+(?:qa|test)\b)|(?:freshers|graduates|students)\s+(?:are\s+)?welcome\b|(?:salary|stipend|pay range|compensation|perks|benefits)\s*(?::|(?:is|are|includes?)\b|(?:INR|USD|EUR|GBP)\b|[₹$€£\d])|(?:apply\s+(?:now|by|here|via|through)|how to apply|send\s+(?:us\s+)?(?:your\s+)?(?:cv|resume|application))\b|(?:we\s+are|[^.!?]{1,100}\s+is)\s+(?:an?\s+)?equal[- ]opportunity\s+employer\b|all\s+qualified\s+applicants\b|we\s+(?:do not|don't)\s+discriminate\b)/i;
+const dutyAction='(?:build(?:ing)?|develop(?:ing)?|design(?:ing)?|implement(?:ing)?|test(?:ing)?|maintain(?:ing)?|writ(?:e|ing)|creat(?:e|ing)|support(?:ing)?|document(?:ing)?|research(?:ing)?|analy[sz](?:e|ing)|coordinat(?:e|ing)|validat(?:e|ing)|improv(?:e|ing)|automat(?:e|ing)|integrat(?:e|ing)|deploy(?:ing)?|debug(?:ging)?|monitor(?:ing)?|detect(?:ing)?|review(?:ing)?|manag(?:e|ing)|collect(?:ing)?|prepar(?:e|ing)|collaborat(?:e|ing)|assist(?:ing)?|evaluat(?:e|ing)|optimi[sz](?:e|ing)|deliver(?:ing)?|resolv(?:e|ing)|investigat(?:e|ing)|train(?:ing)?|index(?:ing)?|track(?:ing)?|schedul(?:e|ing)|recommend(?:ing)?|process(?:ing)?|transcrib(?:e|ing)|classif(?:y|ying)|rout(?:e|ing)|connect(?:ing)?|packag(?:e|ing)|retriev(?:e|ing))';
+const dutyPattern=new RegExp(`(?:^|\\b(?:required to|responsible for|responsibilities include|you will|you would|you'll|to)\\s+)${dutyAction}\\b`,'i');
+const isDuty=(line:string)=>{const normalized=line.replace(/[’‘]/g,"'");return !/\b(?:not|never|no longer)\b[^.!?;]{0,80}\b(?:required to|responsible for|you will|you would|you'll)\b/i.test(normalized)&&dutyPattern.test(normalized);};
 export function prepRequirements(jd:string,title=''):string[]{
- const parts=jd.split(/(?<=[.!?])\s+|[\r\n]+/).map(line=>line.trim().replace(/^(?:[-*•]+\s*|\d+[.)]\s+)/,'').trim()).filter(line=>line&&!sectionLabel.test(line.replace(/[’‘]/g,"'"))&&!unsafeInstruction.test(line)&&!/^.{0,30}(?:interview process|selection process)\s*:/i.test(line)&&!(/\brounds?\b/i.test(line)&&/\b(?:technical|hr|founder|interview)\b/i.test(line)));
- return unique(parts.filter(line=>tokens(line).length).map(line=>line.slice(0,600))).slice(0,8).length?unique(parts.filter(line=>tokens(line).length).map(line=>line.slice(0,600))).slice(0,8):[clean(title,300)].filter(Boolean);
+ const parts=jd.split(/(?<=[.!?])\s+|[\r\n]+/).map(line=>line.trim().replace(/^(?:[-*•]+\s*|\d+[.)]\s+)/,'').trim()).filter(line=>line&&!sectionLabel.test(line.replace(/[’‘]/g,"'"))&&!nonDuty.test(line)&&!unsafeInstruction.test(line)&&!/^.{0,30}(?:interview process|selection process)\s*:/i.test(line)&&!(/\brounds?\b/i.test(line)&&/\b(?:technical|hr|founder|interview)\b/i.test(line)));
+ const duties=parts.filter(isDuty),selected=unique((duties.length?duties:parts).filter(line=>tokens(line).length).map(line=>line.slice(0,600))).slice(0,8);
+ return selected.length?selected:jd.trim()?[]:[clean(title,300)].filter(Boolean);
 }
 function requiredSkills(job:Row,profile:Row,adapters:Pick<PrepAdapters,'skills'|'hasSkill'>){
  let supplied:unknown=job.required_skills;try{if(typeof supplied==='string')supplied=JSON.parse(supplied);}catch{supplied=[];}
@@ -79,9 +86,10 @@ export function localPrepQuestions(profile:Row,job:Row,adapters:Pick<PrepAdapter
  for(const [index,skill] of skills.slice(0,3).entries()){
   const req=requirements[index%requirements.length],purpose=goal(req),domainRisk=riskFor(req);
   let probe=/sql|postgres/i.test(skill)?'Explain the data model and a query; include missing and repeated records.':/react|javascript|typescript|next.js|vue|angular/i.test(skill)?'Explain the input/state boundary, invalid data and one observable UI or API test.':/rag|langchain|langgraph|agent/i.test(skill)?'Explain the retrieval or tool boundary, how you would check an answer, and when the system should abstain.':/docker|kubernetes|aws|gcp|azure/i.test(skill)?'Explain configuration, a reproducible run and one failure you would detect.':`Explain the main input/output contract and test ${domainRisk.test}.`;
-  add('technical',intern?`For ${company}'s task to ${purpose}, show a small ${skill} example. ${probe}`:`For ${company}'s task to ${purpose}, describe a production ${skill} implementation. ${probe} What would you measure before changing it?`,req,`${skill}: implementation and validation`);
+  const context=isDuty(req)?`For ${company}'s task to ${purpose},`:`The JD for ${company} states "${purpose}";`;
+  add('technical',intern?`${context} show a small ${skill} example. ${probe}`:`${context} describe a production ${skill} implementation. ${probe} What would you measure before changing it?`,req,`${skill}: implementation and validation`);
  }
- const rich=tokens(task).filter(token=>!new Set(skills.flatMap(tokens)).has(token)).length>=3;
+ const rich=isDuty(requirement)&&tokens(task).filter(token=>!new Set(skills.flatMap(tokens)).has(token)).length>=3;
  if(rich){
   if(!skills.length)add('technical',`For the JD task to ${task}, walk through the inputs, expected output and ${risk.test}. Which assumption would you verify before implementation?`,requirement,'task fundamentals and validation');
   const project=relevantProject(profile,requirement),example=project?`your project "${project}"`:`a ${intern?'course or personal':'past'} project you actually worked on`;

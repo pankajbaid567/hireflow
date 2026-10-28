@@ -5,6 +5,12 @@ from src.utils.skills import extract_skills, normalize_skill, has_skill
 PREP_VERSION = "prep-evidence-v2"
 STOP = set("a an the to of and or for with in on at by as is are be we our you your this that using use must know required requirement role work job company intern internship engineer developer".split())
 UNSAFE = re.compile(r"\b(ignore (all |the |any )?(previous|prior|system)|system prompt|api[_ -]?key|reveal (the |your )?secret)\b", re.I)
+SECTION_LABEL = re.compile(r"^(?:(?:about|overview of) (?:the |this )?(?:work from home )?(?:internship|job(?:/internship)?|role|company|opportunity)|(?:selected )?(?:intern(?:'s|s|s')?|candidate(?:'s|s|s')?)\s+(?:(?:day[- ]to[- ]day|key)\s+)?responsibilities(?:\s+include)?|(?:key |your |primary |main )?(?:responsibilities|duties|requirements|qualifications)|skills? (?:required|needed)|what (?:you(?:'ll| will) do|we (?:offer|are looking for))|who (?:can|should) apply|perks|benefits|stipend|salary|duration|start date|apply by|number of openings)\s*[:.!?]?$", re.I)
+# Listing declarations remain available to other JD analysis, but do not become
+# interview duties. Domain phrases such as benefits APIs remain legitimate work.
+NON_DUTY = re.compile(r"^(?:synthetic\b.{0,120}\b(?:qa|test|fixture)\s+only\b|(?:this|the)\s+(?:listing|vacancy|job)\s+is\s+(?:for\s+testing\s+only|a\s+synthetic\s+(?:qa|test)\b)|(?:freshers|graduates|students)\s+(?:are\s+)?welcome\b|(?:salary|stipend|pay range|compensation|perks|benefits)\s*(?::|(?:is|are|includes?)\b|(?:INR|USD|EUR|GBP)\b|[₹$€£\d])|(?:apply\s+(?:now|by|here|via|through)|how to apply|send\s+(?:us\s+)?(?:your\s+)?(?:cv|resume|application))\b|(?:we\s+are|[^.!?]{1,100}\s+is)\s+(?:an?\s+)?equal[- ]opportunity\s+employer\b|all\s+qualified\s+applicants\b|we\s+(?:do not|don't)\s+discriminate\b)", re.I)
+DUTY_ACTION = r"(?:build(?:ing)?|develop(?:ing)?|design(?:ing)?|implement(?:ing)?|test(?:ing)?|maintain(?:ing)?|writ(?:e|ing)|creat(?:e|ing)|support(?:ing)?|document(?:ing)?|research(?:ing)?|analy[sz](?:e|ing)|coordinat(?:e|ing)|validat(?:e|ing)|improv(?:e|ing)|automat(?:e|ing)|integrat(?:e|ing)|deploy(?:ing)?|debug(?:ging)?|monitor(?:ing)?|detect(?:ing)?|review(?:ing)?|manag(?:e|ing)|collect(?:ing)?|prepar(?:e|ing)|collaborat(?:e|ing)|assist(?:ing)?|evaluat(?:e|ing)|optimi[sz](?:e|ing)|deliver(?:ing)?|resolv(?:e|ing)|investigat(?:e|ing)|train(?:ing)?|index(?:ing)?|track(?:ing)?|schedul(?:e|ing)|recommend(?:ing)?|process(?:ing)?|transcrib(?:e|ing)|classif(?:y|ying)|rout(?:e|ing)|connect(?:ing)?|packag(?:e|ing)|retriev(?:e|ing))"
+DUTY_PATTERN = re.compile(r"(?:^|\b(?:required to|responsible for|responsibilities include|you will|you would|you'll|to)\s+)" + DUTY_ACTION + r"\b", re.I)
 RELATED = {
     "fastapi": {"python", "flask", "django"}, "django": {"python", "flask", "fastapi"}, "flask": {"python", "fastapi", "django"},
     "typescript": {"javascript"}, "javascript": {"typescript"}, "node.js": {"javascript", "typescript"},
@@ -16,10 +22,18 @@ RELATED = {
 def words(value):
     return {token for token in re.findall(r"\w+", str(value).casefold()) if len(token) > 2 and token not in STOP}
 
+def is_duty(line):
+    normalized = line.replace("’", "'").replace("‘", "'")
+    if re.search(r"\b(?:not|never|no longer)\b[^.!?;]{0,80}\b(?:required to|responsible for|you will|you would|you'll)\b", normalized, re.I):
+        return False
+    return bool(DUTY_PATTERN.search(normalized))
+
 def requirements(jd, title=""):
-    parts = [re.sub(r"^[-*•\s]+", "", line).strip() for line in re.split(r"(?<=[.!?])\s+|[\r\n]+", jd or "")]
-    parts = [line[:600] for line in parts if line and words(line) and not UNSAFE.search(line) and not (re.search(r"\brounds?\b", line, re.I) and re.search(r"\b(technical|hr|founder|interview)\b", line, re.I))]
-    return list(dict.fromkeys(parts))[:8] or ([title[:300]] if title else [])
+    parts = [re.sub(r"^(?:[-*•]+\s*|\d+[.)]\s+)", "", line.strip()).strip() for line in re.split(r"(?<=[.!?])\s+|[\r\n]+", jd or "")]
+    parts = [line for line in parts if line and words(line) and not SECTION_LABEL.search(line.replace("’", "'").replace("‘", "'")) and not NON_DUTY.search(line) and not UNSAFE.search(line) and not re.match(r"^.{0,30}(?:interview process|selection process)\s*:", line, re.I) and not (re.search(r"\brounds?\b", line, re.I) and re.search(r"\b(technical|hr|founder|interview)\b", line, re.I))]
+    duties = [line for line in parts if is_duty(line)]
+    selected = list(dict.fromkeys(line[:600] for line in (duties or parts)))[:8]
+    return selected if selected else [] if str(jd or "").strip() else ([title[:300]] if title else [])
 
 def goal(requirement):
     return re.sub(r"^.{0,150}?\b(required to|responsible for|you will|you would|responsibilities:)\s+", "", requirement, flags=re.I).rstrip(".!? ")
@@ -83,8 +97,9 @@ def local_questions(jd, company, listing_type="job", profile=None, title="", req
         else:
             probe = f"Explain the main input/output contract and test {domain_risk[2]}."
         intro = f"show a small {skill} example" if intern else f"describe a production {skill} implementation"
-        add("technical", f"For {company}'s task to {goal(span)}, {intro}. {probe}" + ("" if intern else " What would you measure before changing it?"), span, f"{skill}: implementation and validation")
-    rich = len(words(task) - set().union(*(words(skill) for skill in skills))) >= 3
+        context = f"For {company}'s task to {goal(span)}," if is_duty(span) else f'The JD for {company} states "{goal(span)}";'
+        add("technical", f"{context} {intro}. {probe}" + ("" if intern else " What would you measure before changing it?"), span, f"{skill}: implementation and validation")
+    rich = is_duty(req) and len(words(task) - set().union(*(words(skill) for skill in skills))) >= 3
     if rich:
         if not skills:
             add("technical", f"For the JD task to {task}, walk through the inputs, expected output and {edge}. Which assumption would you verify before implementation?", req, "task fundamentals and validation")

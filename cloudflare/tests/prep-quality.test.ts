@@ -5,6 +5,52 @@ const canonical=(skill:string)=>extractSkills(skill)[0]||skill;
 function adapters(values:Partial<PrepAdapters>={}):PrepAdapters{return{skills:extractSkills,canonical,hasSkill:(source,skill)=>extractSkills(source).some(value=>canonical(value)===canonical(skill)),searchReady:false,configured:false,search:async()=>[],accessible:async url=>url.startsWith('https://')?url:null,page:async()=>null,publicUrl:raw=>typeof raw==='string'&&raw.startsWith('https://')?raw:null,generate:async()=>{throw new Error('No model configured');},failureMessage:()=> 'provider unavailable',...values};}
 const appointment={company:'Example Employer',title:'Python Engineer',listing_type:'internship',description:'Python and SQL required to coordinate clinic appointments and patient booking slots. Interview process: two rounds, technical and HR.'};
 describe('P2 evidence-aware preparation',()=>{
+ it.each(['internship','job'])('anchors %s questions to real work after a QA disclaimer and pay metadata',listing_type=>{
+  const duty='Build and test a Python and LangChain study-note assistant.';
+  const job={...appointment,listing_type,description:`Synthetic HireFlow QA only, not an employer vacancy. ${duty} Freshers welcome. Stipend INR 20000/month. Two interview rounds: technical and HR.`};
+  expect(prepRequirements(job.description,job.title)).toEqual([duty]);
+  const questions=localPrepQuestions({},job,adapters());
+  expect(questions.length).toBeGreaterThanOrEqual(5);
+  expect(questions.every(q=>q.evidence.quote===duty&&q.question.includes('study-note assistant'))).toBe(true);
+  expect(JSON.stringify(questions)).not.toMatch(/Synthetic HireFlow QA|employer vacancy|Freshers welcome|Stipend INR/);
+  expect(new Set(questions.map(q=>q.category))).toEqual(new Set(['technical','behavioral','design']));
+ });
+ it('excludes EEO, benefits and application declarations without losing full-JD skills or rounds',async()=>{
+  const duty='Build a Python and SQL API to validate appointment booking slots.';
+  const job={...appointment,description:`We are an equal opportunity employer committed to building inclusive teams. All qualified applicants receive consideration without regard to gender or religion. Benefits include training to build professional skills. Apply now to build your future. Docker experience is preferred. ${duty} Interview process: two rounds, technical and HR.`};
+  expect(prepRequirements(job.description,job.title)).toEqual([duty]);
+  const guide=await buildEvidencePrepGuide({} as never,{skills:['Python']},job,adapters());
+  expect(guide.questions.every((q:any)=>q.evidence.quote===duty)).toBe(true);
+  expect(JSON.stringify(guide.questions)).not.toMatch(/equal opportunity|qualified applicants|gender|religion|professional skills|your future/);
+  expect(guide.topics.gaps).toContain('Docker');
+  expect(guide.round_count).toBe(2);expect(guide.prediction_kind).toBe('source_reported_process');
+ });
+ it('quotes sparse qualifications without turning them into duties',()=>{
+  const job={...appointment,description:'Must know Python and SQL. Experience with Docker is preferred.'};
+  const questions=localPrepQuestions({},job,adapters());
+  expect(questions.length).toBeGreaterThan(0);
+  expect(questions.every(q=>job.description.includes(q.evidence.quote))).toBe(true);
+  expect(questions.some(q=>/task to|The JD asks you to|While learning to/.test(q.question))).toBe(false);
+  expect(questions.find(q=>q.category==='design')!.question).toContain('missing from this JD');
+ });
+ it('abstains when a nonempty JD has only declarations, instead of fabricating a duty from its title',()=>{
+  const job={...appointment,title:'Python Intern',description:'Synthetic HireFlow QA only, not an employer vacancy. Benefits include insurance. We are an equal opportunity employer.'};
+  expect(prepRequirements(job.description,job.title)).toEqual([]);
+  expect(localPrepQuestions({},job,adapters())).toEqual([]);
+ });
+ it('retains legitimate benefits-domain API work rather than banning domain words',()=>{
+  const duty='Build a Python and SQL API to calculate employee benefits eligibility and support disability accommodations.';
+  const job={...appointment,description:duty};
+  expect(prepRequirements(duty,job.title)).toEqual([duty]);
+  const questions=localPrepQuestions({},job,adapters());
+  expect(questions.length).toBeGreaterThanOrEqual(5);
+  expect(questions.every(q=>q.evidence.quote===duty&&q.question.includes('benefits eligibility'))).toBe(true);
+ });
+ it.each(['Not required to build a Python API. Must know SQL.','You are not responsible for developing the payment workflow. Python experience is preferred.'])('does not promote negated responsibilities to job duties: %s',description=>{
+  const job={...appointment,description};
+  const questions=localPrepQuestions({},job,adapters());
+  expect(questions.some(q=>/task to|asks you to/.test(q.question))).toBe(false);
+ });
  it('uses real responsibilities after portal headings rather than treating a complete JD as sparse',()=>{
   const job={...appointment,description:[
    'About the internship:',"Selected intern's day-to-day responsibilities include:",

@@ -8,10 +8,64 @@ import pytest
 
 from src.agents.company_intel_agent import CompanyIntelAgent
 from src.agents.prep_guide_agent import PrepGuideAgent
-from src.utils.prep_quality import local_questions, topic_analysis, validate_questions
+from src.utils.prep_quality import local_questions, requirements, topic_analysis, validate_questions
 from src.utils.web_search import WebSearch
 
 JD = "Python and SQL required to coordinate clinic appointments and patient booking slots. Interview process: two rounds, technical and HR."
+
+
+@pytest.mark.parametrize("mode", ["internship", "job"])
+def test_question_duties_skip_qa_disclaimer_and_pay_metadata(mode):
+    duty = "Build and test a Python and LangChain study-note assistant."
+    jd = f"Synthetic HireFlow QA only, not an employer vacancy. {duty} Freshers welcome. Stipend INR 20000/month. Two interview rounds: technical and HR."
+    assert requirements(jd, "Python Engineer") == [duty]
+    questions = local_questions(jd, "Fixture Employer", mode)
+    assert len(questions) >= 5
+    assert all(q["evidence"]["quote"] == duty and "study-note assistant" in q["question"] for q in questions)
+    assert not any(text in str(questions) for text in ["Synthetic HireFlow QA", "employer vacancy", "Freshers welcome", "Stipend INR"])
+    assert {q["category"] for q in questions} == {"technical", "behavioral", "design"}
+
+
+def test_eeo_benefits_and_application_declarations_are_not_duties_but_full_jd_skills_remain():
+    duty = "Build a Python and SQL API to validate appointment booking slots."
+    jd = f"We are an equal opportunity employer committed to building inclusive teams. All qualified applicants receive consideration without regard to gender or religion. Benefits include training to build professional skills. Apply now to build your future. Docker experience is preferred. {duty} Interview process: two rounds, technical and HR."
+    assert requirements(jd, "Python Engineer") == [duty]
+    questions = local_questions(jd, "Fixture Employer", "internship")
+    assert all(q["evidence"]["quote"] == duty for q in questions)
+    assert any(q["category"] == "technical" and "Docker" in q["question"] for q in questions)
+    assert not any(text in str(questions) for text in ["equal opportunity", "qualified applicants", "gender", "religion", "professional skills", "your future"])
+    assert PrepGuideAgent(search_client=Mock()).predict_rounds(jd, "unknown", "internship")["round_count"] == 2
+
+
+def test_sparse_qualifications_are_quoted_without_becoming_duties():
+    jd = "Must know Python and SQL. Experience with Docker is preferred."
+    questions = local_questions(jd, "Fixture Employer", "internship")
+    assert questions and all(q["evidence"]["quote"] in jd for q in questions)
+    assert not any(text in str(questions) for text in ["task to", "The JD asks you to", "While learning to"])
+    assert "missing from this JD" in next(q["question"] for q in questions if q["category"] == "design")
+
+
+def test_declarations_only_jd_does_not_invent_a_duty_from_its_title():
+    jd = "Synthetic HireFlow QA only, not an employer vacancy. Benefits include insurance. We are an equal opportunity employer."
+    assert requirements(jd, "Python Intern") == []
+    assert local_questions(jd, "Fixture Employer", "internship", title="Python Intern") == []
+
+
+def test_legitimate_benefits_domain_api_duty_is_not_filtered_by_domain_words():
+    duty = "Build a Python and SQL API to calculate employee benefits eligibility and support disability accommodations."
+    assert requirements(duty, "Python Engineer") == [duty]
+    questions = local_questions(duty, "Fixture Employer", "internship")
+    assert len(questions) >= 5
+    assert all(q["evidence"]["quote"] == duty and "benefits eligibility" in q["question"] for q in questions)
+
+
+@pytest.mark.parametrize("jd", [
+    "Not required to build a Python API. Must know SQL.",
+    "You are not responsible for developing the payment workflow. Python experience is preferred.",
+])
+def test_negated_responsibilities_are_not_promoted_to_job_duties(jd):
+    questions = local_questions(jd, "Fixture Employer", "internship")
+    assert not any("task to" in q["question"] or "asks you to" in q["question"] for q in questions)
 
 
 def test_questions_assess_real_domain_decisions_and_profile_evidence_in_both_modes():
