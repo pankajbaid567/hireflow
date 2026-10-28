@@ -11,8 +11,11 @@ The deployed Worker supports `EMAIL_PROVIDER=gmail`, using pinned Nodemailer
 API key or purchased domain is required for this path. Gmail's account limits
 and automated-login restrictions still apply; the app's own quota is separate.
 
-1. Enable Google 2-Step Verification and create a dedicated
-   [App Password](https://support.google.com/mail/answer/185833). Google may not
+1. Enable [Google 2-Step Verification](https://myaccount.google.com/signinoptions/two-step-verification),
+   then open [App Passwords](https://myaccount.google.com/apppasswords) and create
+   a dedicated HireFlow password. This generated 16-character code is
+   `GMAIL_APP_PASSWORD`; `GMAIL_USER` is the full Gmail sender address, not an API
+   key. See [Google's instructions](https://support.google.com/accounts/answer/185833). Google may not
    offer App Passwords for some managed or Advanced Protection accounts.
 2. Put `GMAIL_USER` and `GMAIL_APP_PASSWORD` in an ignored local `.env`, or enter
    them through Worker secrets. Use the App Password, never the normal Google

@@ -1,0 +1,180 @@
+{
+  "state": "passed_with_documented_external_acceptance_remaining",
+  "verified_at": "2026-10-28T10:12:55.390948+00:00",
+  "source_commit": "7c9e3ad09d65c471c35cba07bb33926062ad2b4a",
+  "deployment": {
+    "dashboard": "https://hireflow-dashboard.pages.dev",
+    "pages_deployment": "712c55b3",
+    "api": "https://hireflow-api.baidpankaj567.workers.dev",
+    "worker_version": "705de1ec-4e7a-43fd-a656-bf438eb4ea33",
+    "d1_migrations_through": "0021",
+    "new_migrations": [
+      "0020_gmail_delivery.sql",
+      "0021_hiring_reports.sql"
+    ],
+    "post_migration_foreign_key_violations": 0,
+    "pages_typed_health": true,
+    "pages_invalid_empty_profile_status": 422
+  },
+  "local_gates": {
+    "worker": {
+      "passed": 774,
+      "opt_in_skipped": 4
+    },
+    "python": {
+      "passed": 407,
+      "opt_in_skipped": 3
+    },
+    "frontend": {
+      "passed": 157
+    },
+    "worker_typecheck": true,
+    "worker_dry_run": true,
+    "pages_build": true,
+    "isolated_browser_workflow_checks_passed": 18,
+    "isolated_postgres_16": [
+      "upgrade head",
+      "downgrade base",
+      "upgrade head",
+      "alembic check"
+    ],
+    "isolated_postgres_cleanup": true
+  },
+  "ci": {
+    "verified_at": "2026-10-28T10:08:30.564491+00:00",
+    "all_required_workflows_success": true,
+    "runs": [
+      {
+        "id": 40396964148,
+        "name": "Cloudflare CI",
+        "status": "completed",
+        "conclusion": "success",
+        "url": "https://github.com/pankajbaid567/hireflow/actions/runs/40396964148",
+        "run_started_at": "2026-10-26T20:35:14Z",
+        "updated_at": "2026-10-26T20:58:14Z"
+      },
+      {
+        "id": 40396964074,
+        "name": "Frontend CI",
+        "status": "completed",
+        "conclusion": "success",
+        "url": "https://github.com/pankajbaid567/hireflow/actions/runs/40396964074",
+        "run_started_at": "2026-10-26T20:35:14Z",
+        "updated_at": "2026-10-26T20:35:41Z"
+      },
+      {
+        "id": 40396964165,
+        "name": "Backend CI",
+        "status": "completed",
+        "conclusion": "success",
+        "url": "https://github.com/pankajbaid567/hireflow/actions/runs/40396964165",
+        "run_started_at": "2026-10-26T20:35:14Z",
+        "updated_at": "2026-10-26T20:36:36Z"
+      }
+    ]
+  },
+  "production_hiring": {
+    "synthetic_workspaces_created": 1,
+    "reports_created": 2,
+    "queue_acceptances": [
+      {
+        "http_status": 202,
+        "initial_state": "queued"
+      },
+      {
+        "http_status": 202,
+        "initial_state": "queued"
+      }
+    ],
+    "reports_completed": 2,
+    "scoring_attempts_per_report": [
+      1,
+      1
+    ],
+    "json_project_citations": true,
+    "json_alias_citations": true,
+    "education_preserved": true,
+    "experience_years_not_invented": true,
+    "plain_name_skills_csv_accepted": true,
+    "csv_missing_years_null": true,
+    "private_html_hash_match": true,
+    "private_html_no_store": true,
+    "private_html_csp_verified": true,
+    "anonymous_report_denied": true,
+    "report_hash_and_ranking_immutable": true,
+    "mobile_width": 390,
+    "mobile_no_horizontal_overflow": true,
+    "browser_page_errors": 0,
+    "gmail_configured": false,
+    "gmail_send_button_disabled": true,
+    "email_requests": 0,
+    "employer_submissions": 0,
+    "search_requests": 0,
+    "model_diagnostics_requested": 0,
+    "external_provider_operations_recorded": 0,
+    "qa_harness_issue": {
+      "kind": "initial_nested_select_label_timeout",
+      "occurred_before_shortlist_post": true,
+      "failed_observation_retained": true,
+      "same_workspace_resumed": true,
+      "duplicate_profile_created": false
+    }
+  },
+  "cleanup": {
+    "verified_at": "2026-10-28T10:10:46.105385+00:00",
+    "normal_exact_owner_deletion": true,
+    "queue_complete": true,
+    "private_session_revoked": true,
+    "test_workspace_and_all_scoped_rows_absent": true,
+    "private_artifact_files_to_delete": 0,
+    "other_owners_or_broad_prefixes_deleted": false,
+    "real_workspace_seven_tables_unchanged": {
+      "users": true,
+      "applications": true,
+      "resumes": true,
+      "application_status_events": true,
+      "prep_guides": true,
+      "weekly_reports": true,
+      "jobs": true
+    },
+    "real_workspace_private_files_unchanged": true,
+    "private_files_hashed": 12,
+    "second_existing_workspace_unchanged": true,
+    "gmail_usage_unchanged": true,
+    "shared_source_usage_unchanged": true,
+    "embedding_usage_unchanged": true
+  },
+  "native_gmail_transport": {
+    "state": "passed",
+    "checked_at": "2026-10-26T20:24:17.878Z",
+    "runtime": "native Cloudflare Queue + Nodemailer + fixed node:tls socket",
+    "nodemailer_version": "10.2.1",
+    "transport_source_sha256": "ea551e8ee93088401003b0d374309ce511c362b43ecc54b738a4fc457a286abe",
+    "host": "smtp.gmail.com",
+    "port": 465,
+    "tls": true,
+    "smtp_authentication": false,
+    "email_sent": false,
+    "first_probe_failed_before_guard": true,
+    "failed_probe_observation_retained": true,
+    "later_and_final_probe_passed": true,
+    "independent_all_three_exact_qa_resources_absent": true
+  },
+  "reranker": {
+    "experiment_complete": true,
+    "heldout_ndcg_at_3": 0.951141,
+    "baseline_hybrid_ndcg_at_3": 0.951141,
+    "adoption_gate_passed": false,
+    "production_ranking_changed": false,
+    "reused_authored_heldout_is_not_blind_evaluation": true
+  },
+  "remaining_acceptance": [
+    "Gmail credentials and separately authorized owner-controlled inbox receipt",
+    "Real relevant 100+ opportunity pool",
+    "Applicant PDF intake, PDF hiring report export and multi-user hiring roles are future extensions"
+  ],
+  "paid_plan_changes": 0,
+  "real_employer_applications": 0,
+  "real_emails_sent": 0,
+  "privacy": "No credentials, sessions, recipient addresses, applicant facts or existing workspace row contents are included."
+}

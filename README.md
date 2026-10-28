@@ -46,10 +46,11 @@ transfer rerun passed migration, replay rejection and logout on both origins.
 
 [Deployment and resource details](docs/cloudflare.md) include the actual bindings, secrets, quotas, commands, and verification status. No provider secret belongs in browser code.
 
-The 26 October deployment uses Worker source `e6d5e4c`, version
-`70ad62bb-eca4-4be4-9c82-ef28ab64e02d`, Pages `ec151322` (assets from
-`a6814e6`), and D1 migrations through `0019`. Exact CI and production evidence
-are recorded in [P2 verification](docs/p2-verification.md).
+The 27 October (IST) deployment uses source `7c9e3ad`, Worker version
+`705de1ec-4e7a-43fd-a656-bf438eb4ea33`, Pages `712c55b3`, and D1 migrations
+through `0021`. Exact CI and production evidence are recorded in
+[P3 verification](docs/p3-verification.md); [P2 verification](docs/p2-verification.md)
+retains the earlier discovery, preparation and recovery evidence.
 
 ## User flow
 
@@ -126,8 +127,9 @@ passed**, with three Python and four Worker opt-in tests skipped. Frontend
 coverage includes five Pages deployment-guard regressions. Typecheck, Pages
 build, Worker dry run and isolated React/Worker/D1/private-file browser E2E
 passed. The unchanged **120-case AI evaluation**, 16-case preparation check
-and PostgreSQL/Docker cycle have passing evidence. [P2 release evidence and CI](docs/p2-verification.md)
-distinguish exact source revisions, mocked, actual-provider and controlled-form stages.
+and PostgreSQL/Docker cycle have passing evidence. [P3 release evidence and CI](docs/p3-verification.md)
+records the current source; [P2 evidence](docs/p2-verification.md) preserves the
+earlier provider and controlled-form stages.
 
 The historical P1 interactive cycle had HTTP CPU **P95/P99 9/10 ms**, zero native
 runtime errors and one **14 ms signup outlier**. Heavy search, matching, PDF and

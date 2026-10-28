@@ -1,5 +1,8 @@
 # P3 and Gmail implementation verification
 
+Published 27 October 2026 (IST); final CI and scoped production cleanup were
+independently checked on 28 October 2026.
+
 P3 implements the two numbered roadmap items: private hiring shortlists and a
 learned reranking experiment. The separate F-series proposals remain future
 scope. Existing candidate workspaces, consent, reviewed resume versions and
@@ -77,11 +80,66 @@ Pages API remained healthy. No counters were reset or paid resources activated.
 
 ## Deployment and remaining evidence
 
-Runtime publication and the owned production hiring smoke are recorded after
-the new migrations pass. Migration 0020 extends Gmail without editing applied
-0017/0019: it preserves existing provider payloads, signed receipts, scheduled
-bindings, revision counters and guards during the table swap. Migration 0021
-adds private hiring reports/delivery history. Both are tested before application.
+Published on **27 October 2026 (IST)** to the existing free deployment:
+
+| Component | Published value |
+| --- | --- |
+| Source | `7c9e3ad09d65c471c35cba07bb33926062ad2b4a` |
+| Dashboard | [hireflow-dashboard.pages.dev](https://hireflow-dashboard.pages.dev/hiring) |
+| Pages deployment | `712c55b3` ([deployment URL](https://712c55b3.hireflow-dashboard.pages.dev)) |
+| API Worker | `705de1ec-4e7a-43fd-a656-bf438eb4ea33` |
+| D1 schema | Migrations through `0021` |
+
+Migration 0020 extends Gmail without editing applied 0017/0019: it preserves
+existing provider payloads, signed receipts, scheduled bindings, revision
+counters and guards during the table swap. Migration 0021 adds private hiring
+reports/delivery history. Both were tested before application and passed on
+production D1; the subsequent foreign-key check returned no violations. A
+private pre-migration recovery bookmark was retained. Applied migrations remain
+immutable.
+
+The Pages publication wrapper uploaded Functions and assets, then verified
+typed same-origin JSON health and HTTP 422 for an invalid empty profile without
+creating a workspace.
+
+Exact source `7c9e3ad` passed [Cloudflare CI](https://github.com/pankajbaid567/hireflow/actions/runs/40396964148),
+[Backend CI](https://github.com/pankajbaid567/hireflow/actions/runs/40396964165)
+and [Frontend CI](https://github.com/pankajbaid567/hireflow/actions/runs/40396964074).
+Cloudflare's Chromium dependency installation took longer than the other jobs;
+it subsequently completed successfully at `2026-10-26T20:58:14Z`. Final read-only
+GitHub metadata verification on 28 October confirms all three conclusions.
+
+The production browser run used one disposable synthetic workspace and no real
+applicants. Both JSON and ordinary name/skills CSV requests returned HTTP 202,
+progressed from `queued` to `completed` through the production Queue and recorded
+one scoring attempt each. The JSON top two retained project technologies,
+canonical JavaScript alias evidence and supplied education; missing experience
+years remained unknown. Refreshing preserved report hashes and ranking.
+Authenticated private HTML downloaded with the matching hash, no-store and CSP;
+anonymous download returned 401. Desktop and 390-pixel mobile checks passed with
+zero page errors or horizontal overflow. Gmail readiness was false and send
+controls were disabled. No email, search, model-diagnostic or employer-submission
+request was made. Operator ledgers showed no external/provider work; ordinary
+HTTP request telemetry was retained separately.
+
+The first browser helper timed out on an incorrect nested-select label before
+any shortlist POST. Its failed proof is retained. Correcting only the private
+helper resumed the same workspace; no duplicate profile or third report was
+created. Stable screenshots were recaptured in fresh contexts after mobile
+navigation transitions settled.
+
+Normal exact-owner deletion subsequently completed in the production Queue,
+revoked the test session and removed both reports and all scoped workspace rows.
+The reports were inline D1 records, so there were zero private artifact files to
+delete. No broad resource or other-owner cleanup was performed.
+
+After cleanup, all seven original workspace tables and all twelve private files
+matched both the pre-migration snapshot and the original P2 baseline. A second
+existing workspace's eight-table snapshot also matched. Shared Gmail, discovery
+and embedding usage counters were unchanged. The sanitized
+[release evidence](evidence/p3-production.json) contains the gates, publication,
+production UI, cleanup and preservation results without credentials, sessions,
+applicant facts or existing workspace records.
 
 **No Gmail credentials, authenticated SMTP transaction or real email is claimed.**
 Set the two private Gmail values using [the setup guide](email-delivery.md), then

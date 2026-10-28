@@ -1,5 +1,9 @@
 # P2 implementation and release evidence
 
+This document preserves the P2 release evidence. The later [P3/Gmail release](p3-verification.md)
+adds Gmail/Nodemailer and supersedes the SMTP implementation status below;
+actual authorized inbox receipt and the real 100+ pool remain open.
+
 This work builds on P1 commit `fa07874` on `main`. It uses the existing free
 Cloudflare deployment. No paid plan, R2 billing, real employer submission or
 production email send is enabled by this work.
@@ -263,8 +267,8 @@ mail server acceptance, **not inbox placement or reading**. See
 [email delivery setup](email-delivery.md) for signature, replay, privacy and
 retention bounds.
 
-The choice between a free Resend setup and a Gmail App Password path is still
-pending. SMTP/Nodemailer is not implemented, and no provider key, sender/domain
-change or actual email send was performed. Until the required configuration and
-explicitly authorized human receipt check are done, **P2-05 and full P2
-acceptance remain open**.
+At this P2 release checkpoint, SMTP/Nodemailer was not implemented and provider
+selection was pending. The subsequent [P3 release](p3-verification.md) implements
+the selected Gmail/App Password path. Credentials and an explicitly authorized
+human receipt check are still required, so **P2-05 and full P2 acceptance remain
+open**. No actual email was sent during either release verification.

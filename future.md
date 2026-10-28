@@ -1,6 +1,6 @@
 # HireFlow: remaining work and future roadmap
 
-Updated: **27 October 2026 (IST)**. P0 and P1 are published within their documented scopes; [P2 verification](docs/p2-verification.md) records the new release and remaining acceptance.
+Updated: **28 October 2026 (IST)**. P0 and P1 are published within their documented scopes; [P2 verification](docs/p2-verification.md) records remaining acceptance, and [P3 verification](docs/p3-verification.md) records the Gmail, hiring and reranker release.
 
 This is the prioritized backlog for finishing the original project, improving its AI and engineering quality, and considering new capabilities. **Checked items have the scoped implementation/evidence linked below; unchecked items remain pending.** P1 completion is distinct from completing every original milestone or certifying arbitrary employer portals.
 
@@ -203,8 +203,8 @@ Priority expresses importance, not a completion-time promise. Provider credentia
 ### P3-01 — Finish the hiring-side module
 
 - [x] **Implemented / scoped verification, optional M7 · issue 22:** Private JSON/CSV shortlists now preserve source-attributed skills, experience, projects and education, use the maintained scorer, provide per-candidate HTML reports, and queue explicitly reviewed Gmail team delivery. Applicant declarations are not independently verified proficiency. [Hiring implementation](docs/hiring.md) and [P3 evidence](docs/p3-verification.md) record API, ownership, queue, UI and SMTP-boundary tests. Actual team inbox receipt remains the external P2-05 configuration/authorization condition.
-- **New extensions:** applicant PDF intake, a hiring dashboard and private HTML/PDF exports go beyond the original JSON/CSV API requirement. Track them separately when defining the optional module's release scope.
-- **Done when:** the same maintained scoring engine is used, top-N/ties/no-match behavior is reproducible, explanations are traceable to applicant evidence, and tenant ownership is enforced. Include error handling for unreadable PDFs and incomplete profiles. Evaluate job-relevant matching without using protected or irrelevant personal traits as ranking signals.
+- **Extensions:** the hiring dashboard and private HTML report are implemented. Applicant PDF intake, PDF report export and multi-user hiring-team roles remain separate future scope beyond the original JSON/CSV API requirement; unreadable PDF handling belongs to that future intake path.
+- **Done when:** the same maintained scoring engine is used, top-N/ties/no-match behavior is reproducible, explanations are traceable to applicant evidence, and tenant ownership is enforced. Handle malformed JSON/CSV and incomplete profiles; unreadable-file recovery is required when the future PDF intake extension is implemented. Evaluate job-relevant matching without using protected or irrelevant personal traits as ranking signals.
 - **Depends on:** P0-01, P1-01, P1-02 if semantic matching is claimed, P1-03 and P2-05 for email. This optional module must not delay fixing the candidate workflow.
 
 ### P3-02 — Learned reranking experiment

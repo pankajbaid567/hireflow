@@ -1,6 +1,6 @@
 # Cloudflare Pages and Workers deployment
 
-**Deployment, 26 October 2026:** [Pages dashboard](https://hireflow-dashboard.pages.dev/profile), deployment `ec151322` ([deployment URL](https://ec151322.hireflow-dashboard.pages.dev), assets from `a6814e6`); [API Worker](https://hireflow-api.baidpankaj567.workers.dev/health), version `70ad62bb-eca4-4be4-9c82-ef28ab64e02d`, source `e6d5e4c`. D1 migrations through `0019` are applied. Pages Functions and the same-origin API are verified with typed JSON health and backend validation. [P2 verification](p2-verification.md) records exact release gates, CI and remaining acceptance.
+**Deployment, 27 October 2026 (IST):** [Pages dashboard](https://hireflow-dashboard.pages.dev/profile), deployment `712c55b3` ([deployment URL](https://712c55b3.hireflow-dashboard.pages.dev)); [API Worker](https://hireflow-api.baidpankaj567.workers.dev/health), version `705de1ec-4e7a-43fd-a656-bf438eb4ea33`, source `7c9e3ad`. D1 migrations through `0021` are applied. Pages Functions and the same-origin API are verified with typed JSON health and backend validation. [P3 verification](p3-verification.md) records current release gates and production checks; [P2 verification](p2-verification.md) retains the earlier release evidence and remaining acceptance.
 
 P1's production two-mode acceptance, actual providers, controlled forms, CPU, cleanup and demo remain recorded in [P1 verification](p1-verification.md); P0 evidence is [historical](p0-verification.md). A real 100+ relevant opportunity pool and actual owner inbox delivery remain unverified. The JavaScript reader's current allowlist covers only HireFlow's owned synthetic fixture host.
 
@@ -244,7 +244,7 @@ node scripts/verify_cloudflare_dashboard.mjs
 
 The last script uses isolated D1/file storage, real React/Chromium, and a test-only queue hook with remote employer submission disabled. It checks structured edits, private PDFs, preparation/report views, mobile layout, restored sessions and logout. Servers are disposed afterward. Default tests do not send real email.
 
-Recorded local release gates passed **774 Worker tests** (four opt-in skipped), **407 Python tests** (three opt-in skipped) and **157 frontend tests**, including five deployment-guard regressions. Typecheck, dry run, frozen evaluation and preparation gates pass. Their exact source, remote CI and production outcomes are recorded in [P2 verification](p2-verification.md).
+Recorded local release gates passed **774 Worker tests** (four opt-in skipped), **407 Python tests** (three opt-in skipped) and **157 frontend tests**, including five deployment-guard regressions. Typecheck, dry run, frozen evaluation and preparation gates pass. Their exact source, remote CI and production outcomes are recorded in [P3 verification](p3-verification.md).
 
 ## Release verification
 
