@@ -36,7 +36,9 @@ def requirements(jd, title=""):
     return selected if selected else [] if str(jd or "").strip() else ([title[:300]] if title else [])
 
 def goal(requirement):
-    value = re.sub(r"^.{0,150}?\b(required to|responsible for|you will|you would|responsibilities:)\s+", "", requirement, flags=re.I).rstrip(".!? ")
+    return re.sub(r"^.{0,150}?\b(required to|responsible for|you will|you would|responsibilities:)\s+", "", requirement, flags=re.I).rstrip(".!? ")
+
+def lower_start(value):
     return value[:1].lower() + value[1:] if value else value
 
 def topic_analysis(profile, jd_skills, explicit_gaps=()):
@@ -98,25 +100,25 @@ def local_questions(jd, company, listing_type="job", profile=None, title="", req
         else:
             probe = f"Explain the main input/output contract and test {domain_risk[2]}."
         intro = f"show a small {skill} example" if intern else f"describe a production {skill} implementation"
-        context = f"For {company}'s task to {goal(span)}," if is_duty(span) else f'The JD for {company} states "{goal(span)}";'
+        context = f"For {company}'s task to {lower_start(goal(span))}," if is_duty(span) else f'The JD for {company} states "{goal(span)}";'
         add("technical", f"{context} {intro}. {probe}" + ("" if intern else " What would you measure before changing it?"), span, f"{skill}: implementation and validation")
     rich = is_duty(req) and len(words(task) - set().union(*(words(skill) for skill in skills))) >= 3
     if rich:
         if not skills:
-            add("technical", f"For the JD task to {task}, walk through the inputs, expected output and {edge}. Which assumption would you verify before implementation?", req, "task fundamentals and validation")
+            add("technical", f"For the JD task to {lower_start(task)}, walk through the inputs, expected output and {edge}. Which assumption would you verify before implementation?", req, "task fundamentals and validation")
         projects = [p for p in profile.get("projects", []) if isinstance(p, dict) and p.get("name")]
         projects.sort(key=lambda p: len(words(p) & words(req)), reverse=True)
         example = f'your project "{str(projects[0]["name"])[:160]}"' if projects else f'a {"course or personal" if intern else "past"} project you actually worked on'
-        add("behavioral", f"The JD asks you to {task}. Using {example}, explain {decision}. What evidence would you show {'a mentor' if intern else 'a stakeholder'}, and what would make you revise your decision?", req, "evidence, ambiguity and communication")
+        add("behavioral", f"The JD asks you to {lower_start(task)}. Using {example}, explain {decision}. What evidence would you show {'a mentor' if intern else 'a stakeholder'}, and what would make you revise your decision?", req, "evidence, ambiguity and communication")
         second = reqs[1] if len(reqs) > 1 else req
         second_risk = risk_for(second)[0]
-        question = f"While learning to {goal(second)}, suppose feedback points out {second_risk}. What small experiment would you run, what help would you ask for, and how would you explain the result?" if intern else f"For work to {goal(second)}, describe how you would handle a disagreement about {second_risk}. Which observable result would settle the tradeoff, and how would you communicate an unresolved risk?"
+        question = f"While learning to {lower_start(goal(second))}, suppose feedback points out {second_risk}. What small experiment would you run, what help would you ask for, and how would you explain the result?" if intern else f"For work to {lower_start(goal(second))}, describe how you would handle a disagreement about {second_risk}. Which observable result would settle the tradeoff, and how would you communicate an unresolved risk?"
         add("behavioral", question, second, "feedback and a role-specific tradeoff")
         design = "Sketch a small prototype and its data flow" if intern else "Design a scalable service and discuss production boundaries"
         ending = "one test before expanding it" if intern else "how recovery, monitoring and access controls affect your design"
-        add("design", f"{design} using {stack or 'a toolset you would justify from the JD'} to {task}. Show where you would detect {risk}, and {ending}.", req, "system boundaries and failure handling")
+        add("design", f"{design} using {stack or 'a toolset you would justify from the JD'} to {lower_start(task)}. Show where you would detect {risk}, and {ending}.", req, "system boundaries and failure handling")
         if len(output) < 5 and skills:
-            add("technical", f"For the task to {task}, how would you use {skills[0]} to test {edge}? Give the expected result and explain which implementation mistake the test would catch.", req, f"{skills[0]}: a concrete edge-case test")
+            add("technical", f"For the task to {lower_start(task)}, how would you use {skills[0]} to test {edge}? Give the expected result and explain which implementation mistake the test would catch.", req, f"{skills[0]}: a concrete edge-case test")
     elif skills:
         add("behavioral", f"The available JD only establishes {stack}. Describe how you would verify your current {skills[0]} knowledge with {'a mentor' if intern else 'the hiring team'}, and which missing task details you would request before choosing what to practise.", req, "scope clarification for a sparse JD")
         add("design", f"Using {stack}, {'sketch a small prototype' if intern else 'outline a service boundary'} only after stating which inputs, users and success criteria are missing from this JD. How would those answers change the design?", req, "explicit unknowns")

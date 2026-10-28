@@ -43,7 +43,8 @@ function requiredSkills(job:Row,profile:Row,adapters:Pick<PrepAdapters,'skills'|
  const source=`${clean(job.title)} ${clean(job.description)}`;
  return unique([...adapters.skills(source),...list(supplied),...list(profile.skills)].filter(skill=>adapters.hasSkill(source,skill))).slice(0,30);
 }
-function goal(requirement:string){const value=requirement.replace(/^.{0,150}?\b(?:required to|responsible for|you will|you would|responsibilities:)\s+/i,'').replace(/[.!?]+$/,'').trim();return value?value[0].toLowerCase()+value.slice(1):value;}
+function goal(requirement:string){return requirement.replace(/^.{0,150}?\b(?:required to|responsible for|you will|you would|responsibilities:)\s+/i,'').replace(/[.!?]+$/,'').trim();}
+function lowerStart(value:string){return value?value[0].toLowerCase()+value.slice(1):value;}
 const related:Record<string,string[]>={
  fastapi:['python','flask','django'],django:['python','flask','fastapi'],flask:['python','fastapi','django'],
  typescript:['javascript'],javascript:['typescript'],'node.js':['javascript','typescript'],
@@ -86,18 +87,18 @@ export function localPrepQuestions(profile:Row,job:Row,adapters:Pick<PrepAdapter
  for(const [index,skill] of skills.slice(0,3).entries()){
   const req=requirements[index%requirements.length],purpose=goal(req),domainRisk=riskFor(req);
   let probe=/sql|postgres/i.test(skill)?'Explain the data model and a query; include missing and repeated records.':/react|javascript|typescript|next.js|vue|angular/i.test(skill)?'Explain the input/state boundary, invalid data and one observable UI or API test.':/rag|langchain|langgraph|agent/i.test(skill)?'Explain the retrieval or tool boundary, how you would check an answer, and when the system should abstain.':/docker|kubernetes|aws|gcp|azure/i.test(skill)?'Explain configuration, a reproducible run and one failure you would detect.':`Explain the main input/output contract and test ${domainRisk.test}.`;
-  const context=isDuty(req)?`For ${company}'s task to ${purpose},`:`The JD for ${company} states "${purpose}";`;
+  const context=isDuty(req)?`For ${company}'s task to ${lowerStart(purpose)},`:`The JD for ${company} states "${purpose}";`;
   add('technical',intern?`${context} show a small ${skill} example. ${probe}`:`${context} describe a production ${skill} implementation. ${probe} What would you measure before changing it?`,req,`${skill}: implementation and validation`);
  }
  const rich=isDuty(requirement)&&tokens(task).filter(token=>!new Set(skills.flatMap(tokens)).has(token)).length>=3;
  if(rich){
-  if(!skills.length)add('technical',`For the JD task to ${task}, walk through the inputs, expected output and ${risk.test}. Which assumption would you verify before implementation?`,requirement,'task fundamentals and validation');
+  if(!skills.length)add('technical',`For the JD task to ${lowerStart(task)}, walk through the inputs, expected output and ${risk.test}. Which assumption would you verify before implementation?`,requirement,'task fundamentals and validation');
   const project=relevantProject(profile,requirement),example=project?`your project "${project}"`:`a ${intern?'course or personal':'past'} project you actually worked on`;
-  add('behavioral',`The JD asks you to ${task}. Using ${example}, explain ${risk.decision}. What evidence would you show ${intern?'a mentor':'a stakeholder'}, and what would make you revise your decision?`,requirement,'evidence, ambiguity and communication');
+  add('behavioral',`The JD asks you to ${lowerStart(task)}. Using ${example}, explain ${risk.decision}. What evidence would you show ${intern?'a mentor':'a stakeholder'}, and what would make you revise your decision?`,requirement,'evidence, ambiguity and communication');
   const second=requirements[1]||requirement,secondRisk=riskFor(second);
-  add('behavioral',intern?`While learning to ${goal(second)}, suppose feedback points out ${secondRisk.risk}. What small experiment would you run, what help would you ask for, and how would you explain the result?`:`For work to ${goal(second)}, describe how you would handle a disagreement about ${secondRisk.risk}. Which observable result would settle the tradeoff, and how would you communicate an unresolved risk?`,second,'feedback and a role-specific tradeoff');
-  add('design',`${intern?'Sketch a small prototype and its data flow':'Design a scalable service and discuss production boundaries'} using ${stack||'a toolset you would justify from the JD'} to ${task}. Show where you would detect ${risk.risk}, and ${intern?'one test before expanding it':'how recovery, monitoring and access controls affect your design'}.`,requirement,'system boundaries and failure handling');
-  if(questions.length<5&&skills.length)add('technical',`For the task to ${task}, how would you use ${skills[0]} to test ${risk.test}? Give the expected result and explain which implementation mistake the test would catch.`,requirement,`${skills[0]}: a concrete edge-case test`);
+  add('behavioral',intern?`While learning to ${lowerStart(goal(second))}, suppose feedback points out ${secondRisk.risk}. What small experiment would you run, what help would you ask for, and how would you explain the result?`:`For work to ${lowerStart(goal(second))}, describe how you would handle a disagreement about ${secondRisk.risk}. Which observable result would settle the tradeoff, and how would you communicate an unresolved risk?`,second,'feedback and a role-specific tradeoff');
+  add('design',`${intern?'Sketch a small prototype and its data flow':'Design a scalable service and discuss production boundaries'} using ${stack||'a toolset you would justify from the JD'} to ${lowerStart(task)}. Show where you would detect ${risk.risk}, and ${intern?'one test before expanding it':'how recovery, monitoring and access controls affect your design'}.`,requirement,'system boundaries and failure handling');
+  if(questions.length<5&&skills.length)add('technical',`For the task to ${lowerStart(task)}, how would you use ${skills[0]} to test ${risk.test}? Give the expected result and explain which implementation mistake the test would catch.`,requirement,`${skills[0]}: a concrete edge-case test`);
  }else if(skills.length){
   add('behavioral',`The available JD only establishes ${stack}. Describe how you would verify your current ${skills[0]} knowledge with ${intern?'a mentor':'the hiring team'}, and which missing task details you would request before choosing what to practise.`,requirement,'scope clarification for a sparse JD');
   add('design',`Using ${stack}, ${intern?'sketch a small prototype':'outline a service boundary'} only after stating which inputs, users and success criteria are missing from this JD. How would those answers change the design?`,requirement,'explicit unknowns');
