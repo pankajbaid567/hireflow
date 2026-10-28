@@ -12,6 +12,7 @@ describe('P2 evidence-aware preparation',()=>{
   const questions=localPrepQuestions({},job,adapters());
   expect(questions.length).toBeGreaterThanOrEqual(5);
   expect(questions.every(q=>q.evidence.quote===duty&&q.question.includes('study-note assistant'))).toBe(true);
+  expect(JSON.stringify(questions)).not.toContain('to Build');
   expect(JSON.stringify(questions)).not.toMatch(/Synthetic HireFlow QA|employer vacancy|Freshers welcome|Stipend INR/);
   expect(new Set(questions.map(q=>q.category))).toEqual(new Set(['technical','behavioral','design']));
  });

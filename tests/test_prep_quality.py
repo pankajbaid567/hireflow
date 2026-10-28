@@ -22,6 +22,7 @@ def test_question_duties_skip_qa_disclaimer_and_pay_metadata(mode):
     questions = local_questions(jd, "Fixture Employer", mode)
     assert len(questions) >= 5
     assert all(q["evidence"]["quote"] == duty and "study-note assistant" in q["question"] for q in questions)
+    assert not any("to Build" in q["question"] for q in questions)
     assert not any(text in str(questions) for text in ["Synthetic HireFlow QA", "employer vacancy", "Freshers welcome", "Stipend INR"])
     assert {q["category"] for q in questions} == {"technical", "behavioral", "design"}
 

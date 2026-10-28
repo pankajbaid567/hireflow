@@ -36,7 +36,8 @@ def requirements(jd, title=""):
     return selected if selected else [] if str(jd or "").strip() else ([title[:300]] if title else [])
 
 def goal(requirement):
-    return re.sub(r"^.{0,150}?\b(required to|responsible for|you will|you would|responsibilities:)\s+", "", requirement, flags=re.I).rstrip(".!? ")
+    value = re.sub(r"^.{0,150}?\b(required to|responsible for|you will|you would|responsibilities:)\s+", "", requirement, flags=re.I).rstrip(".!? ")
+    return value[:1].lower() + value[1:] if value else value
 
 def topic_analysis(profile, jd_skills, explicit_gaps=()):
     declared = {normalize_skill(skill) for skill in profile.get("skills", []) if isinstance(skill, str)}

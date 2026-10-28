@@ -43,7 +43,7 @@ function requiredSkills(job:Row,profile:Row,adapters:Pick<PrepAdapters,'skills'|
  const source=`${clean(job.title)} ${clean(job.description)}`;
  return unique([...adapters.skills(source),...list(supplied),...list(profile.skills)].filter(skill=>adapters.hasSkill(source,skill))).slice(0,30);
 }
-function goal(requirement:string){return requirement.replace(/^.{0,150}?\b(?:required to|responsible for|you will|you would|responsibilities:)\s+/i,'').replace(/[.!?]+$/,'').trim();}
+function goal(requirement:string){const value=requirement.replace(/^.{0,150}?\b(?:required to|responsible for|you will|you would|responsibilities:)\s+/i,'').replace(/[.!?]+$/,'').trim();return value?value[0].toLowerCase()+value.slice(1):value;}
 const related:Record<string,string[]>={
  fastapi:['python','flask','django'],django:['python','flask','fastapi'],flask:['python','fastapi','django'],
  typescript:['javascript'],javascript:['typescript'],'node.js':['javascript','typescript'],
