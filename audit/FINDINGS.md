@@ -64,3 +64,13 @@ F-025 · S3 · security · Proxy bootstrap-code injection on POST /profile is in
 F-026 · S3 · security · Python OpenAI/Anthropic no timeout; SSRF guard IP-literals only; 500s leak str(e) (= PY-004/005/006) · reported · open
 F-027 · S3 · test · Shared contract fixture covers pay facts only; scoring/company/status unshared (= PY-002) · reported · open
 F-028 · S3 · docs · Five conflicting test-count claims across 8+ docs (= PY-008) · supersedes F-001 scope · open
+
+## Phase 3 findings (local probes; evidence/security/)
+F-029 · S4 · security · Missing Origin accepted on cookie-bearing mutating requests (non-browser clients only; SameSite=Lax covers browsers) · confirmed · wontfix-candidate
+F-030 · S3 · security · Application-existence oracle: other user's real app → "Resource not found", missing → "Application not found" · confirmed (probe existence_oracle) · fix: identical message
+F-031 · S3 · security · listing-URL validator accepts arbitrary ports (22, 6379) and wildcard-DNS names for loopback (127.0.0.1.nip.io) · confirmed · fix: port allowlist 80/443 (+ documented), low impact on Workers
+F-032 · S3 · security · npm advisories in dev tooling: undici (via miniflare, 1 high), wrangler (moderate), follow-redirects (via axios, high) · confirmed (npm-audit-*.json) · fix: bump; not in shipped bundle
+F-022 (update) · S2 · security · ACCESS_CODE = signup bootstrap + login-as-any-user + checkpoint key source — login-as-any-user CONFIRMED dynamically · fix: separate signup token, per-user break-glass off by default, separate key
+F-034 · S4 · security · Header-only "%PDF-" file accepted for signup (honest warning shown); no structure validation · confirmed
+F-035 · S3 · test · No test deletes a workspace populated with hiring rows; relies on cascade chain · static
+F-036 · S4 · security · Login/recovery throttles are per-IP only · confirmed
