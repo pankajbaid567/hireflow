@@ -29,3 +29,24 @@ Where: evals/results/offline.json, preparation-p2.json. Evidence: git diff after
 
 F-010 · S3 · devex · `.env.example` missing DATABASE_URL_POOLED present in local .env
 Evidence: name-only diff. Effort S · med · open
+
+F-011 · S3 · maintainability · `langgraph` declared in requirements.txt but unused anywhere
+Where: requirements.txt:10 (no StateGraph in repo; grep). Fix: remove, or ADR if adopted. M8 defense Q2 references it. Effort S · high · open
+
+F-012 · S3 · correctness · Python scraper rate limit is a flat per-process sleep, not per-domain as M2 requires
+Where: src/scrapers/greenhouse_scraper.py:27, lever_scraper.py:26. Effort S · high · open
+
+F-013 · S3 · docs · Spec/design deviations recorded nowhere formally (FAISS vs D1 vectors, KV vs data/resumes, LaTeX vs ReportLab, Railway vs Cloudflare, LangGraph vs Queue)
+Where: 01-traceability-matrix.md D-1..D-7. Fix: ADRs; milestone-audit marks "scope changed". Effort S · high · needs-owner
+
+F-014 · S3 · devex · Branch protection / default `dev` branch (Issue 2) unverifiable from this machine (no gh CLI)
+Evidence: no `dev` branch locally. Status: needs-owner (check GitHub Settings). Effort S
+
+F-015 · S3 · docs · Embedding pipeline has no JD chunking and default model is BGE, not Issue 9's MiniLM; defense answers must say so
+Where: src/config/settings.py:28, src/pipelines/embedding_pipeline.py. Effort S · high · open
+
+F-016 · S4 · docs · Authorship is mixed (git shortlog: pankajbaid567 38 commits; 5 other contributors, ~25 commits) — resume ledger must not overclaim
+Evidence: `git shortlog -sn`. Status: input to Phase 8 ledger.
+
+F-017 · S3 · security · No `frontend/public/_headers` file → source of missing CSP/HSTS/frame-ancestors (extends F-006)
+Evidence: ls frontend/public/_headers: not found. Effort S · high · open

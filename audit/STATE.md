@@ -10,10 +10,11 @@ Scratchpad: /private/tmp/claude-501/-Users-pankajbaid-pankajbaid567-hireflow-hir
 
 ## Phases
 - [x] Phase 0 — baseline (00-baseline.md, FINDINGS F-001..F-010, logs in evidence/logs). All CI gates green.
-- [ ] Phase 1 — traceability matrix
+- [x] Phase 1 — traceability matrix (01-traceability-matrix.md/.csv, 172 rows, D-1..D-7 decisions, F-item triage). Generator: scratchpad/gen_matrix.py (rows are the source; regenerate by editing there if scratchpad survives, else edit md/csv directly)
 - [ ] Phases 2–9 not started
 
-Findings: 10 (0 S0, 0 S1, 5 S2, 5 S3). Blockers: none. Deploy-drift check via Cloudflare API (read-only) deferred.
+Findings: 17 (0 S0, 0 S1, 5 S2, 11 S3, 1 S4). Blockers: none. Deploy-drift check via Cloudflare API (read-only) deferred.
 
 ## Next action
-Phase 1: read MILESTONES.md, ISSUES_TRACKER.md, future.md; build audit/01-traceability-matrix.md + .csv (one row per acceptance criterion, §1.2 statuses). Consider splitting by source across subagents (read-only) once approved. Then commit audit/ docs (small themed commit).
+Phase 2 (read-only; may use 3 parallel subagents: Worker / frontend+CSS / Python+infra). Each writes audit/_lane-*.md; merge into 02-architecture-review.md with route table (read `route()` in cloudflare/src/index.ts and src/api/routes/*), data-model review, queue semantics, Mermaid diagram. Then Phase 3 (local-only exploit attempts), Phase 4, 5, 6, 7...
+Open owner decisions: D-1..D-7 (matrix), LICENSE choice, Gmail app password, branch protection check, whether AUDIT_PROMPT.md is committed.
