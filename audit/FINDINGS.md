@@ -50,3 +50,17 @@ Evidence: `git shortlog -sn`. Status: input to Phase 8 ledger.
 
 F-017 · S3 · security · No `frontend/public/_headers` file → source of missing CSP/HSTS/frame-ancestors (extends F-006)
 Evidence: ls frontend/public/_headers: not found. Effort S · high · open
+
+## Phase 2 lane findings (full detail: _lane-worker.md, _lane-frontend.md, _lane-python-infra.md)
+Registered here by reference; each becomes an F-### entry with repro/test when worked in Phase 7.
+F-018 · S1 · correctness · Python `applications` lacks UNIQUE(user_id, job_id) (= PY-001; Worker has it) · confirmed · open
+F-019 · S2 · reliability · Queue: no DLQ, 100 retries, concurrency 1, recovery depends on the queue (= W-001) · confirmed wrangler config · open
+F-020 · S2 · observability · Unhandled Worker errors → 503 with no correlation id/error class (= W-002) · reported · open
+F-021 · S2 · security · Global `jobs` keyed by URL writable by any user; first writer's content reused (= W-003) · reported · open
+F-022 · S2 · security · Single shared ACCESS_CODE gates login and derives checkpoint key (= W-004) · reported · open
+F-023 · S2 · reliability/ux · useRemote poll clears data, no abort/401/retry/error boundary (= FE-003/004/005) · reported · open
+F-024 · S2 · a11y · 9px low-contrast badges, colour-only status, no route titles/focus mgmt (= FE-010/011) · reported · open
+F-025 · S3 · security · Proxy bootstrap-code injection on POST /profile is intentional but undocumented (= FE-001, downgraded from lane's S1) · open
+F-026 · S3 · security · Python OpenAI/Anthropic no timeout; SSRF guard IP-literals only; 500s leak str(e) (= PY-004/005/006) · reported · open
+F-027 · S3 · test · Shared contract fixture covers pay facts only; scoring/company/status unshared (= PY-002) · reported · open
+F-028 · S3 · docs · Five conflicting test-count claims across 8+ docs (= PY-008) · supersedes F-001 scope · open
