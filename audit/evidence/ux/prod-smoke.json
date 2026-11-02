@@ -1,0 +1,66 @@
+[
+ {
+  "tag": "desktop",
+  "r": "/profile",
+  "title": "Profile & preferences · HireFlow",
+  "axe": [],
+  "csp": [],
+  "errs": []
+ },
+ {
+  "tag": "desktop",
+  "r": "/weekly-plan",
+  "title": "Weekly plan · HireFlow",
+  "axe": [],
+  "csp": [],
+  "errs": []
+ },
+ {
+  "tag": "desktop",
+  "r": "/applications",
+  "title": "Applications · HireFlow",
+  "axe": [],
+  "csp": [],
+  "errs": []
+ },
+ {
+  "tag": "desktop",
+  "r": "/reports",
+  "title": "Weekly report · HireFlow",
+  "axe": [],
+  "csp": [],
+  "errs": []
+ },
+ {
+  "tag": "mobile",
+  "r": "/profile",
+  "title": "Profile & preferences · HireFlow",
+  "axe": [],
+  "csp": [],
+  "errs": []
+ },
+ {
+  "tag": "mobile",
+  "r": "/weekly-plan",
+  "title": "Weekly plan · HireFlow",
+  "axe": [],
+  "csp": [],
+  "errs": []
+ },
+ {
+  "tag": "mobile",
+  "r": "/applications",
+  "title": "Applications · HireFlow",
+  "axe": [],
+  "csp": [],
+  "errs": []
+ },
+ {
+  "tag": "mobile",
+  "r": "/reports",
+  "title": "Weekly report · HireFlow",
+  "axe": [],
+  "csp": [],
+  "errs": []
+ }
+]
