@@ -41,7 +41,8 @@ async function route(request: Request, env: Env): Promise<Response> {
   if (method==='GET' && path==='/') return json({message:'HireFlow API is running',runtime:'cloudflare-workers'});
   if (method==='GET' && path==='/health') {
     await first(env,'SELECT id FROM users LIMIT 1');
-    return json({status:'ok',runtime:'cloudflare-workers'});
+    // version: the platform-provided Workers version id, so a deployment can be matched to a build (audit F-005).
+    return json({status:'ok',runtime:'cloudflare-workers',version:env.CF_VERSION_METADATA?.id??null});
   }
   if (method==='GET' && path==='/docs') return json({title:'HireFlow Cloudflare API',authentication:'Create a profile through the dashboard. Private requests require its HttpOnly session cookie. Administrative recovery uses a separate operator credential.',
     endpoints:['POST /profile','GET/PATCH /profile/{id}','POST /session/login','POST /session/logout','GET /session','POST /jobs/{id}','POST /jobs/{id}/discover','GET /weekly-plan/{id}','POST /weekly-plan/{id}/swap','POST /weekly-plan/{id}/confirm','GET /applications/{id}','GET /applications/{application_id}/prep-guide','GET /resumes/{id}','GET /resumes/{id}/{application_id}/download','POST /report/{id}/generate','GET /report/{id}/latest','GET /report/{id}/latest/html','POST /report/{id}/latest/email','POST /hiring/shortlist']});

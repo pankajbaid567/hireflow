@@ -16,6 +16,7 @@ export interface Env extends Omit<CloudflareBindings, 'APPLICATION_QUEUE' | 'SUB
   GMAIL_ALLOWED_RECIPIENTS?: string;
   GMAIL_DAILY_ATTEMPT_LIMIT?: string;
   GMAIL_ALLOW_PROFILE_EMAIL?: string;
+  CF_VERSION_METADATA?: { id: string; tag: string; timestamp: string };
   GMAIL_PROFILE_DAILY_LIMIT?: string;
   DYNAMIC_SOURCE_ENABLED?: string;
   DYNAMIC_SOURCE_HOSTS?: string;

@@ -157,3 +157,19 @@ describe('M11/F-030 tenant isolation on resume download and prep-guide existence
     expect(await real.text()).toBe(await missing.text());
   });
 });
+
+describe('F-005 /health reports the deployed version', () => {
+  let bundle: string;
+  beforeAll(() => { bundle = buildSync({ entryPoints: [`${root}src/index.ts`], bundle: true, format: 'esm', platform: 'browser', target: 'es2022', external: ['node:*', 'cloudflare:*'], write: false, logLevel: 'silent' }).outputFiles[0].text; });
+  const health = async (extra: Record<string, unknown>) => {
+    const mf = new Miniflare(convertV4MiniflareOptions({ modules: true, script: bundle, compatibilityDate: '2026-10-21', compatibilityFlags: ['nodejs_compat'], d1Databases: ['DB'], r2Buckets: ['FILES'], queueProducers: { APPLICATION_QUEUE: 'health' }, bindings: { ACCESS_CODE: code, ...extra } }));
+    try { await applyTestMigrations(await mf.getD1Database('DB')); const r = await mf.dispatchFetch('https://worker.example/health'); return { status: r.status, body: await r.json() as any }; } finally { await mf.dispose(); }
+  };
+  it('includes the Workers version id when the platform provides it', async () => {
+    const r = await health({ CF_VERSION_METADATA: { id: 'version-id-123', tag: '', timestamp: '2026-11-02T00:00:00Z' } });
+    expect(r.status).toBe(200); expect(r.body).toMatchObject({ status: 'ok', runtime: 'cloudflare-workers', version: 'version-id-123' });
+  }, 30000);
+  it('stays compatible (no version) when metadata is absent', async () => {
+    const r = await health({}); expect(r.body).toMatchObject({ status: 'ok', runtime: 'cloudflare-workers', version: null });
+  }, 30000);
+});
