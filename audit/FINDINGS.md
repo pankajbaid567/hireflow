@@ -84,3 +84,32 @@ F-041 · S4 · robustness · `extractProfile` passes experience/projects/educati
 F-042 · S4 · correctness · `parseCompensation` misses "1.2 crore per annum" with no currency symbol (safe-direction miss) · confirmed
 F-011 (update) · S3 · maintainability · six unused Python packages (langgraph, langchain, langchain-openai/-anthropic/-groq/-google-genai); no imports anywhere · confirmed by grep
 F-031 (update) · reuse stricter port rule from `intelligence.ts:311 publicUrl`; delete duplicate
+
+## Phase 5–7 additions
+F-043 · S3 · test · Intermittent ~50 s stall in per-test Miniflare boot (`tasks.test.ts`, 1 of 3 isolated runs; normally 0.8 s); caused 4 spurious mutation kills · confirmed once, cause not isolated · open
+F-044 · S2 · a11y · Low text contrast across the app (35 colours, worst 1.9:1; 15–49 serious axe nodes per route) · confirmed · **FIXED** (0 violations)
+F-045 · S3 · a11y · Same `<title>` on every route · confirmed · **FIXED**
+F-046 · S3 · ux · Empty-state button overlapped paragraph on mobile · confirmed (screenshot) · **FIXED**
+F-047 · S4 · ux · Fresh profile logs two console 404s (empty states modelled as errors) · confirmed · open
+F-048 · S4 · ux · Faint grey gradient at the left edge on mobile · confirmed · open
+F-020 (correction) · the response already carries `X-Request-ID` on every reply (index.ts); the gap was the *log line*, which lacked the id and error class · **FIXED** (log now has `request_id` + `error_class`)
+
+## Status after Phase 7 (branch audit/flagship-hardening)
+| ID | Sev | Status | How |
+|---|---|---|---|
+| F-018 | S1 | **FIXED** | Alembic 007 + model constraint; Postgres-verified |
+| F-004 | S2 | **PARTLY FIXED** | `permissions: contents: read`, Dependabot added; SHA-pinning and CodeQL still open |
+| F-006 / F-017 | S2/S3 | **FIXED in code, unproven in production** | `frontend/public/_headers` + test; verified locally in Chromium; takes effect only after a Pages deploy |
+| F-011 | S3 | **FIXED** | six unused requirements removed; suite green with imports blocked |
+| F-020 | S2 | **FIXED** (log correlation) | see above |
+| F-024 | S2 | **PARTLY FIXED** | contrast, titles, landmarks; focus management on route change not changed |
+| F-030 | S3 | **FIXED** | identical 404 for missing/foreign application on prep-guide; test |
+| F-031 | S3 | **FIXED** | default ports only; wildcard-DNS names rejected; tests |
+| F-032 | S3 | **PARTLY FIXED** | frontend lockfile clean (0 advisories); Worker dev-tooling (`wrangler`/`miniflare`, 3 advisories) needs `npm audit fix --force` → breaking bump, deferred |
+| F-037 | S3 | **FIXED** | third-party "N years" no longer a requirement; tests |
+| F-038 | S3 | **DOC-FIXED** | claim reworded in 04 / ledger / defense; benchmark v2 with BM25 row still to do |
+| F-039 | S3 | **FIXED** | model-directive filter in `prepRequirements`; tests |
+| F-040 | S4 | **FIXED** | URLs/markup/directives rejected in generated questions; tests |
+| F-041 | S4 | **FIXED** | extracted collections typed and bounded; tests |
+| F-001 / F-028 | S2/S3 | **PARTLY FIXED** | README + `docs/cloudflare.md` counts refreshed; historical verification docs left as dated records |
+| F-019, F-021, F-022, F-023, F-005, F-007, F-008, F-012, F-013, F-014, F-015, F-025, F-026, F-027, F-029, F-033–F-036, F-042, F-043, F-047, F-048 | various | **OPEN** | see ROADMAP.md |
