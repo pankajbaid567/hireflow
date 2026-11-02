@@ -122,7 +122,7 @@ npm run check --prefix cloudflare
 venv/bin/python -m pytest tests/ -v
 ```
 
-Recorded local release gates: **407 Python, 774 Worker and 157 frontend tests
+Recorded local release gates (flagship audit, branch `audit/flagship-hardening`): **415 Python, 821 Worker and 164 frontend tests
 passed**, with three Python and four Worker opt-in tests skipped. Frontend
 coverage includes five Pages deployment-guard regressions. Typecheck, Pages
 build, Worker dry run and isolated React/Worker/D1/private-file browser E2E
