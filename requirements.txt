@@ -7,12 +7,6 @@
 # ============================================================
 
 # --- Agent Orchestration ---
-langgraph>=0.1.0
-langchain>=0.2.0
-langchain-openai>=0.1.0
-langchain-anthropic>=0.1.0
-langchain-groq>=0.1.0
-langchain-google-genai>=1.0.0
 
 # --- LLM Providers (pick one - see .env.example) ---
 # Paid: OpenAI and Anthropic
