@@ -5,7 +5,7 @@ import type {SMTPTransportOptions,SMTPSentMessageInfo} from 'nodemailer/lib/smtp
 import type Mail from 'nodemailer/lib/mailer';
 import type {Env} from './types';
 
-export type GmailMessage={from:string;to:string;subject:string;html:string;attachments?:Array<{filename:string;content:string}>;messageId:string;date?:string};
+export type GmailMessage={from:string;to:string;subject:string;html:string;attachments?:Array<{filename:string;content:string}>;messageId:string;date?:string;profile_recipient?:boolean};
 export type GmailOutcome={state:'accepted';provider_message_id:string;provider_status:250}|{state:'rejected'|'uncertain';provider_status:number|null;failure_reason:string};
 const host='smtp.gmail.com',port=465,operationMs=20_000;
 const mailbox=(value:unknown):value is string=>typeof value==='string'&&value.length<=254&&/^[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9](?:[A-Za-z0-9.-]*[A-Za-z0-9])?\.[A-Za-z]{2,63}$/.test(value);
@@ -19,10 +19,12 @@ function credentials(env:Env){
  if(recipients.length>10||recipients.some(value=>!mailbox(value)))return null;
  return{user,pass,sender:user,recipients:new Set([user.toLowerCase(),...recipients.map(value=>value.toLowerCase())])};
 }
+/** When GMAIL_ALLOW_PROFILE_EMAIL="true", a signed-in account's own weekly report may go to that account's profile address. Internal callers set `profile_recipient` after binding the recipient to the owner; hiring/generic sends never do. */
+export const profileEmailDelivery=(env:Env)=>String(env.GMAIL_ALLOW_PROFILE_EMAIL||'')==='true';
 export function gmailReadiness(env:Env){return{ready:Boolean(credentials(env)),reason:'Configure GMAIL_USER and its 16-character GMAIL_APP_PASSWORD privately. Gmail recipients are restricted to the sender or an operator-configured private allowlist.'};}
 export function gmailRecipientAllowed(env:Env,recipient:string){const config=credentials(env);return Boolean(config&&mailbox(recipient)&&config.recipients.has(recipient.toLowerCase()));}
-function prepared(message:GmailMessage,config:NonNullable<ReturnType<typeof credentials>>){
- if(!message||!mailbox(message.from)||message.from.toLowerCase()!==config.user.toLowerCase()||!mailbox(message.to)||!config.recipients.has(message.to.toLowerCase()))return null;
+function prepared(message:GmailMessage,config:NonNullable<ReturnType<typeof credentials>>,profileAllowed=false){
+ if(!message||!mailbox(message.from)||message.from.toLowerCase()!==config.user.toLowerCase()||!mailbox(message.to)||!(config.recipients.has(message.to.toLowerCase())||profileAllowed&&message.profile_recipient===true))return null;
  if(typeof message.subject!=='string'||!message.subject.trim()||Buffer.byteLength(message.subject)>200||/[\x00-\x1f\x7f]/.test(message.subject))return null;
  if(typeof message.html!=='string'||Buffer.byteLength(message.html)>250000||typeof message.messageId!=='string'||!/^<[A-Za-z0-9_.-]{1,128}@[A-Za-z0-9.-]{1,128}>$/.test(message.messageId))return null;
  if(message.date!==undefined&&(typeof message.date!=='string'||!/^\d{4}-\d{2}-\d{2}T[0-9:.]+Z$/.test(message.date)||!Number.isFinite(Date.parse(message.date))))return null;
@@ -68,7 +70,7 @@ export async function probeGmailConnection(){
 /** One SMTP transaction, no pooling or automatic retry; all failure text is fixed. */
 export async function sendGmailMessage(env:Env,message:GmailMessage):Promise<GmailOutcome>{
  const config=credentials(env);if(!config)return rejected(gmailReadiness(env).reason);
- const mail=prepared(message,config);if(!mail)return rejected('Gmail delivery rejected unsafe message data or a recipient outside the private sender allowlist. No SMTP connection was opened.');
+ const mail=prepared(message,config,profileEmailDelivery(env));if(!mail)return rejected('Gmail delivery rejected unsafe message data or a recipient outside the private sender allowlist. No SMTP connection was opened.');
  try{return await gmailSession({user:config.user,pass:config.pass},async client=>{
   // Both weekly and hiring sends reserve this same global Free-demo allowance.
   // Interrupted or unknown outcomes remain charged; SMTP has no idempotency key.
