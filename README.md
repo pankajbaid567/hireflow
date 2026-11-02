@@ -55,7 +55,7 @@ A full engineering audit of this repository lives in [`audit/`](audit/FINAL_REPO
 
 [Deployment and resource details](docs/cloudflare.md) include the actual bindings, secrets, quotas, commands, and verification status. No provider secret belongs in browser code.
 
-The current production deployment (2 November 2026) is built from `main` through PR #19: Worker `hireflow-api` version `19f2e73a-2d9e-4429-89b8-998baee25c48` and Pages `hireflow-dashboard` deployment `ddf064f4` (both are direct uploads, so merging does not deploy; run `wrangler deploy` in `cloudflare/` and `npm run deploy:cloudflare` in `frontend/`). Deployment checks are in [`audit/FINAL_REPORT.md` §9](audit/FINAL_REPORT.md); older evidence stays in
+The current production deployment (2 November 2026) is built from `main` at `e744e3e` plus the dead-letter-queue config: Worker `hireflow-api` version `7be1cc32-8e5a-4f54-a4dc-558da541aea6` (also returned by `/health`) and Pages `hireflow-dashboard` deployment `f04b0f6f` (both are direct uploads, so merging does not deploy; run `wrangler deploy` in `cloudflare/` and `npm run deploy:cloudflare` in `frontend/`). Deployment checks are in [`audit/FINAL_REPORT.md` §9](audit/FINAL_REPORT.md); older evidence stays in
 [P3 verification](docs/p3-verification.md) and [P2 verification](docs/p2-verification.md).
 
 ## User flow

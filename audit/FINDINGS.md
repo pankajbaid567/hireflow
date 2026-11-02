@@ -117,3 +117,5 @@ F-020 (correction) · the response already carries `X-Request-ID` on every reply
 ## Update after follow-up work
 F-005 FIXED (`/health` returns the Workers version id via `version_metadata`; also, `/health` already probed D1, so F-007 is narrower than recorded: KV/Queue are not probed). M01/M02/M03/M06 race and ordering tests added and verified by mutation (M04 remains redundant). Profile-email delivery added (flag, per-account cap) — see FINAL_REPORT §9.
 F-023 PARTLY FIXED: `useRemote` keeps data during reload/poll (`refreshing`), clears only on a new resource, ignores stale responses; 4 tests. Still open: request abort and 401 handling.
+F-019 PARTLY FIXED: DLQ `hireflow-applications-dlq` attached to the consumer (retries unchanged at 100 by design). Open: DLQ alert and replay runbook.
+F-005 FIXED in production: `/health` returns the Workers version id.
