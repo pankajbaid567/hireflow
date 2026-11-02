@@ -1,0 +1,767 @@
+{
+ "steps": [
+  {
+   "vp": "desktop",
+   "afterSave": "Skip to content hireflow . YOUR WORKSPACE Weekly plan Applications Resume library Weekly report Hiring shortlist Small steps. Real progress. Your next chapter starts with one thoughtful move. Profile & preferences U UX Tester Profile 2 · Internship Workspace My career A little closer to what’s next ",
+   "url": "http://127.0.0.1:4173/profile"
+  },
+  {
+   "vp": "desktop",
+   "session": {
+    "status": 200,
+    "text": "{\"authenticated\":true,\"user_id\":2}"
+   }
+  },
+  {
+   "vp": "desktop",
+   "uid": [],
+   "cookieNames": [
+    "hireflow_session"
+   ]
+  },
+  {
+   "vp": "desktop",
+   "bag": {
+    "csp": [],
+    "console": [
+     "Failed to load resource: the server responded with a status of 404 (Not Found)",
+     "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    ],
+    "failed": [
+     "404 GET /api/jobs/2/discovery-cycles",
+     "404 GET /api/report/2/latest"
+    ],
+    "pageErrors": []
+   }
+  },
+  {
+   "vp": "mobile",
+   "afterSave": "Skip to content hireflow . YOUR WORKSPACE Weekly plan Applications Resume library Weekly report Hiring shortlist Small steps. Real progress. Your next chapter starts with one thoughtful move. Profile & preferences U UX Tester Profile 3 · Internship My career U YOUR FOUNDATION A profile that feels li",
+   "url": "http://127.0.0.1:4173/profile"
+  },
+  {
+   "vp": "mobile",
+   "session": {
+    "status": 200,
+    "text": "{\"authenticated\":true,\"user_id\":3}"
+   }
+  },
+  {
+   "vp": "mobile",
+   "uid": [],
+   "cookieNames": [
+    "hireflow_session"
+   ]
+  },
+  {
+   "vp": "mobile",
+   "bag": {
+    "csp": [],
+    "console": [
+     "Failed to load resource: the server responded with a status of 404 (Not Found)",
+     "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    ],
+    "failed": [
+     "404 GET /api/jobs/3/discovery-cycles",
+     "404 GET /api/report/3/latest"
+    ],
+    "pageErrors": []
+   }
+  }
+ ],
+ "routes": [
+  {
+   "vp": "desktop",
+   "route": "/weekly-plan",
+   "title": "HireFlow · Your career, in motion",
+   "h1": [
+    "Your weekly plan."
+   ],
+   "overflow": {
+    "scrollW": 1366,
+    "clientW": 1366
+   },
+   "hOverflow": false,
+   "axe": [
+    {
+     "id": "color-contrast",
+     "impact": "serious",
+     "nodes": 23,
+     "sample": ".workspace-label"
+    },
+    {
+     "id": "region",
+     "impact": "moderate",
+     "nodes": 3,
+     "sample": ".breadcrumb > span"
+    }
+   ],
+   "tabs": [
+    "a:Skip to content",
+    "a:hireflow\n.",
+    "a:Weekly plan",
+    "a:Applications",
+    "a:Resume library",
+    "a:Weekly report",
+    "a:Hiring shortlist",
+    "a:Profile & preferences",
+    "a:Your profile",
+    "button:Refresh plan",
+    "button:Find opportunities",
+    "summary:Add an opportunity"
+   ],
+   "text": "Skip to content hireflow . YOUR WORKSPACE Weekly plan Applications Resume library Weekly report Hiring shortlist Small steps. Real progress. Your next chapter s"
+  },
+  {
+   "vp": "desktop",
+   "route": "/applications",
+   "title": "HireFlow · Your career, in motion",
+   "h1": [
+    "Your applications."
+   ],
+   "overflow": {
+    "scrollW": 1366,
+    "clientW": 1366
+   },
+   "hOverflow": false,
+   "axe": [
+    {
+     "id": "color-contrast",
+     "impact": "serious",
+     "nodes": 18,
+     "sample": ".workspace-label"
+    },
+    {
+     "id": "region",
+     "impact": "moderate",
+     "nodes": 3,
+     "sample": ".breadcrumb > span"
+    }
+   ],
+   "tabs": [
+    "a:Skip to content",
+    "a:hireflow\n.",
+    "a:Weekly plan",
+    "a:Applications",
+    "a:Resume library",
+    "a:Weekly report",
+    "a:Hiring shortlist",
+    "a:Profile & preferences",
+    "a:Your profile",
+    "button:Refresh",
+    "select:All statuses\nplanned\nconfirm",
+    "a:View weekly plan"
+   ],
+   "text": "Skip to content hireflow . YOUR WORKSPACE Weekly plan Applications Resume library Weekly report Hiring shortlist Small steps. Real progress. Your next chapter s"
+  },
+  {
+   "vp": "desktop",
+   "route": "/resumes",
+   "title": "HireFlow · Your career, in motion",
+   "h1": [
+    "Your resume library."
+   ],
+   "overflow": {
+    "scrollW": 1366,
+    "clientW": 1366
+   },
+   "hOverflow": false,
+   "axe": [
+    {
+     "id": "color-contrast",
+     "impact": "serious",
+     "nodes": 16,
+     "sample": ".workspace-label"
+    },
+    {
+     "id": "region",
+     "impact": "moderate",
+     "nodes": 3,
+     "sample": ".breadcrumb > span"
+    }
+   ],
+   "tabs": [
+    "a:Skip to content",
+    "a:hireflow\n.",
+    "a:Weekly plan",
+    "a:Applications",
+    "a:Resume library",
+    "a:Weekly report",
+    "a:Hiring shortlist",
+    "a:Profile & preferences",
+    "a:Your profile",
+    "body",
+    "a:Skip to content",
+    "a:hireflow\n."
+   ],
+   "text": "Skip to content hireflow . YOUR WORKSPACE Weekly plan Applications Resume library Weekly report Hiring shortlist Small steps. Real progress. Your next chapter s"
+  },
+  {
+   "vp": "desktop",
+   "route": "/reports",
+   "title": "HireFlow · Your career, in motion",
+   "h1": [
+    "Your weekly report."
+   ],
+   "overflow": {
+    "scrollW": 1366,
+    "clientW": 1366
+   },
+   "hOverflow": false,
+   "axe": [
+    {
+     "id": "color-contrast",
+     "impact": "serious",
+     "nodes": 15,
+     "sample": ".workspace-label"
+    },
+    {
+     "id": "region",
+     "impact": "moderate",
+     "nodes": 3,
+     "sample": ".breadcrumb > span"
+    }
+   ],
+   "tabs": [
+    "a:Skip to content",
+    "a:hireflow\n.",
+    "a:Weekly plan",
+    "a:Applications",
+    "a:Resume library",
+    "a:Weekly report",
+    "a:Hiring shortlist",
+    "a:Profile & preferences",
+    "a:Your profile",
+    "button:Generate this week",
+    "button:Try again",
+    "a:Skip to content"
+   ],
+   "text": "Skip to content hireflow . YOUR WORKSPACE Weekly plan Applications Resume library Weekly report Hiring shortlist Small steps. Real progress. Your next chapter s"
+  },
+  {
+   "vp": "desktop",
+   "route": "/hiring",
+   "title": "HireFlow · Your career, in motion",
+   "h1": [
+    "Review candidates thoughtfully."
+   ],
+   "overflow": {
+    "scrollW": 1366,
+    "clientW": 1366
+   },
+   "hOverflow": false,
+   "axe": [
+    {
+     "id": "color-contrast",
+     "impact": "serious",
+     "nodes": 18,
+     "sample": ".workspace-label"
+    },
+    {
+     "id": "region",
+     "impact": "moderate",
+     "nodes": 3,
+     "sample": ".breadcrumb > span"
+    }
+   ],
+   "tabs": [
+    "a:Skip to content",
+    "a:hireflow\n.",
+    "a:Weekly plan",
+    "a:Applications",
+    "a:Resume library",
+    "a:Weekly report",
+    "a:Hiring shortlist",
+    "a:Profile & preferences",
+    "a:Your profile",
+    "input:",
+    "select:Internship\nJob",
+    "input:"
+   ],
+   "text": "Skip to content hireflow . YOUR WORKSPACE Weekly plan Applications Resume library Weekly report Hiring shortlist Small steps. Real progress. Your next chapter s"
+  },
+  {
+   "vp": "desktop",
+   "route": "/profile",
+   "title": "HireFlow · Your career, in motion",
+   "h1": [
+    "A profile that feels like you."
+   ],
+   "overflow": {
+    "scrollW": 1366,
+    "clientW": 1366
+   },
+   "hOverflow": false,
+   "axe": [
+    {
+     "id": "color-contrast",
+     "impact": "serious",
+     "nodes": 49,
+     "sample": ".workspace-label"
+    },
+    {
+     "id": "landmark-unique",
+     "impact": "moderate",
+     "nodes": 1,
+     "sample": ".sidebar"
+    },
+    {
+     "id": "region",
+     "impact": "moderate",
+     "nodes": 3,
+     "sample": ".breadcrumb > span"
+    }
+   ],
+   "tabs": [
+    "a:Skip to content",
+    "a:hireflow\n.",
+    "a:Weekly plan",
+    "a:Applications",
+    "a:Resume library",
+    "a:Weekly report",
+    "a:Hiring shortlist",
+    "a:Profile & preferences",
+    "a:Your profile",
+    "input:name",
+    "input:email",
+    "input:phone"
+   ],
+   "text": "Skip to content hireflow . YOUR WORKSPACE Weekly plan Applications Resume library Weekly report Hiring shortlist Small steps. Real progress. Your next chapter s"
+  },
+  {
+   "vp": "mobile",
+   "route": "/weekly-plan",
+   "title": "HireFlow · Your career, in motion",
+   "h1": [
+    "Your weekly plan."
+   ],
+   "overflow": {
+    "scrollW": 390,
+    "clientW": 390
+   },
+   "hOverflow": false,
+   "axe": [
+    {
+     "id": "color-contrast",
+     "impact": "serious",
+     "nodes": 11,
+     "sample": ".breadcrumb > strong"
+    },
+    {
+     "id": "region",
+     "impact": "moderate",
+     "nodes": 2,
+     "sample": ".breadcrumb > strong"
+    }
+   ],
+   "tabs": [
+    "a:Skip to content",
+    "a:hireflow\n.",
+    "button:Close navigation",
+    "a:Weekly plan",
+    "a:Applications",
+    "a:Resume library",
+    "a:Weekly report",
+    "a:Hiring shortlist",
+    "a:Profile & preferences",
+    "button:Open navigation",
+    "a:Your profile",
+    "button:Refresh plan"
+   ],
+   "text": "Skip to content hireflow . YOUR WORKSPACE Weekly plan Applications Resume library Weekly report Hiring shortlist Small steps. Real progress. Your next chapter s"
+  },
+  {
+   "vp": "mobile",
+   "route": "/applications",
+   "title": "HireFlow · Your career, in motion",
+   "h1": [
+    "Your applications."
+   ],
+   "overflow": {
+    "scrollW": 390,
+    "clientW": 390
+   },
+   "hOverflow": false,
+   "axe": [
+    {
+     "id": "color-contrast",
+     "impact": "serious",
+     "nodes": 6,
+     "sample": ".breadcrumb > strong"
+    },
+    {
+     "id": "region",
+     "impact": "moderate",
+     "nodes": 2,
+     "sample": ".breadcrumb > strong"
+    }
+   ],
+   "tabs": [
+    "a:Skip to content",
+    "a:hireflow\n.",
+    "button:Close navigation",
+    "a:Weekly plan",
+    "a:Applications",
+    "a:Resume library",
+    "a:Weekly report",
+    "a:Hiring shortlist",
+    "a:Profile & preferences",
+    "button:Open navigation",
+    "a:Your profile",
+    "button:Refresh"
+   ],
+   "text": "Skip to content hireflow . YOUR WORKSPACE Weekly plan Applications Resume library Weekly report Hiring shortlist Small steps. Real progress. Your next chapter s"
+  },
+  {
+   "vp": "mobile",
+   "route": "/resumes",
+   "title": "HireFlow · Your career, in motion",
+   "h1": [
+    "Your resume library."
+   ],
+   "overflow": {
+    "scrollW": 390,
+    "clientW": 390
+   },
+   "hOverflow": false,
+   "axe": [
+    {
+     "id": "color-contrast",
+     "impact": "serious",
+     "nodes": 5,
+     "sample": ".breadcrumb > strong"
+    },
+    {
+     "id": "region",
+     "impact": "moderate",
+     "nodes": 2,
+     "sample": ".breadcrumb > strong"
+    }
+   ],
+   "tabs": [
+    "a:Skip to content",
+    "a:hireflow\n.",
+    "button:Close navigation",
+    "a:Weekly plan",
+    "a:Applications",
+    "a:Resume library",
+    "a:Weekly report",
+    "a:Hiring shortlist",
+    "a:Profile & preferences",
+    "button:Open navigation",
+    "a:Your profile",
+    "body"
+   ],
+   "text": "Skip to content hireflow . YOUR WORKSPACE Weekly plan Applications Resume library Weekly report Hiring shortlist Small steps. Real progress. Your next chapter s"
+  },
+  {
+   "vp": "mobile",
+   "route": "/reports",
+   "title": "HireFlow · Your career, in motion",
+   "h1": [
+    "Your weekly report."
+   ],
+   "overflow": {
+    "scrollW": 390,
+    "clientW": 390
+   },
+   "hOverflow": false,
+   "axe": [
+    {
+     "id": "color-contrast",
+     "impact": "serious",
+     "nodes": 4,
+     "sample": ".breadcrumb > strong"
+    },
+    {
+     "id": "region",
+     "impact": "moderate",
+     "nodes": 2,
+     "sample": ".breadcrumb > strong"
+    }
+   ],
+   "tabs": [
+    "a:Skip to content",
+    "a:hireflow\n.",
+    "button:Close navigation",
+    "a:Weekly plan",
+    "a:Applications",
+    "a:Resume library",
+    "a:Weekly report",
+    "a:Hiring shortlist",
+    "a:Profile & preferences",
+    "button:Open navigation",
+    "a:Your profile",
+    "button:Generate this week"
+   ],
+   "text": "Skip to content hireflow . YOUR WORKSPACE Weekly plan Applications Resume library Weekly report Hiring shortlist Small steps. Real progress. Your next chapter s"
+  },
+  {
+   "vp": "mobile",
+   "route": "/hiring",
+   "title": "HireFlow · Your career, in motion",
+   "h1": [
+    "Review candidates thoughtfully."
+   ],
+   "overflow": {
+    "scrollW": 390,
+    "clientW": 390
+   },
+   "hOverflow": false,
+   "axe": [
+    {
+     "id": "color-contrast",
+     "impact": "serious",
+     "nodes": 7,
+     "sample": ".breadcrumb > strong"
+    },
+    {
+     "id": "region",
+     "impact": "moderate",
+     "nodes": 2,
+     "sample": ".breadcrumb > strong"
+    }
+   ],
+   "tabs": [
+    "a:Skip to content",
+    "a:hireflow\n.",
+    "button:Close navigation",
+    "a:Weekly plan",
+    "a:Applications",
+    "a:Resume library",
+    "a:Weekly report",
+    "a:Hiring shortlist",
+    "a:Profile & preferences",
+    "button:Open navigation",
+    "a:Your profile",
+    "input:"
+   ],
+   "text": "Skip to content hireflow . YOUR WORKSPACE Weekly plan Applications Resume library Weekly report Hiring shortlist Small steps. Real progress. Your next chapter s"
+  },
+  {
+   "vp": "mobile",
+   "route": "/profile",
+   "title": "HireFlow · Your career, in motion",
+   "h1": [
+    "A profile that feels like you."
+   ],
+   "overflow": {
+    "scrollW": 390,
+    "clientW": 390
+   },
+   "hOverflow": false,
+   "axe": [
+    {
+     "id": "color-contrast",
+     "impact": "serious",
+     "nodes": 38,
+     "sample": ".breadcrumb > strong"
+    },
+    {
+     "id": "landmark-unique",
+     "impact": "moderate",
+     "nodes": 1,
+     "sample": ".sidebar"
+    },
+    {
+     "id": "region",
+     "impact": "moderate",
+     "nodes": 2,
+     "sample": ".breadcrumb > strong"
+    }
+   ],
+   "tabs": [
+    "a:Skip to content",
+    "a:hireflow\n.",
+    "button:Close navigation",
+    "a:Weekly plan",
+    "a:Applications",
+    "a:Resume library",
+    "a:Weekly report",
+    "a:Hiring shortlist",
+    "a:Profile & preferences",
+    "button:Open navigation",
+    "a:Your profile",
+    "input:name"
+   ],
+   "text": "Skip to content hireflow . YOUR WORKSPACE Weekly plan Applications Resume library Weekly report Hiring shortlist Small steps. Real progress. Your next chapter s"
+  }
+ ],
+ "contrast": {
+  "#94a092 on #ffffff": {
+   "ratio": 2.72,
+   "size": "6.8pt (9px)",
+   "count": 6
+  },
+  "#77847a on #ffffff": {
+   "ratio": 3.91,
+   "size": "9.0pt (12px)",
+   "count": 30
+  },
+  "#929c87 on #f5f7ef": {
+   "ratio": 2.65,
+   "size": "8.3pt (11px)",
+   "count": 6
+  },
+  "#96a08f on #ffffff": {
+   "ratio": 2.71,
+   "size": "7.5pt (10px)",
+   "count": 6
+  },
+  "#a1aa9f on #fdfdfc": {
+   "ratio": 2.35,
+   "size": "8.3pt (11px)",
+   "count": 6
+  },
+  "#71806f on #fdfdfc": {
+   "ratio": 4.11,
+   "size": "8.3pt (11px)",
+   "count": 12
+  },
+  "#939f8e on #fdfdfc": {
+   "ratio": 2.71,
+   "size": "7.5pt (10px)",
+   "count": 6
+  },
+  "#8a9a81 on #f7f8f5": {
+   "ratio": 2.8,
+   "size": "6.8pt (9px)",
+   "count": 12
+  },
+  "#8a9588 on #f7f8f5": {
+   "ratio": 2.92,
+   "size": "9.0pt (12px)",
+   "count": 12
+  },
+  "#8e9c80 on #ffffff": {
+   "ratio": 2.9,
+   "size": "8.3pt (11px)",
+   "count": 2
+  },
+  "#81946e on #ffffff": {
+   "ratio": 3.28,
+   "size": "8.3pt (11px)",
+   "count": 2
+  },
+  "#929e87 on #ffffff": {
+   "ratio": 2.81,
+   "size": "8.3pt (11px)",
+   "count": 12
+  },
+  "#8b9880 on #ffffff": {
+   "ratio": 3.04,
+   "size": "7.5pt (10px)",
+   "count": 4
+  },
+  "#657a51 on #eef3e7": {
+   "ratio": 4.17,
+   "size": "9.8pt (13px)",
+   "count": 2
+  },
+  "#92a17f on #eef3e7": {
+   "ratio": 2.44,
+   "size": "8.3pt (11px)",
+   "count": 2
+  },
+  "#7e916a on #f9fbf4": {
+   "ratio": 3.27,
+   "size": "7.5pt (10px)",
+   "count": 1
+  },
+  "#8d9885 on #ffffff": {
+   "ratio": 3.01,
+   "size": "9.0pt (12px)",
+   "count": 6
+  },
+  "#a2ac9c on #f7f8f5": {
+   "ratio": 2.2,
+   "size": "6.8pt (9px)",
+   "count": 18
+  },
+  "#9ca78f on #ffffff": {
+   "ratio": 2.51,
+   "size": "7.5pt (10px)",
+   "count": 2
+  },
+  "#95a18a on #ffffff": {
+   "ratio": 2.71,
+   "size": "6.8pt (9px)",
+   "count": 1
+  },
+  "#7a867f on #ffffff": {
+   "ratio": 3.78,
+   "size": "9.0pt (12px)",
+   "count": 2
+  },
+  "#95a08c on #ffffff": {
+   "ratio": 2.73,
+   "size": "7.5pt (10px)",
+   "count": 16
+  },
+  "#93a089 on #ffffff": {
+   "ratio": 2.75,
+   "size": "8.3pt (11px)",
+   "count": 2
+  },
+  "#9aa48e on #f5f8ee": {
+   "ratio": 2.42,
+   "size": "7.5pt (10px)",
+   "count": 2
+  },
+  "#99a18f on #ffffff": {
+   "ratio": 2.67,
+   "size": "9.0pt (12px)",
+   "count": 2
+  },
+  "#9aa48e on #ffffff": {
+   "ratio": 2.6,
+   "size": "7.5pt (10px)",
+   "count": 2
+  },
+  "#8b9984 on #ffffff": {
+   "ratio": 3,
+   "size": "7.5pt (10px)",
+   "count": 12
+  },
+  "#6d7f59 on #fbfcf8": {
+   "ratio": 4.21,
+   "size": "9.0pt (12px)",
+   "count": 2
+  },
+  "#a0ab95 on #fbfcf8": {
+   "ratio": 2.32,
+   "size": "7.5pt (10px)",
+   "count": 2
+  },
+  "#7a867f on #fbfcf8": {
+   "ratio": 3.67,
+   "size": "9.0pt (12px)",
+   "count": 2
+  },
+  "#9aa48f on #ffffff": {
+   "ratio": 2.59,
+   "size": "7.5pt (10px)",
+   "count": 2
+  },
+  "#8a9a81 on #edf2e4": {
+   "ratio": 2.62,
+   "size": "6.0pt (8px)",
+   "count": 2
+  },
+  "#92a084 on #edf2e4": {
+   "ratio": 2.42,
+   "size": "8.3pt (11px)",
+   "count": 2
+  },
+  "#718562 on #edf2e4": {
+   "ratio": 3.52,
+   "size": "7.5pt (10px)",
+   "count": 6
+  },
+  "#a5b694 on #edf2e4": {
+   "ratio": 1.89,
+   "size": "12.0pt (16px)",
+   "count": 6
+  }
+ }
+}

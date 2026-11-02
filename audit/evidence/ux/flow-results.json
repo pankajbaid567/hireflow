@@ -1,0 +1,415 @@
+{
+ "steps": [
+  {
+   "vp": "desktop",
+   "afterSave": "Skip to content hireflow . YOUR WORKSPACE Weekly plan Applications Resume library Weekly report Hiring shortlist Small steps. Real progress. Your next chapter starts with one thoughtful move. Profile & preferences Your workspace Let’s Get You Started Workspace My career A little closer to what’s nex",
+   "url": "http://127.0.0.1:4173/profile"
+  },
+  {
+   "vp": "desktop",
+   "session": {
+    "status": 200,
+    "text": "{\"authenticated\":false}"
+   }
+  },
+  {
+   "vp": "desktop",
+   "uid": [],
+   "cookieNames": []
+  },
+  {
+   "vp": "desktop",
+   "bag": {
+    "csp": [],
+    "console": [
+     "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    ],
+    "failed": [
+     "429 POST /api/profile"
+    ],
+    "pageErrors": []
+   }
+  },
+  {
+   "vp": "mobile",
+   "afterSave": "Skip to content hireflow . YOUR WORKSPACE Weekly plan Applications Resume library Weekly report Hiring shortlist Small steps. Real progress. Your next chapter starts with one thoughtful move. Profile & preferences Your workspace Let’s Get You Started My career YOUR FOUNDATION A profile that feels li",
+   "url": "http://127.0.0.1:4173/profile"
+  },
+  {
+   "vp": "mobile",
+   "session": {
+    "status": 200,
+    "text": "{\"authenticated\":false}"
+   }
+  },
+  {
+   "vp": "mobile",
+   "uid": [],
+   "cookieNames": []
+  },
+  {
+   "vp": "mobile",
+   "bag": {
+    "csp": [],
+    "console": [
+     "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    ],
+    "failed": [
+     "429 POST /api/profile"
+    ],
+    "pageErrors": []
+   }
+  }
+ ],
+ "routes": [
+  {
+   "vp": "desktop",
+   "route": "/weekly-plan",
+   "title": "Weekly plan · HireFlow",
+   "h1": [
+    "Your weekly plan."
+   ],
+   "overflow": {
+    "scrollW": 1366,
+    "clientW": 1366
+   },
+   "hOverflow": false,
+   "axe": [],
+   "tabs": [
+    "a:Skip to content",
+    "a:hireflow\n.",
+    "a:Weekly plan",
+    "a:Applications",
+    "a:Resume library",
+    "a:Weekly report",
+    "a:Hiring shortlist",
+    "a:Profile & preferences",
+    "a:Your profile",
+    "a:Set up profile",
+    "body",
+    "a:Skip to content"
+   ],
+   "text": "Skip to content hireflow . YOUR WORKSPACE Weekly plan Applications Resume library Weekly report Hiring shortlist Small steps. Real progress. Your next chapter s"
+  },
+  {
+   "vp": "desktop",
+   "route": "/applications",
+   "title": "Applications · HireFlow",
+   "h1": [
+    "Your applications."
+   ],
+   "overflow": {
+    "scrollW": 1366,
+    "clientW": 1366
+   },
+   "hOverflow": false,
+   "axe": [],
+   "tabs": [
+    "a:Skip to content",
+    "a:hireflow\n.",
+    "a:Weekly plan",
+    "a:Applications",
+    "a:Resume library",
+    "a:Weekly report",
+    "a:Hiring shortlist",
+    "a:Profile & preferences",
+    "a:Your profile",
+    "a:Set up profile",
+    "a:Skip to content",
+    "a:hireflow\n."
+   ],
+   "text": "Skip to content hireflow . YOUR WORKSPACE Weekly plan Applications Resume library Weekly report Hiring shortlist Small steps. Real progress. Your next chapter s"
+  },
+  {
+   "vp": "desktop",
+   "route": "/resumes",
+   "title": "Resume library · HireFlow",
+   "h1": [
+    "Your resume library."
+   ],
+   "overflow": {
+    "scrollW": 1366,
+    "clientW": 1366
+   },
+   "hOverflow": false,
+   "axe": [],
+   "tabs": [
+    "a:Skip to content",
+    "a:hireflow\n.",
+    "a:Weekly plan",
+    "a:Applications",
+    "a:Resume library",
+    "a:Weekly report",
+    "a:Hiring shortlist",
+    "a:Profile & preferences",
+    "a:Your profile",
+    "a:Set up profile",
+    "body",
+    "a:Skip to content"
+   ],
+   "text": "Skip to content hireflow . YOUR WORKSPACE Weekly plan Applications Resume library Weekly report Hiring shortlist Small steps. Real progress. Your next chapter s"
+  },
+  {
+   "vp": "desktop",
+   "route": "/reports",
+   "title": "Weekly report · HireFlow",
+   "h1": [
+    "Your weekly report."
+   ],
+   "overflow": {
+    "scrollW": 1366,
+    "clientW": 1366
+   },
+   "hOverflow": false,
+   "axe": [],
+   "tabs": [
+    "a:Skip to content",
+    "a:hireflow\n.",
+    "a:Weekly plan",
+    "a:Applications",
+    "a:Resume library",
+    "a:Weekly report",
+    "a:Hiring shortlist",
+    "a:Profile & preferences",
+    "a:Your profile",
+    "a:Set up profile",
+    "a:Skip to content",
+    "a:hireflow\n."
+   ],
+   "text": "Skip to content hireflow . YOUR WORKSPACE Weekly plan Applications Resume library Weekly report Hiring shortlist Small steps. Real progress. Your next chapter s"
+  },
+  {
+   "vp": "desktop",
+   "route": "/hiring",
+   "title": "Hiring shortlist · HireFlow",
+   "h1": [
+    "Review candidates thoughtfully."
+   ],
+   "overflow": {
+    "scrollW": 1366,
+    "clientW": 1366
+   },
+   "hOverflow": false,
+   "axe": [],
+   "tabs": [
+    "a:Skip to content",
+    "a:hireflow\n.",
+    "a:Weekly plan",
+    "a:Applications",
+    "a:Resume library",
+    "a:Weekly report",
+    "a:Hiring shortlist",
+    "a:Profile & preferences",
+    "a:Your profile",
+    "a:Set up profile",
+    "body",
+    "a:Skip to content"
+   ],
+   "text": "Skip to content hireflow . YOUR WORKSPACE Weekly plan Applications Resume library Weekly report Hiring shortlist Small steps. Real progress. Your next chapter s"
+  },
+  {
+   "vp": "desktop",
+   "route": "/profile",
+   "title": "Profile & preferences · HireFlow",
+   "h1": [
+    "A profile that feels like you."
+   ],
+   "overflow": {
+    "scrollW": 1366,
+    "clientW": 1366
+   },
+   "hOverflow": false,
+   "axe": [],
+   "tabs": [
+    "a:Skip to content",
+    "a:hireflow\n.",
+    "a:Weekly plan",
+    "a:Applications",
+    "a:Resume library",
+    "a:Weekly report",
+    "a:Hiring shortlist",
+    "a:Profile & preferences",
+    "a:Your profile",
+    "summary:Already have a workspace? Si",
+    "input:Resume PDF",
+    "input:name"
+   ],
+   "text": "Skip to content hireflow . YOUR WORKSPACE Weekly plan Applications Resume library Weekly report Hiring shortlist Small steps. Real progress. Your next chapter s"
+  },
+  {
+   "vp": "mobile",
+   "route": "/weekly-plan",
+   "title": "Weekly plan · HireFlow",
+   "h1": [
+    "Your weekly plan."
+   ],
+   "overflow": {
+    "scrollW": 390,
+    "clientW": 390
+   },
+   "hOverflow": false,
+   "axe": [],
+   "tabs": [
+    "a:Skip to content",
+    "a:hireflow\n.",
+    "button:Close navigation",
+    "a:Weekly plan",
+    "a:Applications",
+    "a:Resume library",
+    "a:Weekly report",
+    "a:Hiring shortlist",
+    "a:Profile & preferences",
+    "button:Open navigation",
+    "a:Your profile",
+    "a:Set up profile"
+   ],
+   "text": "Skip to content hireflow . YOUR WORKSPACE Weekly plan Applications Resume library Weekly report Hiring shortlist Small steps. Real progress. Your next chapter s"
+  },
+  {
+   "vp": "mobile",
+   "route": "/applications",
+   "title": "Applications · HireFlow",
+   "h1": [
+    "Your applications."
+   ],
+   "overflow": {
+    "scrollW": 390,
+    "clientW": 390
+   },
+   "hOverflow": false,
+   "axe": [],
+   "tabs": [
+    "a:Skip to content",
+    "a:hireflow\n.",
+    "button:Close navigation",
+    "a:Weekly plan",
+    "a:Applications",
+    "a:Resume library",
+    "a:Weekly report",
+    "a:Hiring shortlist",
+    "a:Profile & preferences",
+    "button:Open navigation",
+    "a:Your profile",
+    "a:Set up profile"
+   ],
+   "text": "Skip to content hireflow . YOUR WORKSPACE Weekly plan Applications Resume library Weekly report Hiring shortlist Small steps. Real progress. Your next chapter s"
+  },
+  {
+   "vp": "mobile",
+   "route": "/resumes",
+   "title": "Resume library · HireFlow",
+   "h1": [
+    "Your resume library."
+   ],
+   "overflow": {
+    "scrollW": 390,
+    "clientW": 390
+   },
+   "hOverflow": false,
+   "axe": [],
+   "tabs": [
+    "a:Skip to content",
+    "a:hireflow\n.",
+    "button:Close navigation",
+    "a:Weekly plan",
+    "a:Applications",
+    "a:Resume library",
+    "a:Weekly report",
+    "a:Hiring shortlist",
+    "a:Profile & preferences",
+    "button:Open navigation",
+    "a:Your profile",
+    "a:Set up profile"
+   ],
+   "text": "Skip to content hireflow . YOUR WORKSPACE Weekly plan Applications Resume library Weekly report Hiring shortlist Small steps. Real progress. Your next chapter s"
+  },
+  {
+   "vp": "mobile",
+   "route": "/reports",
+   "title": "Weekly report · HireFlow",
+   "h1": [
+    "Your weekly report."
+   ],
+   "overflow": {
+    "scrollW": 390,
+    "clientW": 390
+   },
+   "hOverflow": false,
+   "axe": [],
+   "tabs": [
+    "a:Skip to content",
+    "a:hireflow\n.",
+    "button:Close navigation",
+    "a:Weekly plan",
+    "a:Applications",
+    "a:Resume library",
+    "a:Weekly report",
+    "a:Hiring shortlist",
+    "a:Profile & preferences",
+    "button:Open navigation",
+    "a:Your profile",
+    "a:Set up profile"
+   ],
+   "text": "Skip to content hireflow . YOUR WORKSPACE Weekly plan Applications Resume library Weekly report Hiring shortlist Small steps. Real progress. Your next chapter s"
+  },
+  {
+   "vp": "mobile",
+   "route": "/hiring",
+   "title": "Hiring shortlist · HireFlow",
+   "h1": [
+    "Review candidates thoughtfully."
+   ],
+   "overflow": {
+    "scrollW": 390,
+    "clientW": 390
+   },
+   "hOverflow": false,
+   "axe": [],
+   "tabs": [
+    "a:Skip to content",
+    "a:hireflow\n.",
+    "button:Close navigation",
+    "a:Weekly plan",
+    "a:Applications",
+    "a:Resume library",
+    "a:Weekly report",
+    "a:Hiring shortlist",
+    "a:Profile & preferences",
+    "button:Open navigation",
+    "a:Your profile",
+    "a:Set up profile"
+   ],
+   "text": "Skip to content hireflow . YOUR WORKSPACE Weekly plan Applications Resume library Weekly report Hiring shortlist Small steps. Real progress. Your next chapter s"
+  },
+  {
+   "vp": "mobile",
+   "route": "/profile",
+   "title": "Profile & preferences · HireFlow",
+   "h1": [
+    "A profile that feels like you."
+   ],
+   "overflow": {
+    "scrollW": 390,
+    "clientW": 390
+   },
+   "hOverflow": false,
+   "axe": [],
+   "tabs": [
+    "a:Skip to content",
+    "a:hireflow\n.",
+    "button:Close navigation",
+    "a:Weekly plan",
+    "a:Applications",
+    "a:Resume library",
+    "a:Weekly report",
+    "a:Hiring shortlist",
+    "a:Profile & preferences",
+    "button:Open navigation",
+    "a:Your profile",
+    "summary:Already have a workspace? Si"
+   ],
+   "text": "Skip to content hireflow . YOUR WORKSPACE Weekly plan Applications Resume library Weekly report Hiring shortlist Small steps. Real progress. Your next chapter s"
+  }
+ ],
+ "contrast": {}
+}
