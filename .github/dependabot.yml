@@ -1,17 +1,25 @@
-# Audit F-004: weekly dependency and action updates, grouped to keep the PR count low.
+# Audit F-004: weekly updates for dependencies and actions. Majors are ignored (they need a deliberate upgrade branch with the full
+# suite), and at most 3 PRs per ecosystem are open at once so the first run does not flood the repository.
 version: 2
 updates:
   - package-ecosystem: npm
     directory: /cloudflare
     schedule: { interval: weekly }
+    open-pull-requests-limit: 3
+    ignore: [{ dependency-name: "*", update-types: ["version-update:semver-major"] }]
     groups: { npm-minor-patch: { update-types: [minor, patch] } }
   - package-ecosystem: npm
     directory: /frontend
     schedule: { interval: weekly }
+    open-pull-requests-limit: 3
+    ignore: [{ dependency-name: "*", update-types: ["version-update:semver-major"] }]
     groups: { npm-minor-patch: { update-types: [minor, patch] } }
   - package-ecosystem: pip
     directory: /
     schedule: { interval: weekly }
+    open-pull-requests-limit: 3
+    ignore: [{ dependency-name: "*", update-types: ["version-update:semver-major"] }]
   - package-ecosystem: github-actions
     directory: /
     schedule: { interval: weekly }
+    open-pull-requests-limit: 3
