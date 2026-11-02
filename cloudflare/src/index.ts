@@ -18,6 +18,7 @@ import { files } from './files';
 import {startPrepExport,getPrepExports,prepExportStatus,downloadPrepExport} from './prep_exports';
 import { createTransfer, consumeTransfer } from './session_transfer';
 import { accountSecurity } from './account_security';
+import { confirmEmailVerification, emailVerificationStatus, requestEmailVerification } from './email_verification';
 import { cancelQueuedApplication, createSubmissionReview, editResume, regenerateResume, rejectResume, resumeDraft, reviewQuestions } from './reviews';
 import { getOperationsStatus, newOperationContext, recordOperation } from './telemetry';
 import { runModelDiagnostics, safeProviderHealth } from './provider_health';
@@ -50,8 +51,15 @@ async function route(request: Request, env: Env): Promise<Response> {
   const lifecycle=await workspaceBackupRoutes(request,env,async task=>{await env.APPLICATION_QUEUE.send(task);});
   if(lifecycle)return lifecycle;
   const schedule=await schedulerRoutes(request,env);if(schedule)return schedule;
+  if(path==='/account/email-verification'&&(method==='GET'||method==='POST')){const uid=await requireUser(request,env);return json(method==='GET'?await emailVerificationStatus(env,uid):await requestEmailVerification(env,uid));}
   const accountResponse=await accountSecurity(request,env);
   if(accountResponse)return accountResponse;
+  if(method==='GET'&&path==='/email/verify'){
+    // Opened from the emailed link, so there is no session or Origin; the single-use token is the credential.
+    const ok=await confirmEmailVerification(env,url.searchParams.get('token')||'');
+    const page=ok?'<h1>Email confirmed</h1><p>You can now email your weekly report to this address. You can close this tab.</p>':'<h1>This link did not work</h1><p>It may have expired, been used already, or belong to an older email address. Request a new link from the report page.</p>';
+    return new Response(`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>HireFlow email confirmation</title><body style="font-family:system-ui;max-width:32rem;margin:4rem auto;padding:0 1rem">${page}</body>`,{status:ok?200:400,headers:{'Content-Type':'text/html; charset=utf-8','Content-Security-Policy':"default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'",'Cache-Control':'no-store','X-Robots-Tag':'noindex'}});
+  }
   if((match=path.match(/^\/operations\/(\d+)(\/diagnostics)?$/))) {
     const id=number(match[1]);await requireUser(request,env,id);
     if(method==='GET'&&!match[2])return json({...await getOperationsStatus(env,id),providers:await safeProviderHealth(env)});

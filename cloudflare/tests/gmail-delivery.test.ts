@@ -42,13 +42,15 @@ it('clamps a zero quota setting to one attempt and fails closed after that atomi
 it('with profile-email delivery enabled, any account owner receives their own report; the flag does not widen generic sends',async()=>{
  const someone='new-user@example.com';await db.prepare("UPDATE users SET email=? WHERE id=1").bind(someone).run();
  expect((await request('/enqueue',{})).status).toBe(403);
+ expect((await request('/enqueue',{}, {'X-Test-Profile-Email':'1'})).status).toBe(403);  // unverified address: still refused
+ await db.prepare("UPDATE users SET email_verified_at='2026-11-02T00:00:00.000Z' WHERE id=1").run();
  const ticket=await json('/enqueue',{}, {'X-Test-Profile-Email':'1'});expect(ticket.state).toBe('queued');
  await json('/send/'+ticket.id,{}, {'X-Test-Profile-Email':'1'});const state=await json('/status/'+ticket.id,undefined,{'X-Test-Profile-Email':'1'});expect(state).toMatchObject({state:'accepted',attempts:1});
  expect((await delivery(ticket.id)).recipient).toBe(someone);expect((await json('/wire')).connections).toBe(1);
  const third=await json('/direct',{...direct(),to:'victim@example.com'},{'X-Test-Profile-Email':'1'});expect(third.state).toBe('rejected');expect((await json('/wire')).connections).toBe(1);
 });
 it('caps profile-email deliveries per account per day (0 disables) without blocking an existing delivery',async()=>{
- await db.prepare("UPDATE users SET email='capped@example.com' WHERE id=1").run();
+ await db.prepare("UPDATE users SET email='capped@example.com',email_verified_at='2026-11-02T00:00:00.000Z' WHERE id=1").run();
  expect((await request('/enqueue',{}, {'X-Test-Profile-Email':'1','X-Test-Profile-Limit':'0'})).status).toBe(429);
  const first=await json('/enqueue',{}, {'X-Test-Profile-Email':'1','X-Test-Profile-Limit':'1'});
  expect((await json('/enqueue',{}, {'X-Test-Profile-Email':'1','X-Test-Profile-Limit':'1'})).id).toBe(first.id);

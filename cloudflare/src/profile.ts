@@ -139,7 +139,7 @@ export async function saveProfile(request: Request, env: Env, id?: number) {
   try {
     if (id) {
       await env.DB.batch([
-        env.DB.prepare('UPDATE users SET name=?,email=?,mode=?,weekly_quota=?,confirmation_mode=?,master_profile=?,profile_version=profile_version+1 WHERE id=?').bind(data.name, data.email, data.mode, data.weekly_quota, data.confirmation_mode, JSON.stringify(data), id),
+        env.DB.prepare('UPDATE users SET name=?,email=?,mode=?,weekly_quota=?,confirmation_mode=?,master_profile=?,profile_version=profile_version+1,email_verified_at=CASE WHEN email=? THEN email_verified_at ELSE NULL END WHERE id=?').bind(data.name, data.email, data.mode, data.weekly_quota, data.confirmation_mode, JSON.stringify(data), data.email, id),
         env.DB.prepare("UPDATE applications SET resume_path=NULL WHERE user_id=? AND status IN ('pending','planned')").bind(id),
       ]);
     } else {

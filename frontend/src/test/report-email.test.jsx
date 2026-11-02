@@ -3,8 +3,8 @@ import {render,screen,waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {api} from '../api/client';
 import {ReportEmail} from '../pages/ReportsPage';
-vi.mock('../api/client',async original=>({...await original(),isCloudflare:()=>true,api:{getEmailReadiness:vi.fn(),sendReportEmail:vi.fn(),getEmailDelivery:vi.fn()}}));
-beforeEach(()=>{vi.resetAllMocks();api.getEmailReadiness.mockResolvedValue({ready:true,provider:'resend'});});
+vi.mock('../api/client',async original=>({...await original(),isCloudflare:()=>true,api:{getEmailReadiness:vi.fn(),sendReportEmail:vi.fn(),getEmailDelivery:vi.fn(),getEmailVerification:vi.fn(),requestEmailVerification:vi.fn()}}));
+beforeEach(()=>{vi.resetAllMocks();api.getEmailReadiness.mockResolvedValue({ready:true,provider:'resend'});api.getEmailVerification.mockResolvedValue({email:'me@example.com',verified:true,required:false});});
 describe('explicit owner report delivery',()=>{
  it('disables sending when provider setup is missing and never asks for an API key',async()=>{
   api.getEmailReadiness.mockResolvedValue({ready:false,reason:'Configure a verified sender.'});render(<ReportEmail userId={7}/>);expect(await screen.findByText(/Email delivery is not configured/)).toHaveTextContent('private report is available to download');expect(screen.getByRole('button',{name:'Send report to my email'})).toBeDisabled();expect(screen.queryByRole('textbox')).toBeNull();expect(api.sendReportEmail).not.toHaveBeenCalled();
@@ -32,4 +32,25 @@ describe('explicit owner report delivery',()=>{
   expect(screen.getByText(/Recipient mail server rejected/)).toBeInTheDocument();expect(screen.queryByText(/^Delivery verified/)).toBeNull();expect(screen.getByRole('button',{name:'Send report to my email'})).toBeDisabled();
  });
 
+});
+
+describe('email ownership verification step (audit follow-up)',()=>{
+ it('blocks sending until the address is confirmed, then offers a link request and explains the next step',async()=>{
+  api.getEmailVerification.mockResolvedValue({email:'me@example.com',verified:false,required:true,provider_ready:true});api.requestEmailVerification.mockResolvedValue({state:'sent'});
+  render(<ReportEmail userId={7}/>);
+  expect(await screen.findByText(/Confirm your email address/)).toBeInTheDocument();
+  expect(screen.getByRole('button',{name:'Send report to my email'})).toBeDisabled();
+  await userEvent.setup().click(screen.getByRole('button',{name:'Send verification link'}));
+  expect(api.requestEmailVerification).toHaveBeenCalledWith(7);
+  expect(await screen.findByText(/Check me@example.com/)).toBeInTheDocument();
+ });
+ it('lets a verified account send, and never shows the step when it is not required',async()=>{
+  api.getEmailVerification.mockResolvedValue({email:'me@example.com',verified:true,required:true});render(<ReportEmail userId={7}/>);
+  await waitFor(()=>expect(screen.getByRole('button',{name:'Send report to my email'})).toBeEnabled());expect(screen.queryByText(/Confirm your email address/)).toBeNull();
+ });
+ it('shows a rate-limit message from the server instead of failing silently',async()=>{
+  api.getEmailVerification.mockResolvedValue({email:'me@example.com',verified:false,required:true,provider_ready:true});api.requestEmailVerification.mockRejectedValue({response:{data:{detail:'A verification link was already sent recently.'}}});
+  render(<ReportEmail userId={7}/>);await userEvent.setup().click(await screen.findByRole('button',{name:'Send verification link'}));
+  expect(await screen.findByRole('alert')).toHaveTextContent('already sent recently');
+ });
 });

@@ -140,6 +140,22 @@ describe('M11/F-030 tenant isolation on resume download and prep-guide existence
     const r = await call('/profile', '', 'POST', { name: email, email, skills: ['Python'], mode: 'internship', weekly_quota: 10 });
     expect(r.status).toBe(201); return { id: (await r.json() as any).id as number, cookie: r.headers.get('Set-Cookie')!.split(';')[0] };
   }
+  it('email verification routes: bad link is a no-store 400 page with a locked-down CSP; changing the email clears verification', async () => {
+    const a = await signup('verify-a@example.com');
+    const bad = await mf.dispatchFetch('https://worker.example/email/verify?token=' + 'b'.repeat(64));
+    expect(bad.status).toBe(400); expect(bad.headers.get('content-security-policy')).toContain("default-src 'none'"); expect(bad.headers.get('cache-control')).toBe('no-store');
+    expect(await bad.text()).toContain('did not work');
+    expect((await mf.dispatchFetch('https://worker.example/account/email-verification')).status).toBe(401);
+    const status = await (await call('/account/email-verification', a.cookie)).json() as any;
+    expect(status).toMatchObject({ email: 'verify-a@example.com', verified: false, required: false });
+    await db.prepare("UPDATE users SET email_verified_at='2026-11-02T00:00:00.000Z' WHERE id=?").bind(a.id).run();
+    const same = await call(`/profile/${a.id}`, a.cookie, 'PATCH', { email: 'verify-a@example.com', name: 'Renamed' });
+    expect(same.status, await same.clone().text()).toBe(200);
+    expect((await db.prepare('SELECT email_verified_at AS v FROM users WHERE id=?').bind(a.id).first<any>())!.v).not.toBeNull();
+    const changed = await call(`/profile/${a.id}`, a.cookie, 'PATCH', { email: 'verify-new@example.com' });
+    expect(changed.status, await changed.clone().text()).toBe(200);
+    expect((await db.prepare('SELECT email_verified_at AS v FROM users WHERE id=?').bind(a.id).first<any>())!.v).toBeNull();
+  });
   it('B cannot download A\'s resume via B\'s own path, and the prep-guide errors do not reveal existence', async () => {
     const a = await signup('a@example.com'), b = await signup('b@example.com');
     const job = await call(`/jobs/${a.id}`, a.cookie, 'POST', { title: 'Python Intern', company: 'Test Co', description: 'Python internship', url: 'https://example.com/apply/1', listing_type: 'internship' });

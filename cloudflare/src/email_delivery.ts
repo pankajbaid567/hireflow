@@ -40,11 +40,12 @@ export async function enqueueReportEmail(env:Env,owner:number,consent:Consent={}
  // weekly report was regenerated. Keep the original payload and idempotency key.
  if(consent.schedule_run_id){const existing=await first(env,'SELECT d.* FROM weekly_schedule_runs r JOIN email_deliveries d ON d.id=r.email_delivery_id AND d.user_id=r.user_id WHERE r.id=? AND r.user_id=?',consent.schedule_run_id,owner)||await first(env,'SELECT * FROM email_deliveries WHERE user_id=? AND schedule_run_id=?',owner,consent.schedule_run_id);if(existing){const bound=await bindScheduledDelivery(env,owner,existing,consent);if(['queued','ready','retry_wait'].includes(bound.state)&&!bound.dispatched_at&&await consentValid(env,bound))await dispatch(env,bound);return deliveryMetadata(bound);}}
  const config=configuration(env),snapshot=await env.DB.batch([
-  env.DB.prepare('SELECT id,email FROM users WHERE id=?').bind(owner),
+  env.DB.prepare('SELECT id,email,email_verified_at FROM users WHERE id=?').bind(owner),
   env.DB.prepare('SELECT * FROM weekly_reports WHERE user_id=? ORDER BY week_start_date DESC,id DESC LIMIT 1').bind(owner),
  ]),user=snapshot[0].results[0] as Row|undefined,report=snapshot[1].results[0] as Row|undefined;
  if(!user)throw new ApiError(404,'Profile not found');if(!report)throw new ApiError(404,'No weekly report generated yet');
  const profileMode=config.provider==='gmail'&&!gmailRecipientAllowed(env,user.email)&&profileEmailDelivery(env);
+ if(profileMode&&!user.email_verified_at)throw new ApiError(403,'Confirm your email address before requesting delivery. Use "Send verification link" on the report page.');
  if(config.provider==='gmail'&&!gmailRecipientAllowed(env,user.email)&&!profileMode)throw new ApiError(403,'Gmail delivery is restricted to the sender or an operator-configured private recipient allowlist. Use an approved workspace email before requesting delivery.');
  let row=await first(env,'SELECT * FROM email_deliveries WHERE user_id=? AND report_key=? AND provider=? AND recipient=?',owner,report.html_path,config.provider,user.email);
  if(row){row=await bindScheduledDelivery(env,owner,row,consent);if(['queued','ready','retry_wait'].includes(row.state)&&!row.dispatched_at&&await consentValid(env,row))await dispatch(env,row);return deliveryMetadata(row);}

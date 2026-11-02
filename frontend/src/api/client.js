@@ -96,6 +96,8 @@ async function discoverJobs(id, { signal } = {}) {
 export const api = {
   getEmailReadiness: id => client.get(`/report/${id}/email-readiness`).then(r=>r.data),
   sendReportEmail: id => client.post(`/report/${id}/latest/email`).then(r=>r.data),
+  getEmailVerification: () => client.get('/account/email-verification').then(r=>r.data),
+  requestEmailVerification: () => client.post('/account/email-verification').then(r=>r.data),
   getEmailDelivery: (id,ticket) => client.get(`/report/${id}/email-deliveries/${ticket}`).then(r=>r.data),
   getSchedule: () => client.get('/account/schedule').then(r=>r.data),
   saveSchedule: data => client.put('/account/schedule',data).then(r=>r.data),
