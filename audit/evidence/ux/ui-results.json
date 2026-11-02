@@ -1,0 +1,198 @@
+{
+ "base": "http://127.0.0.1:4173",
+ "note": "local stack, synthetic data, outbound stubbed",
+ "pages": [
+  {
+   "name": "first-visit desktop",
+   "viewport": "desktop",
+   "console": [],
+   "csp": [],
+   "failed": [],
+   "pageErrors": [],
+   "title": "HireFlow · Your career, in motion",
+   "axe": [
+    {
+     "id": "color-contrast",
+     "impact": "serious",
+     "help": "Elements must meet minimum color contrast ratio thresholds",
+     "nodes": 40,
+     "sample": ".workspace-label"
+    },
+    {
+     "id": "landmark-unique",
+     "impact": "moderate",
+     "help": "Landmarks should have a unique role or role/label/title (i.e. accessible name) combination",
+     "nodes": 1,
+     "sample": ".sidebar"
+    },
+    {
+     "id": "region",
+     "impact": "moderate",
+     "help": "All page content should be contained by landmarks",
+     "nodes": 3,
+     "sample": ".breadcrumb > span"
+    }
+   ],
+   "text": "Skip to content\nhireflow\n.\nYOUR WORKSPACE\nWeekly plan\nApplications\nResume library\nWeekly report\nHiring shortlist\nSmall steps.\nReal progress.\n\nYour next chapter starts with one thoughtful move.\n\nProfile & preferences\nYour workspace\nLet’s Get You Started\nWorkspace\nMy career\nA little closer to what’s next\n\nYOUR FOUNDATION\n\nA profile that feels like you.\n\nTell us where you want to go. We’ll help you f",
+   "inputs": 14,
+   "inputList": [
+    {
+     "name": "",
+     "type": "password",
+     "label": ""
+    },
+    {
+     "name": "",
+     "type": "file",
+     "label": "Add your resume\nChoose a PDF · up to 3 MB"
+    },
+    {
+     "name": "name",
+     "type": "text",
+     "label": "Full name"
+    },
+    {
+     "name": "email",
+     "type": "email",
+     "label": "Email address"
+    },
+    {
+     "name": "phone",
+     "type": "tel",
+     "label": "Phone number"
+    },
+    {
+     "name": "experience_years",
+     "type": "number",
+     "label": "Years of experience"
+    },
+    {
+     "name": "skills",
+     "type": "text",
+     "label": "Skills\nSeparate skills with commas. Include the things you enjoy working with."
+    },
+    {
+     "name": "education",
+     "type": "text",
+     "label": "Education"
+    },
+    {
+     "name": "target_roles",
+     "type": "text",
+     "label": "Target roles"
+    },
+    {
+     "name": "preferred_locations",
+     "type": "text",
+     "label": "Preferred locations"
+    },
+    {
+     "name": "weekly_quota",
+     "type": "number",
+     "label": "Applications per week\nSet a pace you can prepare for. Between 1 and 100."
+    },
+    {
+     "name": "min_stipend",
+     "type": "number",
+     "label": "Minimum stipend · INR per month\nUsed when a listing includes compensation information."
+    }
+   ]
+  },
+  {
+   "name": "first-visit mobile",
+   "viewport": "mobile",
+   "console": [],
+   "csp": [],
+   "failed": [],
+   "pageErrors": [],
+   "title": "HireFlow · Your career, in motion",
+   "axe": [
+    {
+     "id": "color-contrast",
+     "impact": "serious",
+     "help": "Elements must meet minimum color contrast ratio thresholds",
+     "nodes": 29,
+     "sample": ".breadcrumb > strong"
+    },
+    {
+     "id": "landmark-unique",
+     "impact": "moderate",
+     "help": "Landmarks should have a unique role or role/label/title (i.e. accessible name) combination",
+     "nodes": 1,
+     "sample": ".sidebar"
+    },
+    {
+     "id": "region",
+     "impact": "moderate",
+     "help": "All page content should be contained by landmarks",
+     "nodes": 2,
+     "sample": ".breadcrumb > strong"
+    }
+   ],
+   "text": "Skip to content\nhireflow\n.\nYOUR WORKSPACE\nWeekly plan\nApplications\nResume library\nWeekly report\nHiring shortlist\nSmall steps.\nReal progress.\n\nYour next chapter starts with one thoughtful move.\n\nProfile & preferences\nYour workspace\nLet’s Get You Started\nMy career\n\nYOUR FOUNDATION\n\nA profile that feels like you.\n\nTell us where you want to go. We’ll help you find the way.\n\nAlready have a workspace? S",
+   "inputs": 14,
+   "inputList": [
+    {
+     "name": "",
+     "type": "password",
+     "label": ""
+    },
+    {
+     "name": "",
+     "type": "file",
+     "label": "Add your resume\nChoose a PDF · up to 3 MB"
+    },
+    {
+     "name": "name",
+     "type": "text",
+     "label": "Full name"
+    },
+    {
+     "name": "email",
+     "type": "email",
+     "label": "Email address"
+    },
+    {
+     "name": "phone",
+     "type": "tel",
+     "label": "Phone number"
+    },
+    {
+     "name": "experience_years",
+     "type": "number",
+     "label": "Years of experience"
+    },
+    {
+     "name": "skills",
+     "type": "text",
+     "label": "Skills\nSeparate skills with commas. Include the things you enjoy working with."
+    },
+    {
+     "name": "education",
+     "type": "text",
+     "label": "Education"
+    },
+    {
+     "name": "target_roles",
+     "type": "text",
+     "label": "Target roles"
+    },
+    {
+     "name": "preferred_locations",
+     "type": "text",
+     "label": "Preferred locations"
+    },
+    {
+     "name": "weekly_quota",
+     "type": "number",
+     "label": "Applications per week\nSet a pace you can prepare for. Between 1 and 100."
+    },
+    {
+     "name": "min_stipend",
+     "type": "number",
+     "label": "Minimum stipend · INR per month\nUsed when a listing includes compensation information."
+    }
+   ]
+  }
+ ]
+}

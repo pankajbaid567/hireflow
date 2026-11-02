@@ -1,0 +1,17 @@
+# Audit F-004: weekly dependency and action updates, grouped to keep the PR count low.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /cloudflare
+    schedule: { interval: weekly }
+    groups: { npm-minor-patch: { update-types: [minor, patch] } }
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule: { interval: weekly }
+    groups: { npm-minor-patch: { update-types: [minor, patch] } }
+  - package-ecosystem: pip
+    directory: /
+    schedule: { interval: weekly }
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: weekly }

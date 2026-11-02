@@ -32,6 +32,15 @@ Pages application cycle passed. See [P0 verification](docs/p0-verification.md)
 for the evidence and remaining portal/capacity boundaries. A separate old-site
 transfer rerun passed migration, replay rejection and logout on both origins.
 
+## Independent audit (November 2026)
+
+A full engineering audit of this repository lives in [`audit/`](audit/FINAL_REPORT.md): requirements traceability (172 rows), architecture, security (39 tenant-isolation probes, 0 leaks), AI evaluation validity, test mutation sampling, accessibility, and a fix wave with tests written first. What it means for the claims above:
+
+- **Matching evidence is synthetic.** Hybrid BGE + skill overlap lifts heldout nDCG@3 from 0.70 to 0.95 on a 120-case author-labelled benchmark (20 queries, 10 domains) and still beats a BM25 baseline by +0.12 (95% CI +0.08 to +0.15). It is not a hiring-outcome result, and Recall@1 cannot exceed 0.5 by construction. See [AI review](audit/04-ai-genai-review.md).
+- **The model never authors resume claims.** It only selects fact IDs that already exist in your profile; the application copies the text.
+- **Submissions are certified on owned synthetic forms only**, not real employer portals.
+- **Open items** are ranked in the [roadmap](audit/ROADMAP.md); nothing in the audit has been deployed to production yet.
+
 ## Current application
 
 | Component | Runtime / resource |
@@ -122,7 +131,7 @@ npm run check --prefix cloudflare
 venv/bin/python -m pytest tests/ -v
 ```
 
-Recorded local release gates: **407 Python, 774 Worker and 157 frontend tests
+Recorded local release gates (flagship audit, branch `audit/flagship-hardening`): **415 Python, 821 Worker and 164 frontend tests
 passed**, with three Python and four Worker opt-in tests skipped. Frontend
 coverage includes five Pages deployment-guard regressions. Typecheck, Pages
 build, Worker dry run and isolated React/Worker/D1/private-file browser E2E

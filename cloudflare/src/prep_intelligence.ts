@@ -23,6 +23,10 @@ const stop=new Set('a an the to of and or for with in on at by as is are be we o
 const tokens=(value:string)=>normalize(value).split(' ').filter(token=>token.length>2&&!stop.has(token));
 const unique=<T>(values:T[])=>[...new Set(values)];
 const unsafeInstruction=/\b(?:ignore (?:all |the |any )?(?:previous|prior|system)|system prompt|api[_ -]?key|send (?:my |your )?(?:password|secret)|reveal (?:the |your )?secret)\b/i;
+// Imperatives aimed at a reader/model rather than describing work (audit F-039). A denylist cannot be complete; it is one layer
+// beside the DATA-block prompt framing, validators, and the absence of tools or cross-user data on this path.
+const modelDirective=/\b(?:disregard|forget (?:everything|all|the|what)|ignore (?:everything|the above|above|what)|new instructions?|updated instructions?|act as (?:the|a|an) (?:system|admin|assistant|developer)|pretend (?:to be|you)|you must now|override (?:the|your|all)|(?:output|print|list|reveal|dump|leak)\s+(?:every|all|the (?:hidden|system|secret))|respond (?:only )?with)\b/i;
+const linkOrMarkup=/https?:\/\/|\bwww\.|[<>]/i;
 // Portal section labels are not duties. Keeping them as the first requirement
 // turned full descriptions into "sparse" JDs and generated questions about a
 // heading instead of the employer's actual work.
@@ -34,7 +38,7 @@ const dutyAction='(?:build(?:ing)?|develop(?:ing)?|design(?:ing)?|implement(?:in
 const dutyPattern=new RegExp(`(?:^|\\b(?:required to|responsible for|responsibilities include|you will|you would|you'll|to)\\s+)${dutyAction}\\b`,'i');
 const isDuty=(line:string)=>{const normalized=line.replace(/[’‘]/g,"'");return !/\b(?:not|never|no longer)\b[^.!?;]{0,80}\b(?:required to|responsible for|you will|you would|you'll)\b/i.test(normalized)&&dutyPattern.test(normalized);};
 export function prepRequirements(jd:string,title=''):string[]{
- const parts=jd.split(/(?<=[.!?])\s+|[\r\n]+/).map(line=>line.trim().replace(/^(?:[-*•]+\s*|\d+[.)]\s+)/,'').trim()).filter(line=>line&&!sectionLabel.test(line.replace(/[’‘]/g,"'"))&&!nonDuty.test(line)&&!unsafeInstruction.test(line)&&!/^.{0,30}(?:interview process|selection process)\s*:/i.test(line)&&!(/\brounds?\b/i.test(line)&&/\b(?:technical|hr|founder|interview)\b/i.test(line)));
+ const parts=jd.split(/(?<=[.!?])\s+|[\r\n]+/).map(line=>line.trim().replace(/^(?:[-*•]+\s*|\d+[.)]\s+)/,'').trim()).filter(line=>line&&!sectionLabel.test(line.replace(/[’‘]/g,"'"))&&!nonDuty.test(line)&&!unsafeInstruction.test(line)&&!modelDirective.test(line)&&!/^.{0,30}(?:interview process|selection process)\s*:/i.test(line)&&!(/\brounds?\b/i.test(line)&&/\b(?:technical|hr|founder|interview)\b/i.test(line)));
  const duties=parts.filter(isDuty),selected=unique((duties.length?duties:parts).filter(line=>tokens(line).length).map(line=>line.slice(0,600))).slice(0,8);
  return selected.length?selected:jd.trim()?[]:[clean(title,300)].filter(Boolean);
 }
@@ -209,7 +213,7 @@ export function validatePrepQuestions(value:unknown,profile:Row,job:Row,adapters
  for(const raw of value){
   if(!raw||!['technical','behavioral','design'].includes(raw.category)||typeof raw.question!=='string')return null;
   const question=clean(raw.question,1500),key=normalize(question),domainHits=unique(tokens(question).filter(token=>domain.has(token))).length;
-  if(question.length<25||unsafeInstruction.test(question)||assumesCandidateHistory(question)||seen.has(key)||job.listing_type==='internship'&&/\b(?:production|billion|multi-region|scalable)\b/i.test(question)||/\b(?:you have \d+|you led|your employer|our company is|guaranteed (?:offer|round))\b/i.test(question)||(!skills.some(skill=>adapters.hasSkill(question,skill))&&domainHits<2)||domain.size>=3&&domainHits<2)return null;
+  if(question.length<25||unsafeInstruction.test(question)||modelDirective.test(question)||linkOrMarkup.test(question)||assumesCandidateHistory(question)||seen.has(key)||job.listing_type==='internship'&&/\b(?:production|billion|multi-region|scalable)\b/i.test(question)||/\b(?:you have \d+|you led|your employer|our company is|guaranteed (?:offer|round))\b/i.test(question)||(!skills.some(skill=>adapters.hasSkill(question,skill))&&domainHits<2)||domain.size>=3&&domainHits<2)return null;
   const shape=new Set(tokens(key));if([...seen].some(prior=>{const other=new Set(tokens(prior));return [...shape].filter(token=>other.has(token)).length/new Set([...shape,...other]).size>.85;}))return null;
   seen.add(key);const quote=[...requirements].sort((a,b)=>tokens(question).filter(token=>tokens(b).includes(token)).length-tokens(question).filter(token=>tokens(a).includes(token)).length)[0]||'';
   output.push({category:raw.category,question,evidence:{kind:'jd',quote},level:job.listing_type==='internship'?'internship':'job',focus:'model-generated, JD-validated practice'});

@@ -1,0 +1,122 @@
+[
+ {
+  "id": "M01",
+  "invariant": "duplicate-submission",
+  "file": "tasks.ts",
+  "status": "SURVIVED",
+  "tests": [],
+  "failed": 0,
+  "total": 786,
+  "killed_by": [],
+  "seconds": 309
+ },
+ {
+  "id": "M02",
+  "invariant": "approval-binding",
+  "file": "tasks.ts",
+  "status": "SURVIVED",
+  "tests": [],
+  "failed": 0,
+  "total": 786,
+  "killed_by": [],
+  "seconds": 315
+ },
+ {
+  "id": "M03",
+  "invariant": "approval-binding",
+  "file": "tasks.ts",
+  "status": "SURVIVED",
+  "tests": [],
+  "failed": 0,
+  "total": 786,
+  "killed_by": [],
+  "seconds": 289
+ },
+ {
+  "id": "M04",
+  "invariant": "approval-binding",
+  "file": "tasks.ts",
+  "status": "SURVIVED",
+  "tests": [],
+  "failed": 0,
+  "total": 786,
+  "killed_by": [],
+  "seconds": 309
+ },
+ {
+  "id": "M06",
+  "invariant": "submitting-checkpoint",
+  "file": "automation.ts",
+  "status": "SURVIVED",
+  "tests": [],
+  "failed": 0,
+  "total": 786,
+  "killed_by": [],
+  "seconds": 312
+ },
+ {
+  "id": "M08",
+  "invariant": "session-expiry",
+  "file": "auth.ts",
+  "status": "KILLED",
+  "tests": [],
+  "failed": 1,
+  "total": 432,
+  "killed_by": [
+   "Cloudflare plan regressions rejects expired sessions and cross-profile PDF download attempts"
+  ],
+  "seconds": 236
+ },
+ {
+  "id": "M10",
+  "invariant": "tenant-isolation",
+  "file": "index.ts",
+  "status": "KILLED",
+  "tests": [],
+  "failed": 1,
+  "total": 166,
+  "killed_by": [
+   "verified provider delivery outcomes updates only the exact immutable weekly report version"
+  ],
+  "seconds": 143
+ },
+ {
+  "id": "M11",
+  "invariant": "tenant-isolation",
+  "file": "index.ts",
+  "status": "KILLED",
+  "tests": [],
+  "failed": 1,
+  "total": 86,
+  "killed_by": [
+   "immutable approval and private durable checkpoints checks approval again immediately before an adapter can sub"
+  ],
+  "seconds": 185
+ },
+ {
+  "id": "M16",
+  "invariant": "prep-injection-guard",
+  "file": "prep_intelligence.ts",
+  "status": "KILLED",
+  "tests": [],
+  "failed": 1,
+  "total": 52,
+  "killed_by": [
+   "immutable approval and private durable checkpoints fills standard facts from the exact edited PDF snapshot ins"
+  ],
+  "seconds": 439
+ },
+ {
+  "id": "M17",
+  "invariant": "login-rate-limit",
+  "file": "auth.ts",
+  "status": "KILLED",
+  "tests": [],
+  "failed": 1,
+  "total": 52,
+  "killed_by": [
+   "immutable approval and private durable checkpoints rejects answer_changed authorization before acquiring brows"
+  ],
+  "seconds": 56
+ }
+]

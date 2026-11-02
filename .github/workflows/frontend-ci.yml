@@ -7,6 +7,10 @@ on:
     branches: [main, dev]
     paths: ['frontend/**', 'scripts/deploy_cloudflare_pages.mjs', '.github/workflows/frontend-ci.yml']
 
+# Least privilege (audit F-004): CI only reads the repository.
+permissions:
+  contents: read
+
 jobs:
   test-and-build:
     runs-on: ubuntu-latest

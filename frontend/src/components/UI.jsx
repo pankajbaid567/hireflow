@@ -1,3 +1,4 @@
+import { Children } from 'react';
 import { AlertCircle, ArrowUpRight, RefreshCw, Sprout } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -11,10 +12,13 @@ export function Loading({ label = 'Loading your workspace…' }) {
   return <div className="loading" role="status"><RefreshCw className="spin" size={22} />{label}</div>;
 }
 export function EmptyState({ title, children, action }) {
-  return <div className="empty-state"><span className="empty-icon"><Sprout size={30} /></span><h2>{title}</h2><p>{children}</p>{action}</div>;
+  // Text belongs in the paragraph; links/buttons passed as children render after it, not inside it (audit: the
+  // button overlapped the wrapped paragraph on narrow screens).
+  const parts = Children.toArray(children), isControl = (part) => part?.type === Link || part?.type === 'button' || /\bbutton\b/.test(part?.props?.className || ''), text = parts.filter((part) => !isControl(part)), controls = parts.filter(isControl);
+  return <div className="empty-state"><span className="empty-icon"><Sprout size={30} /></span><h2>{title}</h2>{text.length > 0 && <p>{text}</p>}{controls}{action}</div>;
 }
 export function ProfileRequired() {
-  return <EmptyState title="Start with a little about you">Create a profile or open an existing one to see your opportunities.<Link to="/profile" className="button">Set up profile <ArrowUpRight size={17} /></Link></EmptyState>;
+  return <EmptyState title="Start with a little about you" action={<Link to="/profile" className="button">Set up profile <ArrowUpRight size={17} /></Link>}>Create a profile or open an existing one to see your opportunities.</EmptyState>;
 }
 export function StatusBadge({ status }) {
   const label = String(status || 'pending').replaceAll('_', ' ');

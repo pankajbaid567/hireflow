@@ -1,0 +1,215 @@
+# Phase 1 — Requirements traceability matrix
+
+Baseline 2026-11-01, commit cd2ac5d. Machine-readable twin: `01-traceability-matrix.csv`.
+
+**Reading guide.** VERIFIED = I reproduced it in this audit: a named test file/gate passed in Phase 0 and I confirmed the code anchor. *Suite-level only*: assertion strength and over-mocking are reviewed in Phase 5, and a mocked test never upgrades a live-acceptance criterion (those rows are PARTIAL/BLOCKED). Defense-question rows are NOT DONE until `INTERVIEW_DEFENSE.md` (Phase 8). Issue rows are grouped; sub-criteria that diverge from the spec get their own row. Not rows: `ISSUES_TRACKER.md` issues 17–19/21/22/24/25 are also covered via M6/M7/M8 rows.
+
+## Status counts
+
+| Scope | VERIFIED | IMPLEMENTED-UNVERIFIED | PARTIAL | NOT DONE | BLOCKED-EXTERNAL | Total |
+|---|---|---|---|---|---|---|
+| M1-M8 (incl. files + defense rows) | 58 | 29 | 15 | 9 | 0 | 111 |
+| ISSUES 1-26 (grouped) | 14 | 9 | 5 | 1 | 1 | 30 |
+| future.md P0-P3 | 15 | 2 | 6 | 0 | 3 | 26 |
+| Definition of completion | 2 | 1 | 2 | 0 | 0 | 5 |
+
+## Scope-change decisions (owner input needed; recommendation given)
+
+| ID | Spec vs shipped | Options | Recommendation |
+|---|---|---|---|
+| D-1 | "100+ relevant listings per cycle" vs measured live ceiling (LinkedIn 429, Naukri empty) | (a) keep claim and keep trying; (b) publish measured ceiling + local-execution path; (c) drop requirement | **(b)** — bounded measured attempt in Phase 7, state the real number; never claim 100+ without it |
+| D-2 | FAISS + MiniLM (spec) vs D1 vectors + BGE (prod) / FAISS+BGE (Python) | keep both documented / drop FAISS | **Document** D1 vector retrieval as the production design; keep Python FAISS as local path |
+| D-3 | `data/resumes/{user}/{job}_resume.pdf` vs private KV versions; LaTeX vs ReportLab | restore local files / accept KV | **Accept** KV (private, versioned, ownership-checked); record scope change |
+| D-4 | Auto-apply on Internshala/Lever/Greenhouse vs owned-fixture certification only | attempt real portals / keep fixtures | **Keep fixtures** — real submissions are prohibited and risky; state "controlled-fixture" in README |
+| D-5 | LangGraph (M8 defense) vs Queue/outbox | add LangGraph / document actual state machine | **Document state machine + ADR**; remove unused `langgraph` dependency unless a demonstrated problem appears |
+| D-6 | Railway/Render vs Cloudflare | deploy to Railway/Render / accept Cloudflare | **Accept Cloudflare** as the live deployment; mark Issue 26 as scope-changed |
+| D-7 | Python backend: keep as supported path or demote | keep / archive | Decide after Phase 2 parity review (leaning: keep as documented local path, Worker is primary) |
+
+## F01–F15 triage (optional proposals; max 3 recommended)
+
+| ID | Flagship value | Effort | Risk | Verdict |
+|---|---|---|---|---|
+| F04 Accessibility & keyboard | High (visible quality signal; Phase 6 audits it anyway) | M | low | **DO (in scope)** |
+| F03 Resume comparison & application evidence | Med-High (trust/explainability; much of it exists) | S-M | low | Candidate #2 — only if Phase 6 finds the gap |
+| F02 Answer library / application prefs | Med | M | med (PII, form drift) | Candidate #3 |
+| F01 Saved searches/alerts | Med | L | med (needs verified email) | Skip: blocked on email |
+| F13 Provider comparison dashboard | Med for GenAI roles | M | med (cost) | Skip; eval harness already covers the story |
+| F12 OCR/multilingual | Med | L | high | Skip (declared limit) |
+| F05–F11, F14, F15 | Low-Med | L | med-high | Skip: scope creep, nothing here fixes a credibility gap |
+
+## Matrix
+
+| ID | Requirement | Status | Evidence | Gap | Closing action | Blocker | Effort |
+|---|---|---|---|---|---|---|---|
+| M1.1 | Schema: users, jobs, applications, prep_guides, weekly_reports (+shortlists) | VERIFIED | models: src/models/{user,job,application,prep_guide,report,shortlist}.py; `alembic upgrade head`+`check` clean (logs/alembic.log) |  |  |  |  |
+| M1.2 | SQLAlchemy models in src/models/ | VERIFIED | src/models/*.py (10 tables incl. auth + status events) |  |  |  |  |
+| M1.3 | User.mode internship/job | VERIFIED | src/models/user.py:26 Enum(UserMode), default=job (spec silent on default) |  |  |  |  |
+| M1.4 | POST /profile: PDF or JSON, LLM extraction, save | IMPLEMENTED-UNVERIFIED | src/api/routes/profile.py:118; tests/test_profile_api.py (6, mocked LLM) pass; Worker prod path per docs/p1-pdf-quality.md uses live Gemini | Live extraction not reproduced by me; passes only against mocks here | Phase 4/6: live-free extraction check with synthetic PDF | provider key | S |
+| M1.5 | GET /profile/{user_id} | VERIFIED | profile.py:188; test_profile_api passes (ownership: cookie, verify in Phase 3) |  |  |  |  |
+| M1.6 | .env.example complete; .env works | PARTIAL | names diff (00-baseline §4): DATABASE_URL_POOLED in .env, absent from .env.example (F-010) | name drift | add key or remove from .env |  | S |
+| M1.7 | requirements.txt complete, fresh venv | VERIFIED | fresh py3.11 venv installed requirements.txt and requirements-runtime.txt, pytest 415 pass (logs/py-install*.log, pytest.log). `langgraph` declared but unused (F-011) | unused dep | remove or justify (ADR) |  | S |
+| M1.8 | docker-compose up starts API + Postgres | IMPLEMENTED-UNVERIFIED | docker-compose.yml:8,50; docs/evidence/p1-docker-cycle.json (claim) | not re-run yet | Phase 6 ladder step 1 |  | S |
+| M1.9 | Alembic initial migration | VERIFIED | migrations/versions (7 revs); up/down/up/check pass |  |  |  |  |
+| M1.10 | README setup works on fresh clone | IMPLEMENTED-UNVERIFIED | docs/fresh-setup.md is on-host copy, not clean clone; I hit undocumented Node>=22.12 trap (F-002) | clean-clone unproven | Phase 8 clean-clone test |  | M |
+| M1.F | Files Expected (M1) | VERIFIED | all listed paths exist (ls) |  |  |  |  |
+| M1.D | Defense Q1-5 (venv, .env, intake flow, Alembic, mode flow) | NOT DONE | answers pending Phase 8 |  | write INTERVIEW_DEFENSE.md |  | M |
+| M2.1 | Lever scraper, all fields | VERIFIED | src/scrapers/lever_scraper.py; tests/test_scrapers.py (51 tests, fixtures) pass; Worker reads Lever API (cloudflare/src/listing_details.ts) | fixtures only; live tenants not exercised by me |  |  |  |
+| M2.2 | Greenhouse scraper | VERIFIED | src/scrapers/greenhouse_scraper.py; test_scrapers pass | same |  |  |  |
+| M2.3 | Generic Playwright scraper for JS pages | IMPLEMENTED-UNVERIFIED | src/scrapers/generic_scraper.py; Worker Browser Run: cloudflare/src/dynamic_source.ts (dynamic-source*.test.ts pass, mocked/controlled) | real JS-rendered site not exercised | Phase 6 |  | S |
+| M2.4 | BeautifulSoup static scraper | IMPLEMENTED-UNVERIFIED | src/scrapers/static_scraper.py | assertion coverage not yet reviewed | Phase 5 |  | S |
+| M2.5 | All 12 fields extracted | IMPLEMENTED-UNVERIFIED | tests/fixtures/listing_contract.json; docs claim P1-03 | field-by-field not re-derived | Phase 5 contract test on both backends |  | M |
+| M2.6 | Spam/quality filter with is_spam + spam_confidence | VERIFIED | src/agents/spam_filter.py:35-78, threshold setting settings.py:27; test_spam_filter (6) | Worker uses separate fee/sparsity rules (parity?) | Phase 5 parity fixtures |  | S |
+| M2.7 | All listings saved to jobs | IMPLEMENTED-UNVERIFIED | src/scrapers/db_utils.py; Worker saves to D1 |  | Phase 5 |  | S |
+| M2.8 | Scraper reads mode, targets correct sources | IMPLEMENTED-UNVERIFIED | docs: 5 internship + 4 job searches (cloudflare/src/discovery_cycles.ts) | not run live | Phase 6 local stack |  | S |
+| M2.9 | Rate limit: <=X req/s per domain | PARTIAL | Python: flat 1.0s sleep per process (greenhouse_scraper.py:27, lever_scraper.py:26) — not per-domain; Worker: per-host scheduling/budgets (docs/p2-discovery-scheduler.md) | Python path not per-domain | document or implement per-host limiter in Python |  | S |
+| M2.10 | >=5 tests in tests/test_scrapers.py | VERIFIED | 51 tests, pass |  |  |  |  |
+| M2.X | Spec/design: '100+ complete fresh listings per cycle' (milestone-audit M2) | PARTIAL | future.md P2-01 unchecked; engine passes synthetic 100-JD workerd/D1 test only; live pilot: LinkedIn 429s, Naukri empty | Real relevant 100+ pool never demonstrated | (c) bounded measured attempt, publish measured ceiling + local-execution alternative; SCOPE DECISION D-1 | real-world volume | L |
+| M2.F | Files Expected (M2) | VERIFIED | all paths exist |  |  |  |  |
+| M2.D | Defense Q1-6 | NOT DONE | pending Phase 8 (Q3 spam false positives, Q5 selector drift need honest answers) |  |  |  | M |
+| M3.1 | Embeddings for profile and JD | VERIFIED | Python: src/pipelines/embedding_pipeline.py (test_embedding 9); Worker: cloudflare/src/semantic_matching.ts (semantic-matching.test.ts); live Workers AI BGE not called by me | live model not run |  |  |  |
+| M3.2 | FAISS index from job embeddings | PARTIAL | Python only (faiss-cpu, settings.py:32); production Worker uses versioned D1 vectors, not FAISS | spec/design differ | SCOPE DECISION D-2 (document D1 vector search as the production design) |  | S |
+| M3.3 | Six weights 40/20/15/10/10/5 | VERIFIED | src/pipelines/match_scorer.py:35-42; Worker equivalence untested by me | Worker weights not yet compared | Phase 5 shared fixtures |  | S |
+| M3.4 | Output: match_score 0-1, skill_matches, skill_gaps, rank | IMPLEMENTED-UNVERIFIED | match_scorer.py compute_match_score:166; test_matcher (25) | bounds/monotonicity property tests absent | Phase 4/5 property tests |  | M |
+| M3.5 | Skill-gap extraction | IMPLEMENTED-UNVERIFIED | match_scorer.py; evals/hireflow_v1 | edge cases (near-duplicate skills) unprobed | Phase 4 |  | M |
+| M3.6 | Stipend/salary fit vs min_stipend/min_salary | IMPLEMENTED-UNVERIFIED | match_scorer.py:143; frontend ProfilePage.jsx:96 | INR/LPA/monthly/range edge cases unprobed | Phase 4 pay-normalization tests |  | M |
+| M3.7 | Match results saved to applications (planned) | IMPLEMENTED-UNVERIFIED | score_jobs_for_user match_scorer.py:231 |  | Phase 5 |  | S |
+| M3.8 | >=3 tests in tests/test_matcher.py | VERIFIED | 25 tests pass |  |  |  |  |
+| M3.9 | Scoring deterministic | IMPLEMENTED-UNVERIFIED | docs claim; no determinism/property test seen |  | Phase 4 property test |  | S |
+| M3.X | Eval validity of 'hybrid beats lexical' (nDCG@3 0.9511 vs 0.6991) | PARTIAL | Reproduced exactly (logs/ai-eval.log) but 120 author-written synthetic cases, 20 heldout queries | validity, leakage, CIs unaudited | Phase 4 |  | M |
+| M3.F | Files Expected (M3) | VERIFIED | all exist |  |  |  |  |
+| M3.D | Defense Q1-6 | NOT DONE | pending. Known divergence: Q1 default model is BAAI/bge-small-en-v1.5 (settings.py:28) not MiniLM (Issue 9); Q5 no chunking exists in embedding_pipeline.py |  |  |  | M |
+| M4.1 | Top-N by weekly_quota | VERIFIED | src/pipelines/quota_selector.py; test_quota_selector (17) |  |  |  |  |
+| M4.2 | Filters: applied companies, expired(>30d), blacklist | VERIFIED | quota_selector.py:68-73; cloudflare/src/company_policy.ts; tests pass |  |  |  |  |
+| M4.3 | Always generate plan, review before submit | VERIFIED | review gates exercised in cloudflare/tests/review-workflow.test.ts + isolated E2E (logs/e2e-dashboard.log) |  |  |  |  |
+| M4.4 | Plan shows company, role, score, gaps, resume | IMPLEMENTED-UNVERIFIED | frontend WeeklyPlan page; E2E passes | visual verification pending | Phase 6 |  | S |
+| M4.5 | Confirm batch / swap / remove | VERIFIED | src/api/routes/weekly_plan.py:47,62; Worker plans.ts; E2E |  |  |  |  |
+| M4.6 | confirmation_mode batch/individual, default batch | IMPLEMENTED-UNVERIFIED | profile.py:53; ProfilePage.jsx:96 | 'individual' pagination behavior (Issue 11) not located in backend/UI | Phase 6 flow 7 |  | S |
+| M4.7 | No resume/submit until confirm | VERIFIED | review-workflow.test.ts, plan-regressions.test.ts (pass) |  |  |  |  |
+| M4.8 | Tailored resumes shown before submit | VERIFIED | reviews.ts + ResumePreview; E2E |  |  |  |  |
+| M4.9 | Skills->JD mapping; sections; top 2-3 projects | IMPLEMENTED-UNVERIFIED | cloudflare/src/resume_tailoring.ts; src/pipelines/resume_service.py; tests/test_resume.py has only 3 tests | thin Python coverage | Phase 4 truthfulness probes |  | M |
+| M4.10 | Resume as PDF (LaTeX or ReportLab) | VERIFIED | ReportLab (Python) + Worker pdf.ts; pdf-quality real-reader tests ran (not skipped) |  |  |  |  |
+| M4.11 | Saved at data/resumes/{user_id}/{job_id}_resume.pdf | PARTIAL | Python: src/pipelines/pdf_generator.py:9 uses _resume_v{N}.pdf (matches Issue 13); production: private KV versions | path differs by design | SCOPE DECISION D-3 |  | S |
+| M4.12 | Application record: resume_path, resume_version, planned | IMPLEMENTED-UNVERIFIED | application model; Worker D1 |  | Phase 5 |  | S |
+| M4.13 | Internship vs Job tone differs | IMPLEMENTED-UNVERIFIED | resume_tailoring.ts | not diffed | Phase 4 |  | S |
+| M4.14 | >=2 tests | VERIFIED | test_resume 3 + resume-tailoring.test.ts |  |  |  |  |
+| M4.F | Files Expected | VERIFIED | all exist |  |  |  |  |
+| M4.D | Defense Q1-7 | NOT DONE | pending |  |  |  | M |
+| M5.1 | Navigate to application_url | VERIFIED | automation.ts + real local browser tests ran (describe.skipIf(!localBrowserAvailable) not skipped here) | owned fixture only — never real employer |  |  |  |
+| M5.2 | Fill standard fields | VERIFIED | automation.test.ts real-browser; test_automation (18) |  |  |  |  |
+| M5.3 | Upload tailored resume | VERIFIED | same |  |  |  |  |
+| M5.4 | Free-text via LLM w/ JD context | IMPLEMENTED-UNVERIFIED | answers reviewed/bound (reviews.ts) | prompt-injection resistance unprobed | Phase 4 corpus |  | M |
+| M5.5 | Multi-step, resume from last page | VERIFIED | automation_checkpoints.ts; four-step recovery test (docs/p0-verification.md); tests pass |  |  |  |  |
+| M5.6 | CAPTCHA -> needs_action, never solved | VERIFIED | src/automation/captcha_handler.py; fixtures/captcha_form.html; Worker tests pass |  |  |  |  |
+| M5.7 | Configurable delay between submissions | IMPLEMENTED-UNVERIFIED | application_agent.py retry_delay |  | Phase 2 |  | S |
+| M5.8 | Status applied/failed/needs_action | VERIFIED | status events model; tests/test_status_logger (10) |  |  |  |  |
+| M5.9 | Failure reason recorded | VERIFIED | same |  |  |  |  |
+| M5.10 | Internshala + Lever/Greenhouse forms | PARTIAL | docs/portal-compatibility.md: no real portal certified; owned QA form only | no real-portal certification; never will be run on real employers per safety rule | SCOPE DECISION D-4 (keep as 'controlled-fixture only') | external | M |
+| M5.11 | >=3 mock-page tests | VERIFIED | test_automation 18 + Worker |  |  |  |  |
+| M5.F | Files Expected | VERIFIED | all exist |  |  |  |  |
+| M5.D | Defense Q1-5 (Q3 anti-detection: only a user_agent string exists) | NOT DONE | pending; honest answer: no stealth measures, by design |  |  |  | M |
+| M6.1 | Round prediction | IMPLEMENTED-UNVERIFIED | cloudflare/src/prep_intelligence.ts; src/utils/prep_quality.py; labelled estimates (P2-03) |  | Phase 4 |  | S |
+| M6.2 | Internship lighter by default | IMPLEMENTED-UNVERIFIED | Issue 17: 1-2 rounds; prep-quality eval pass (logs/prep-eval.log mode_depth true) |  |  |  |  |
+| M6.3 | Strong/Moderate/Gap categories | IMPLEMENTED-UNVERIFIED | prep_intelligence.ts |  | Phase 4 |  | S |
+| M6.4 | 2-3 resources per gap (Tavily/SerpAPI) | PARTIAL | code: src/utils/web_search.py, intelligence.ts; link validation tests pass (mocked) | live provider output not reproduced |  | provider key | S |
+| M6.5 | 5-10 JD-specific questions | VERIFIED | prep-quality eval pass (duplication/JD-grounding gates), prep-quality.test.ts | synthetic corpus |  |  |  |
+| M6.6 | Company intel scrape | PARTIAL | company_intel_agent.py; Worker evidence-only 'unknown' policy; Glassdoor/AmbitionBox lookup only in Python agent, real access restricted | review sites not reliably reachable | document as 'not supported' | external | S |
+| M6.7 | Zero-review fallback | VERIFIED | test_company_intel (5); prep tests |  |  |  |  |
+| M6.8 | Saved to prep_guides + PDF/HTML in data/reports/ | IMPLEMENTED-UNVERIFIED | prep_exports.ts (private KV, expiry); path differs (D-3) |  |  |  |  |
+| M6.9 | Distinct per listing | VERIFIED | prep-quality eval (near-duplicate gates) pass |  |  |  |  |
+| M6.F | Files Expected | VERIFIED | all exist |  |  |  |  |
+| M6.D | Defense Q1-6 | NOT DONE | pending |  |  |  | M |
+| M7.1 | Aggregate weekly applications | VERIFIED | reports.ts, reports.test.ts pass; src/agents/report_generator.py test_report (6) |  |  |  |  |
+| M7.2 | Cross-application insights | IMPLEMENTED-UNVERIFIED | reports.ts |  | Phase 4 |  | S |
+| M7.3 | Weekly study plan | IMPLEMENTED-UNVERIFIED | reports.ts |  |  |  |  |
+| M7.4 | Report emailed (SendGrid/Resend) with resumes | PARTIAL | Worker: Gmail transport + Resend/SendGrid webhooks (email_delivery.ts); Python: email_service.py. NO real delivery ever verified (P2-05/P2-07 open) | real delivery unproven | (b) owner Gmail app-password + one authorised send | owner credentials | S |
+| M7.5 | Saved to weekly_reports + HTML/PDF | VERIFIED | model report.py; private HTML in E2E |  |  |  |  |
+| M7.6 | Separates internship vs job | VERIFIED | mixed-mode tests (reports.test.ts, p1-workflow.test.ts) |  |  |  |  |
+| M7.H1 | Hiring: JD + CSV/JSON in | VERIFIED | cloudflare/src/hiring.ts, hiring-reports.test.ts; test_hiring_shortlist (14) |  |  |  |  |
+| M7.H2 | Hiring: parse applicants | VERIFIED | same |  |  |  |  |
+| M7.H3 | Hiring: same scoring engine as M3 | IMPLEMENTED-UNVERIFIED | claimed in docs/hiring.md | not diffed | Phase 5 |  | S |
+| M7.H4 | Top-N shortlist | VERIFIED | tests pass |  |  |  |  |
+| M7.H5 | Per-candidate report | VERIFIED | hiring-reports.test.ts + E2E 'hiring' steps |  |  |  |  |
+| M7.H6 | Email shortlist to hiring team | PARTIAL | hiring_email.ts; no real send | same as M7.4 | (b) | owner credentials | S |
+| M7.H7 | Saved to shortlists table | VERIFIED | model shortlist.py |  |  |  |  |
+| M7.F | Files Expected | VERIFIED | all exist |  |  |  |  |
+| M7.D | Defense Q1-5 (Q3 fairness for non-traditional backgrounds needs real analysis) | NOT DONE | pending |  |  |  | M |
+| M8.1 | Mode switcher | VERIFIED | E2E (logs/e2e-dashboard.log steps); frontend tests |  |  |  |  |
+| M8.2 | Weekly plan view w/ confirm gate | VERIFIED | E2E |  |  |  |  |
+| M8.3 | Plan actions incl. edit resume | VERIFIED | review-workflow.test.ts; ResumePreview |  |  |  |  |
+| M8.4 | Resume preview edit/reject | VERIFIED | E2E + frontend tests |  |  |  |  |
+| M8.5 | Application tracker | VERIFIED | E2E |  |  |  |  |
+| M8.6 | Prep guide viewer | VERIFIED | route /applications/:id/prep-guide; E2E |  |  |  |  |
+| M8.7 | Resume viewer with download | VERIFIED | /resumes page |  |  |  |  |
+| M8.8 | Profile page edit profile/mode/quota | VERIFIED | ProfilePage.jsx; tests |  |  |  |  |
+| M8.9 | Mobile-responsive | PARTIAL | E2E mobile overflow checks pass; no a11y/touch-target audit | responsive != accessible | Phase 6 |  | M |
+| M8.10 | End-to-end flow, both modes | PARTIAL | isolated E2E passes; production run 328d62554e26 claimed in docs; not reproduced | live E2E not reproduced; real-pool/real-email missing | Phase 6 production smoke (one cycle/mode) |  | M |
+| M8.11 | Failure states: CAPTCHA, scraper error, LLM timeout | IMPLEMENTED-UNVERIFIED | provider_health.ts; tests | UI states unaudited | Phase 6 flow 17 |  | M |
+| M8.12 | Both modes in same cycle | VERIFIED | mixed-mode tests |  |  |  |  |
+| M8.13 | Demo video 3-5 min | PARTIAL | frontend/public/assets/hireflow-p1-demo.webm 5.6 MB, 4:45 per README; webm: Safari/iOS risk | playback/format unaudited | Phase 7 MP4 fallback |  | S |
+| M8.14 | docs/architecture.md | PARTIAL | exists (150 lines) but must match reality (diagram in Phase 2) |  | Phase 2 |  | S |
+| M8.15 | README tested on fresh machine | IMPLEMENTED-UNVERIFIED | see M1.10 |  |  |  | M |
+| M8.16 | >=10 tests | VERIFIED | 782+415+157 pass |  |  |  |  |
+| M8.X | Spec: LangGraph agent graph | NOT DONE | no StateGraph anywhere; only `langgraph` in requirements.txt (F-011); actual design = Queue/outbox | spec/design differ | SCOPE DECISION D-5 + ADR (Phase 4) |  | S |
+| M8.F | Files Expected | VERIFIED | all exist |  |  |  |  |
+| M8.D | Defense Q1-6 (Q2 LangGraph state schema: honest 'not used') | NOT DONE | pending |  |  |  | M |
+| I1 | Dev env: py3.11 venv, packages, Postgres, Playwright, .env, uvicorn starts | IMPLEMENTED-UNVERIFIED | py3.11 venv + pytest + alembic reproduced; uvicorn start not run | Node >=22.12 / engines not documented (F-002) | Phase 6 |  | S |
+| I2.a | backend-ci runs pytest on PRs; frontend-ci on frontend changes | VERIFIED | .github/workflows/{backend,frontend}-ci.yml; mirrored locally | least-privilege/SHA pinning missing (F-004) |  |  |  |
+| I2.b | dev default branch + main protection (require PR + CI) | BLOCKED-EXTERNAL | gh CLI unavailable; branches show feature/* but no `dev`; remote branch settings unknown | can't read repo settings | owner: check GitHub Settings > Branches (and consider whether `dev` is still wanted) | owner GitHub access | S |
+| I3 | Schema columns; alembic up / down -1 / up | VERIFIED | alembic upgrade->downgrade base->upgrade->check (stronger than -1) |  |  |  |  |
+| I4 | POST/GET profile, mode validated, default batch, LLM works, /docs | IMPLEMENTED-UNVERIFIED | profile.py:53,118,188; tests mocked; /docs not fetched |  | Phase 6 |  | S |
+| I5 | get_llm_client: groq/gemini/openai/anthropic/ollama; .chat/.extract; clear error w/o key | VERIFIED | src/utils/llm_client.py:17-20,187-220; test_llm_client passes |  |  |  |  |
+| I6 | Lever/Greenhouse: fields, pagination, 1s delay, >=3 tests each | VERIFIED | src/scrapers/*; test_scrapers 51 | pagination assertion strength unreviewed | Phase 5 |  | S |
+| I7 | Generic scraper static+JS, consistent structure, empty list, method logged | IMPLEMENTED-UNVERIFIED | generic_scraper.py, static_scraper.py | 'logs method per URL' not confirmed | Phase 5 |  | S |
+| I8 | Spam filter: scores all, flags, 0-1, configurable 0.7, >=5 tests (3 spam, 2 sparse legit) | VERIFIED | spam_filter.py; settings.py:27; test_spam_filter has 6 |  |  |  |  |
+| I9 | Embeddings, FAISS saved to data/faiss_index/, search, short text, default MiniLM | PARTIAL | BGE default (settings.py:28) not MiniLM; faiss path setting.py:32; no JD chunking | model/spec differ | D-2; document |  | S |
+| I10 | Scorer 40/20/15/10/10/5, gaps, modes, saved w/ rank, deterministic | VERIFIED | match_scorer.py:35; test_matcher | determinism test absent (see M3.9) |  |  |  |
+| I11 | Quota, filters, GET/POST weekly-plan, swap, nothing proceeds pre-confirm, batch/individual | IMPLEMENTED-UNVERIFIED | weekly_plan.py:25,47,62; quota_selector.py | 'individual paginates one-by-one' behavior unconfirmed | Phase 6 flow 7 |  | S |
+| I12 | Resume tailoring RAG: 2-3 projects, skill order, tone, no hallucination, dict sections, different per JD | IMPLEMENTED-UNVERIFIED | resume_tailoring.ts, resume_service.py; fact-preservation checks in tests | no adversarial truthfulness run yet | Phase 4 |  | M |
+| I13 | PDF generation; path _resume_v{N}; version increment; ATS text; LaTeX; record updated | PARTIAL | ReportLab not LaTeX; pdf-quality real-reader tests pass; path differs in prod | LaTeX not used (D-3, decision: ReportLab OK per M4.10) | document |  | S |
+| I14 | Form filler fields/upload/free-text/submit/status/DB/>=3 tests | VERIFIED | form_filler.py, test_automation 18 | owned fixtures only |  |  |  |
+| I15 | CAPTCHA types, retries w/ exp backoff, timeout temp, selector change permanent, no unhandled | VERIFIED | application_agent.py:142 backoff; captcha_handler; tests pass | hCaptcha/image coverage unreviewed | Phase 5 |  | S |
+| I16 | Status log timestamps; GET /applications paginated; failure reason; manual URL | VERIFIED | applications.py:30-48 page/page_size; status_event model; test_status_logger 10 |  |  |  |  |
+| I17 | Round predictor, topics, no-process JD, internship 1-2 rounds | IMPLEMENTED-UNVERIFIED | see M6.1-M6.3 |  | Phase 4 |  | S |
+| I18 | Resources 2-3, broken-link alternatives, JD-specific questions, categories, internship lighter | IMPLEMENTED-UNVERIFIED | prep tests (mocked links) | live not reproduced | Phase 4 |  | S |
+| I19 | Company intel; Glassdoor/AmbitionBox; no-review fallback; saved in company_intel | PARTIAL | see M6.6 |  |  | external | S |
+| I20 | Weekly report fields/insights/study plan/failed called out/saved | VERIFIED | reports tests; test_report |  |  |  |  |
+| I21 | Email: HTML body, <=10 attachments, SendGrid/Resend via EMAIL_PROVIDER, size fallback, logged | PARTIAL | email_delivery.ts/email_service.py; mocked/signed webhooks; Gmail path added. Real delivery never verified | delivery unproven; EMAIL_PROVIDER semantics changed (Gmail) | (b) | owner credentials | S |
+| I22 | Hiring agent | VERIFIED | see M7.H* |  |  |  |  |
+| I23 | React app :3000; profile page; mode; POST /profile; error handling; responsive | VERIFIED | docker-compose.yml:50 (3000:80); frontend tests; E2E |  |  |  |  |
+| I24 | Plan view, remove/swap, PDF preview, Confirm and Apply, tracker, needs-action link | VERIFIED | E2E + review tests |  |  |  |  |
+| I25 | Prep viewer sections, colour badges, links new tab, expandable questions, resume library | IMPLEMENTED-UNVERIFIED | frontend tests; colour-only badges => a11y risk (Phase 6) |  | Phase 6 |  | S |
+| I26.a | docker-compose up --build: API+frontend+DB | IMPLEMENTED-UNVERIFIED | docker-compose.yml; evidence p1-docker-cycle.json (claim) | re-run in Phase 6 |  |  | S |
+| I26.b | Deployed to Railway or Render with live URL | NOT DONE | deployed on Cloudflare instead; docs/deployment.md:155 says no Railway/Render deployment claimed | spec differs | SCOPE DECISION D-6: accept Cloudflare as the equivalent live deployment |  | S |
+| I26.c | Live URL accessible; E2E passes | PARTIAL | hireflow-dashboard.pages.dev /profile HTTP 200 (curl 2026-11-01); /health ok; golden-path not re-run on prod |  | Phase 6 production smoke |  | S |
+| I26.d | docs/deployment.md documents URL + redeploy | VERIFIED | docs/deployment.md (188 lines) |  |  |  |  |
+| P0-01 | Verified account recovery and ownership | VERIFIED | account-security.test.ts, session_transfer.test.ts, test_account_security.py pass; recovery keys/passkeys | browser-level passkey flow & bridge replay to be probed in Phase 3 |  |  |  |
+| P0-02 | Per-opportunity resume edit/reject/reapproval | VERIFIED | review-workflow.test.ts + E2E | two-tab concurrency unprobed (Phase 6) |  |  |  |
+| P0-03 | Portal compatibility and durable multi-step forms | PARTIAL | checkpoints tests pass; Greenhouse/Lever adapters on fixtures only | no real-portal certification | D-4 | external |  |
+| P0-04 | Provider degradation and actionable recovery | VERIFIED | provider_health.ts; operations.test.ts |  |  |  |  |
+| P0-05 | Capacity, cost visibility and alerts | VERIFIED | operations.test.ts, capacity-script.test.ts; telemetry.ts | single-workflow envelope only |  |  |  |
+| P0-06 | Answer review and queued cancellation | VERIFIED | review-workflow.test.ts |  |  |  |  |
+| P1-01 | Labeled AI evaluation suite | PARTIAL | reproduced; synthetic/author-labelled | validity audit pending (Phase 4) | Phase 4 |  |  |
+| P1-02 | Embeddings + hybrid in plan path | VERIFIED | semantic-matching tests; ai-eval reproduced | live BGE not called |  |  |  |
+| P1-03 | Listing schema and fit signals | IMPLEMENTED-UNVERIFIED | listing-facts.test.ts, test_listing_facts pass |  | Phase 5 |  |  |
+| P1-04 | Company-wide prior-application exclusion | VERIFIED | company_policy.ts + tests |  |  |  |  |
+| P1-05 | Live Job-mode discovery verification | BLOCKED-EXTERNAL | docs/evidence; LinkedIn 429s, Naukri empty (docs) | live sources outside my control |  | real-world data |  |
+| P1-06 | Complete acceptance scenarios both modes | PARTIAL | isolated E2E; live run claimed | not reproduced | Phase 6 |  |  |
+| P1-07 | Architecture, setup, honest demo | PARTIAL | docs exist; clean-clone unproven |  | Phase 8 |  |  |
+| P1-08 | Resume extraction/rendering coverage | VERIFIED | pdf-quality (real reader ran), test_pdf_quality | no OCR (declared) |  |  |  |
+| P1-09 | Reduce Worker CPU tail | IMPLEMENTED-UNVERIFIED | docs/p1-capacity.md measured on prod; not reproduced |  |  |  |  |
+| P2-01 | Background discovery and measured 100+ pool | PARTIAL | checkbox itself unchecked in future.md; see M2.X |  | D-1 | real-world volume |  |
+| P2-02 | Portal adapters, career pages, shared rate limits | VERIFIED | ashby-adapter, source-reader, dynamic-source tests |  |  |  |  |
+| P2-03 | Better prep and company evidence | VERIFIED | prep-quality eval; intelligence tests |  |  |  |  |
+| P2-04 | Standalone prep exports | VERIFIED | prep-exports.test.ts (real PDF reader) |  |  |  |  |
+| P2-05 | Configure and verify email delivery | BLOCKED-EXTERNAL | checkbox unchecked; Gmail credentials absent | needs app password + inbox | owner steps (ROADMAP) | owner credentials |  |
+| P2-06 | Consent-preserving scheduler | VERIFIED | scheduler-discovery.test.ts, weekly_scheduler.ts | non-email only |  |  |  |
+| P2-07 | Mixed-mode, delivery-complete reports | BLOCKED-EXTERNAL | checkbox unchecked; delivery unverified | same as P2-05 |  | owner credentials |  |
+| P2-08 | Backup, restore, retention, lifecycle | VERIFIED | workspace-backup.test.ts | D1 is forward-only; rollback plan to document (Phase 2) |  |  |  |
+| P2-09 | Backend parity and regression maintenance | PARTIAL | docs/backend-parity.md | parity not enforced by shared fixtures (Phase 5) |  |  |  |
+| P3-01 | Hiring-side module | VERIFIED | hiring-reports.test.ts; E2E | email unverified |  |  |  |
+| P3-02 | Learned reranking experiment | VERIFIED | reranker reproduced byte-identical (cmp OK) | honest negative result; fine |  |  |  |
+| DoC.1 | Link completed items to implementation/test evidence | PARTIAL | partial; scattered across 28 docs |  | Phase 7 single status doc |  |  |
+| DoC.2 | Re-run checks; opt-in live tests separate | VERIFIED | providers.live.test.ts opt-in (4 skipped) |  |  |  |  |
+| DoC.3 | Preserve factual content, confirmation, ownership, no blind resubmission | IMPLEMENTED-UNVERIFIED | tests exist; adversarial probes pending Phases 3-4 |  |  |  |  |
+| DoC.4 | Update audit/README/deploy docs; milestone complete only after conditions or recorded scope change | PARTIAL | scope changes not formally recorded (D-1..D-6) |  | ADRs in Phase 7 |  |  |
+| DoC.5 | Sanitized evidence; no keys/cookies/private resumes | VERIFIED | Phase 0 scan: no secret patterns, no emails in docs/evidence |  |  |  |  |

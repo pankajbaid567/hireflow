@@ -1,0 +1,330 @@
+{
+ "n_ranking_queries": 48,
+ "groups": {
+  "dev": [
+   "accessibility",
+   "agriculture",
+   "appointments",
+   "banking",
+   "delivery",
+   "education",
+   "inventory",
+   "library",
+   "music",
+   "security",
+   "sports",
+   "travel",
+   "vision",
+   "weather"
+  ],
+  "heldout": [
+   "astronomy",
+   "civic",
+   "commerce",
+   "documents",
+   "energy",
+   "games",
+   "marine",
+   "nonprofit",
+   "transit",
+   "warehouse"
+  ]
+ },
+ "group_overlap_dev_heldout": [],
+ "heldout_means": {
+  "random": {
+   "r1": 0.2,
+   "r3": 0.6,
+   "ndcg3": 0.4991
+  },
+  "lexical": {
+   "r1": 0.3,
+   "r3": 0.8,
+   "ndcg3": 0.6991
+  },
+  "tfidf": {
+   "r1": 0.5,
+   "r3": 0.65,
+   "ndcg3": 0.8251
+  },
+  "bm25": {
+   "r1": 0.5,
+   "r3": 0.7,
+   "ndcg3": 0.8357
+  },
+  "semantic": {
+   "r1": 0.5,
+   "r3": 1.0,
+   "ndcg3": 0.9458
+  },
+  "hybrid": {
+   "r1": 0.5,
+   "r3": 1.0,
+   "ndcg3": 0.9511
+  }
+ },
+ "dev_means": {
+  "random": {
+   "r1": 0.2,
+   "r3": 0.6,
+   "ndcg3": 0.4991
+  },
+  "lexical": {
+   "r1": 0.2857,
+   "r3": 0.7857,
+   "ndcg3": 0.6776
+  },
+  "tfidf": {
+   "r1": 0.5,
+   "r3": 0.5714,
+   "ndcg3": 0.8099
+  },
+  "bm25": {
+   "r1": 0.5,
+   "r3": 0.7143,
+   "ndcg3": 0.8403
+  },
+  "semantic": {
+   "r1": 0.5,
+   "r3": 0.9821,
+   "ndcg3": 0.9405
+  },
+  "hybrid": {
+   "r1": 0.5,
+   "r3": 1.0,
+   "ndcg3": 0.9674
+  }
+ },
+ "bootstrap_heldout": {
+  "lexical": {
+   "ndcg3": {
+    "point": 0.6991,
+    "ci95_cluster": [
+     0.584,
+     0.8235
+    ],
+    "ci95_query": [
+     0.5874,
+     0.8125
+    ]
+   },
+   "r1": {
+    "point": 0.3,
+    "ci95_cluster": [
+     0.175,
+     0.4
+    ],
+    "ci95_query": [
+     0.2,
+     0.4
+    ]
+   }
+  },
+  "tfidf": {
+   "ndcg3": {
+    "point": 0.8251,
+    "ci95_cluster": [
+     0.7932,
+     0.8624
+    ],
+    "ci95_query": [
+     0.8011,
+     0.8491
+    ]
+   },
+   "r1": {
+    "point": 0.5,
+    "ci95_cluster": [
+     0.5,
+     0.5
+    ],
+    "ci95_query": [
+     0.5,
+     0.5
+    ]
+   }
+  },
+  "bm25": {
+   "ndcg3": {
+    "point": 0.8357,
+    "ci95_cluster": [
+     0.7985,
+     0.873
+    ],
+    "ci95_query": [
+     0.8118,
+     0.8624
+    ]
+   },
+   "r1": {
+    "point": 0.5,
+    "ci95_cluster": [
+     0.5,
+     0.5
+    ],
+    "ci95_query": [
+     0.5,
+     0.5
+    ]
+   }
+  },
+  "semantic": {
+   "ndcg3": {
+    "point": 0.9458,
+    "ci95_cluster": [
+     0.9321,
+     0.9606
+    ],
+    "ci95_query": [
+     0.9363,
+     0.9559
+    ]
+   },
+   "r1": {
+    "point": 0.5,
+    "ci95_cluster": [
+     0.5,
+     0.5
+    ],
+    "ci95_query": [
+     0.5,
+     0.5
+    ]
+   }
+  },
+  "hybrid": {
+   "ndcg3": {
+    "point": 0.9511,
+    "ci95_cluster": [
+     0.9359,
+     0.9665
+    ],
+    "ci95_query": [
+     0.939,
+     0.9639
+    ]
+   },
+   "r1": {
+    "point": 0.5,
+    "ci95_cluster": [
+     0.5,
+     0.5
+    ],
+    "ci95_query": [
+     0.5,
+     0.5
+    ]
+   }
+  }
+ },
+ "paired_diff_heldout": {
+  "hybrid-lexical": {
+   "ndcg3": {
+    "point": 0.252,
+    "ci95_cluster": [
+     0.1283,
+     0.3816
+    ]
+   },
+   "r1": {
+    "point": 0.2,
+    "ci95_cluster": [
+     0.1,
+     0.325
+    ]
+   }
+  },
+  "hybrid-tfidf": {
+   "ndcg3": {
+    "point": 0.126,
+    "ci95_cluster": [
+     0.0867,
+     0.158
+    ]
+   },
+   "r1": {
+    "point": 0.0,
+    "ci95_cluster": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "hybrid-bm25": {
+   "ndcg3": {
+    "point": 0.1154,
+    "ci95_cluster": [
+     0.0757,
+     0.1515
+    ]
+   },
+   "r1": {
+    "point": 0.0,
+    "ci95_cluster": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "hybrid-semantic": {
+   "ndcg3": {
+    "point": 0.0053,
+    "ci95_cluster": [
+     0.0,
+     0.0133
+    ]
+   },
+   "r1": {
+    "point": 0.0,
+    "ci95_cluster": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "semantic-tfidf": {
+   "ndcg3": {
+    "point": 0.1207,
+    "ci95_cluster": [
+     0.0855,
+     0.1515
+    ]
+   },
+   "r1": {
+    "point": 0.0,
+    "ci95_cluster": [
+     0.0,
+     0.0
+    ]
+   }
+  }
+ },
+ "group_level_wins_ndcg3": {
+  "hybrid_vs_lexical": {
+   "groups": 10,
+   "wins": 8,
+   "losses": 2,
+   "ties": 0
+  },
+  "hybrid_vs_tfidf": {
+   "groups": 10,
+   "wins": 9,
+   "losses": 0,
+   "ties": 1
+  },
+  "semantic_vs_tfidf": {
+   "groups": 10,
+   "wins": 9,
+   "losses": 0,
+   "ties": 1
+  }
+ },
+ "label_multiset_per_query": {
+  "(3, 2, 1, 0, 0)": 48
+ },
+ "max_recall_at_1_possible": 0.5,
+ "jd_text_templated": {
+  "distinct_candidate_descriptions": 97,
+  "total_candidate_slots": 240
+ }
+}

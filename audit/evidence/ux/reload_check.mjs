@@ -1,0 +1,12 @@
+import { createRequire } from 'node:module'; import { fileURLToPath } from 'node:url';
+const root = fileURLToPath(new URL('../../../', import.meta.url)); const { chromium } = createRequire(`${root}cloudflare/package.json`)('playwright-core');
+const BASE = 'http://127.0.0.1:4173'; const b = await chromium.launch({ executablePath: chromium.executablePath() });
+const ctx = await b.newContext({ viewport: { width: 1366, height: 900 } }); const page = await ctx.newPage(); const log = [];
+page.on('request', r => { if (r.url().includes('/api/')) log.push(`${r.method()} ${new URL(r.url()).pathname}`); });
+page.on('response', r => { if (r.url().includes('/api/')) log.push(`  -> ${r.status()} ${new URL(r.url()).pathname}`); });
+await page.goto(BASE + '/profile'); await page.fill('input[name=name]', 'Reload Tester'); await page.fill('input[name=email]', `rl-${Date.now()}@example.com`); await page.fill('input[name=skills]', 'Python');
+await page.getByRole('button', { name: /save profile/i }).click(); await page.waitForTimeout(1500); log.push('--- navigate by link'); 
+await page.getByRole('link', { name: /weekly plan/i }).first().click(); await page.waitForTimeout(1200); const viaLink = (await page.innerText('main')).replace(/\s+/g, ' ').slice(0, 120);
+log.push('--- full reload'); await page.reload(); await page.waitForTimeout(1500); const afterReload = (await page.innerText('main')).replace(/\s+/g, ' ').slice(0, 120);
+log.push('--- goto /weekly-plan'); await page.goto(BASE + '/weekly-plan'); await page.waitForTimeout(1500); const afterGoto = (await page.innerText('main')).replace(/\s+/g, ' ').slice(0, 120);
+console.log(JSON.stringify({ viaLink, afterReload, afterGoto, storage: await page.evaluate(() => ({ ls: Object.keys(localStorage), ss: Object.keys(sessionStorage) })), cookies: (await ctx.cookies()).map(c => `${c.name} secure=${c.secure} sameSite=${c.sameSite}`), log }, null, 1)); await b.close();

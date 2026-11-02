@@ -87,3 +87,28 @@ def test_weekly_reports_table_columns():
     expected = ["id", "user_id", "week_start_date", "metrics", "content", "created_at"]
     for col in expected:
         assert col in wr_columns
+
+
+def test_application_is_unique_per_user_and_job():
+    """Audit F-018: concurrent scoring runs must not create two rows for one (user, job)."""
+    import pytest
+    from sqlalchemy import create_engine
+    from sqlalchemy.exc import IntegrityError
+    from sqlalchemy.orm import Session
+
+    from src.models.application import Application
+    from src.models.job import Job
+    from src.models.user import User
+
+    engine = create_engine("sqlite://")
+    Base.metadata.create_all(engine)
+    with Session(engine) as db:
+        user = User(name="U", email="u@example.com", mode="internship")
+        job = Job(title="T", company="C", url="https://example.com/j", description="d")
+        db.add_all([user, job])
+        db.commit()
+        db.add(Application(user_id=user.id, job_id=job.id))
+        db.commit()
+        db.add(Application(user_id=user.id, job_id=job.id))
+        with pytest.raises(IntegrityError):
+            db.commit()
