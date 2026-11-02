@@ -14,10 +14,13 @@ Scratchpad: /private/tmp/claude-501/-Users-pankajbaid-pankajbaid567-hireflow-hir
 - [x] Phase 2 — 02-architecture-review.md + 3 lane reports (_lane-*.md); findings F-018..F-028
 - [x] Phase 3 — 03-security-privacy.md; probe: evidence/security/probe_worker.mjs (rerun: node audit/evidence/security/probe_worker.mjs, Node 22); findings F-029..F-036 (no S0/S1)
 - [x] Phase 4 — 04-ai-genai-review.md; scripts+results in evidence/ai/ (run_probe.mjs [injection_probe.ts|property_probe.ts], eval_validity.py); findings F-037..F-042 (+F-011/F-031 updates); 0 real LLM calls
-- [ ] Phases 5–9 not started
+- [x] Phase 5 — 05-test-strategy.md (mutation sampling 20: 12 killed)
+- [x] Phase 6 — 06-ux-ui-a11y-review.md, 07-userflow-test-log.md (local only)
+- [x] Phase 7 — fix wave committed (see FINDINGS 'Status after Phase 7')
+- [x] Phase 8 — README block, RESUME_TRUTH_LEDGER, INTERVIEW_DEFENSE
+- [x] Phase 9 — gates re-run, FINAL_REPORT, ROADMAP
 
 Findings: 42 (0 S0, 1 S1 [F-018], ~11 S2, rest S3/S4). Blockers: none. Deploy-drift check via Cloudflare API (read-only) deferred.
 
 ## Next action
-Phase 5 (test-suite audit). Do: (1) mutation-style assertion-strength sampling of the 'VERIFIED' rows (flip a guard, see a test fail) for the invariants: duplicate-submission, approval binding, tenant isolation, session revoke; (2) coverage by risk (not %); flaky/skip inventory (4 skipped providers.live); (3) carry-overs: seed state for IDOR inconclusive set (resume download, prep-export HTML, email deliveries, hiring shortlists, backups, discover-by-id), hiring-data deletion test, authenticated LLM-route rate-limit test; (4) regression tests (red first) for F-037, F-039, F-040; (5) Python/Worker contract gaps (F-027). Output 05-test-strategy.md.
-Open owner decisions: D-1..D-7, LICENSE, Gmail app password, branch protection.
+Audit complete on branch. Owner actions listed in FINAL_REPORT §8 (deploy, LICENSE, D-1..D-7, DLQ, ACCESS_CODE split, Gmail, branch protection). Open engineering items: ROADMAP.md.
