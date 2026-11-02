@@ -20,7 +20,7 @@ tests and live evidence. Native JavaScript hydration is verified on an owned
 synthetic source; the deployed allowlist contains only that host. A real 100+
 relevant pool and arbitrary external JavaScript portal coverage remain
 unverified. Actual email sender setup and inbox receipt are still required;
-a queued or provider-accepted email is not delivery. Weekly reports are emailed to the address on the signed-in user's own profile through the owner's Gmail (`GMAIL_ALLOW_PROFILE_EMAIL`, at most 3 per account per day, 10 per day across the deployment); hiring-team emails still require an operator allowlist.
+a queued or provider-accepted email is not delivery. Weekly reports are emailed to the address on the signed-in user's own profile through the owner's Gmail (`GMAIL_ALLOW_PROFILE_EMAIL`, only after the account confirms that address by a one-time link, at most 3 per account per day, 10 per day across the deployment); hiring-team emails still require an operator allowlist.
 
 The original specification is **not fully complete**. Read the [milestone audit](docs/milestone-audit.md) for implemented, partial, missing, and unverified requirements, and the [prioritized roadmap](future.md) for remaining work, improvements and future additions.
 
@@ -55,7 +55,7 @@ A full engineering audit of this repository lives in [`audit/`](audit/FINAL_REPO
 
 [Deployment and resource details](docs/cloudflare.md) include the actual bindings, secrets, quotas, commands, and verification status. No provider secret belongs in browser code.
 
-The current production deployment (2 November 2026) is built from `main` at `e744e3e` plus the dead-letter-queue config: Worker `hireflow-api` version `7be1cc32-8e5a-4f54-a4dc-558da541aea6` (also returned by `/health`) and Pages `hireflow-dashboard` deployment `f04b0f6f` (both are direct uploads, so merging does not deploy; run `wrangler deploy` in `cloudflare/` and `npm run deploy:cloudflare` in `frontend/`). Deployment checks are in [`audit/FINAL_REPORT.md` §9](audit/FINAL_REPORT.md); older evidence stays in
+The current production deployment (2 November 2026) is built from `main` at `0cc5913` (email verification): Worker `hireflow-api` version `dbe8c66a-3bbd-450a-a23d-8f226e3e29be` (also returned by `/health`), D1 migrations through `0022`, and Pages `hireflow-dashboard` deployment `d1bd953d` (both are direct uploads, so merging does not deploy; run `wrangler deploy` in `cloudflare/` and `npm run deploy:cloudflare` in `frontend/`). Deployment checks are in [`audit/FINAL_REPORT.md` §9](audit/FINAL_REPORT.md); older evidence stays in
 [P3 verification](docs/p3-verification.md) and [P2 verification](docs/p2-verification.md).
 
 ## User flow
