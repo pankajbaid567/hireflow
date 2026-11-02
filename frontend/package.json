@@ -17,11 +17,11 @@
   },
   "dependencies": {
     "@simplewebauthn/browser": "14.0.0",
-    "axios": "^1.12.2",
+    "axios": "^1.21.0",
     "lucide-react": "^0.468.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "react-router-dom": "^7.9.1"
+    "react-router-dom": "^7.18.5"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.6.3",
