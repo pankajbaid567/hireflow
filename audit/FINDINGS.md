@@ -113,3 +113,6 @@ F-020 (correction) · the response already carries `X-Request-ID` on every reply
 | F-041 | S4 | **FIXED** | extracted collections typed and bounded; tests |
 | F-001 / F-028 | S2/S3 | **PARTLY FIXED** | README + `docs/cloudflare.md` counts refreshed; historical verification docs left as dated records |
 | F-019, F-021, F-022, F-023, F-005, F-007, F-008, F-012, F-013, F-014, F-015, F-025, F-026, F-027, F-029, F-033–F-036, F-042, F-043, F-047, F-048 | various | **OPEN** | see ROADMAP.md |
+
+## Update after follow-up work
+F-005 FIXED (`/health` returns the Workers version id via `version_metadata`; also, `/health` already probed D1, so F-007 is narrower than recorded: KV/Queue are not probed). M01/M02/M03/M06 race and ordering tests added and verified by mutation (M04 remains redundant). Profile-email delivery added (flag, per-account cap) — see FINAL_REPORT §9.

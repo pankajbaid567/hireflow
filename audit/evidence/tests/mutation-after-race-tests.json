@@ -1,0 +1,86 @@
+[
+ {
+  "id": "M01",
+  "invariant": "duplicate-submission",
+  "file": "tasks.ts",
+  "status": "KILLED",
+  "tests": [
+   "tasks.test.ts",
+   "automation-runtime.test.ts",
+   "p1-workflow.test.ts"
+  ],
+  "failed": 1,
+  "total": 56,
+  "killed_by": [
+   "the atomic execution claim re-validates at claim time (audit M01-M04) refuses when the application leaves conf"
+  ],
+  "seconds": 23
+ },
+ {
+  "id": "M02",
+  "invariant": "approval-binding",
+  "file": "tasks.ts",
+  "status": "KILLED",
+  "tests": [
+   "tasks.test.ts",
+   "review-workflow.test.ts",
+   "automation-runtime.test.ts"
+  ],
+  "failed": 1,
+  "total": 56,
+  "killed_by": [
+   "the atomic execution claim re-validates at claim time (audit M01-M04) refuses when the review is revoked after"
+  ],
+  "seconds": 12
+ },
+ {
+  "id": "M03",
+  "invariant": "approval-binding",
+  "file": "tasks.ts",
+  "status": "KILLED",
+  "tests": [
+   "tasks.test.ts",
+   "review-workflow.test.ts",
+   "automation-runtime.test.ts"
+  ],
+  "failed": 1,
+  "total": 56,
+  "killed_by": [
+   "the atomic execution claim re-validates at claim time (audit M01-M04) refuses when the review expires after va"
+  ],
+  "seconds": 12
+ },
+ {
+  "id": "M04",
+  "invariant": "approval-binding",
+  "file": "tasks.ts",
+  "status": "SURVIVED",
+  "tests": [
+   "tasks.test.ts",
+   "review-workflow.test.ts",
+   "automation-runtime.test.ts",
+   "p1-jd-races.test.ts"
+  ],
+  "failed": 0,
+  "total": 86,
+  "killed_by": [],
+  "seconds": 56
+ },
+ {
+  "id": "M06",
+  "invariant": "submitting-checkpoint",
+  "file": "automation.ts",
+  "status": "KILLED",
+  "tests": [
+   "automation.test.ts",
+   "automation-runtime.test.ts",
+   "tasks.test.ts"
+  ],
+  "failed": 1,
+  "total": 142,
+  "killed_by": [
+   "real local HTML form browser behavior completes four controlled steps with reviewed facts and exactly one fina"
+  ],
+  "seconds": 35
+ }
+]

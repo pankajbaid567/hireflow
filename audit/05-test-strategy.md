@@ -77,3 +77,6 @@ Also: `tests/test_models.py` (one-application-per-user-job; red without the cons
 5. Flaky Miniflare boot (F-043).
 6. Python/Worker contract fixture covers pay facts only (F-027).
 7. `automation.test.ts` real-browser block depends on a local Chromium; CI installs it, but a local run without it silently skips that block (not counted here).
+
+## 6. Update (after the race tests were added)
+`tasks.test.ts` now has four tests that fire an SQLite trigger *between* the approval pre-check and the atomic claim (revoke review, expire review, change profile, cancel), and `automation.test.ts` asserts the durable `submitting` checkpoint is written before the click and ordered before `submitted`. Re-running the mutation sample: **M01, M02, M03, M06 now KILLED; M04 (profile_version condition inside the claim) still SURVIVES** — the profile-change race is refused by another condition, so that one SQL clause is redundant with the rest of the claim, not proven necessary. Mutation tally: 16 of 20 killed, 2 equivalent/redundant (M04, M10), 2 gaps closed in the first pass. Evidence: `evidence/tests/mutation-after-race-tests.json`.

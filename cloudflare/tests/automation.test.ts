@@ -184,6 +184,8 @@ describe.skipIf(!localBrowserAvailable)('real local HTML form browser behavior',
     expect(proof.submitted).toMatchObject({full_name:profile.name,email:profile.email,education:profile.education,experience_years:'0',motivation:input().approvedAnswers!['why do you want to work here'],resume:{name:'test_resume.pdf',size:input().resume.length}});
     expect(checkpoints.saved.filter(item=>item.phase==='ready').map(item=>item.step)).toContain(3);
     expect(checkpoints.value?.phase).toBe('submitted');
+    // The durable `submitting` marker must be written BEFORE the irreversible click, then replaced by `submitted` (audit M06).
+    const phases=checkpoints.saved.map(item=>item.phase);expect(phases).toContain('submitting');expect(phases.indexOf('submitting')).toBeLessThan(phases.lastIndexOf('submitted'));
     expect(beforeFinalSubmit).toHaveBeenCalledTimes(4);
   });
 

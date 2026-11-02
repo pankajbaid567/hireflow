@@ -249,6 +249,24 @@ describe('immutable approval and private durable checkpoints',()=>{
   });
 });
 
+describe('the atomic execution claim re-validates at claim time (audit M01-M04)',()=>{
+  // The browser-budget reservation runs after the approval pre-check and before the claim. A trigger on it simulates a concurrent
+  // change landing exactly in that window; the claim's own WHERE clause must refuse, not rely on the earlier check.
+  const race=async(statement:string)=>{
+    await application();
+    await db.exec(`CREATE TRIGGER race_between_check_and_claim AFTER UPDATE ON browser_budget BEGIN ${statement}; END`);
+    const outcome=await process();
+    expect(outcome.acknowledged).toBe(true);
+    expect(await count('test_browser_calls')).toBe(0);
+    expect((await row()).attempts).toBe(0);
+    expect((await db.prepare('SELECT reserved_seconds FROM browser_budget').first<any>())!.reserved_seconds).toBe(0);
+  };
+  it('refuses when the review is revoked after validation',async()=>{await race("UPDATE submission_reviews SET revoked_at='2026-01-01T00:00:00.000Z'");expect((await row()).status).not.toBe('applied');});
+  it('refuses when the review expires after validation',async()=>{await race("UPDATE submission_reviews SET expires_at='2000-01-01T00:00:00.000Z'");expect((await row()).status).not.toBe('applied');});
+  it('refuses when the profile changes after validation',async()=>{await race('UPDATE users SET profile_version=profile_version+1 WHERE id=1');expect((await row()).status).not.toBe('applied');});
+  it('refuses when the application leaves confirmed after validation (e.g. cancelled)',async()=>{await race("UPDATE applications SET status='planned' WHERE id=1");expect((await row()).status).toBe('planned');});
+});
+
 describe('browser allocation and atomic free-tier limits', () => {
   it('records a successful attempt, applied timestamp, audit and durable prep delivery', async () => {
     await application();
