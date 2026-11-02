@@ -1,0 +1,5 @@
+// Bundles audit/evidence/ai/'+(process.argv[2]||'injection_probe.ts')+' with the repo's esbuild and runs it. Usage: node run_probe.mjs > injection-results.json
+import { createRequire } from 'node:module'; import { fileURLToPath } from 'node:url'; import { mkdtempSync, rmSync } from 'node:fs'; import { tmpdir } from 'node:os'; import { join } from 'node:path'; import { spawnSync } from 'node:child_process';
+const root = fileURLToPath(new URL('../../../', import.meta.url)), require = createRequire(new URL('../../../cloudflare/package.json', import.meta.url));
+const { build } = require('esbuild'), dir = mkdtempSync(join(tmpdir(), 'hf-inj-'));
+try { const out = join(dir, 'p.mjs'); await build({ entryPoints: [join(root, 'audit/evidence/ai/'+(process.argv[2]||'injection_probe.ts')+'')], bundle: true, platform: 'node', format: 'esm', outfile: out, logLevel: 'error', target: 'node22', external: ['@cloudflare/playwright'] }); const c = spawnSync(process.execPath, [out], { cwd: root, stdio: ['ignore', 'inherit', 'inherit'] }); process.exitCode = c.status ?? 1; } finally { rmSync(dir, { recursive: true, force: true }); }

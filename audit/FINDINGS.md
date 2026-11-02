@@ -74,3 +74,13 @@ F-022 (update) · S2 · security · ACCESS_CODE = signup bootstrap + login-as-an
 F-034 · S4 · security · Header-only "%PDF-" file accepted for signup (honest warning shown); no structure validation · confirmed
 F-035 · S3 · test · No test deletes a workspace populated with hiring rows; relies on cascade chain · static
 F-036 · S4 · security · Login/recovery throttles are per-IP only · confirmed
+
+## Phase 4 findings (offline probes; evidence/ai/; full detail 04-ai-genai-review.md)
+F-037 · S3 · correctness · `parseExperience` treats a mentor/team "N years of experience" as a job requirement; fresher score 0.750→0.6075, experience_fit 1.00→0.05 · confirmed (property-results.json) · fix test-first: assert null for third-party subjects
+F-038 · S3 · ai-eval · Headline nDCG gain measured vs weak comparator on a templated corpus; Recall@1 ceiling-bound (max 0.5); hybrid≈BGE-only (+0.005, CI 0–0.013); vs BM25 gain is +0.115 (CI +0.076..+0.152) · confirmed (eval_validity.json) · fix: add BM25/TF-IDF + CIs in a new benchmark version; reword claim
+F-039 · S3 · ai-safety · Prompt-injection filter is a regex denylist; paraphrased instruction in a JD with no duty sentence is kept as a requirement and quoted into template questions · confirmed (INJ-P9b/P10b) · impact bounded: no tools/egress/cross-user data
+F-040 · S4 · ai-safety · `validatePrepQuestions` accepts model questions containing URLs/HTML · confirmed (INJ-P6/P7)
+F-041 · S4 · robustness · `extractProfile` passes experience/projects/education items through unvalidated (type/count/length); mock bypassed token cap · confirmed in mock (INJ-X5/X6)
+F-042 · S4 · correctness · `parseCompensation` misses "1.2 crore per annum" with no currency symbol (safe-direction miss) · confirmed
+F-011 (update) · S3 · maintainability · six unused Python packages (langgraph, langchain, langchain-openai/-anthropic/-groq/-google-genai); no imports anywhere · confirmed by grep
+F-031 (update) · reuse stricter port rule from `intelligence.ts:311 publicUrl`; delete duplicate

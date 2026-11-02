@@ -13,11 +13,11 @@ Scratchpad: /private/tmp/claude-501/-Users-pankajbaid-pankajbaid567-hireflow-hir
 - [x] Phase 1 — traceability matrix (01-traceability-matrix.md/.csv, 172 rows, D-1..D-7 decisions, F-item triage). Generator: scratchpad/gen_matrix.py (rows are the source; regenerate by editing there if scratchpad survives, else edit md/csv directly)
 - [x] Phase 2 — 02-architecture-review.md + 3 lane reports (_lane-*.md); findings F-018..F-028
 - [x] Phase 3 — 03-security-privacy.md; probe: evidence/security/probe_worker.mjs (rerun: node audit/evidence/security/probe_worker.mjs, Node 22); findings F-029..F-036 (no S0/S1)
-- [ ] Phases 4–9 not started
+- [x] Phase 4 — 04-ai-genai-review.md; scripts+results in evidence/ai/ (run_probe.mjs [injection_probe.ts|property_probe.ts], eval_validity.py); findings F-037..F-042 (+F-011/F-031 updates); 0 real LLM calls
+- [ ] Phases 5–9 not started
 
-Findings: 36 (0 S0, 1 S1 [F-018], ~11 S2, rest S3/S4). Blockers: none. Deploy-drift check via Cloudflare API (read-only) deferred.
+Findings: 42 (0 S0, 1 S1 [F-018], ~11 S2, rest S3/S4). Blockers: none. Deploy-drift check via Cloudflare API (read-only) deferred.
 
 ## Next action
-Phase 4 (AI/GenAI). Read src/utils/llm_client.py, cloudflare/src/{intelligence,provider_health,resume_tailoring,prep_intelligence}.ts, evals/. Do: (1) re-run frozen eval (already reproduced) and AUDIT validity: dev/heldout separation, label authorship, baseline strength, bootstrap CIs on 20 heldout queries (write scripts under audit/evidence/ai/), BGE-only vs lexical vs hybrid ablation; (2) prompt-injection corpus >=15 against extraction/matching/tailoring/prep/form-answer paths using offline/mocked providers (reuse probe harness; no real LLM calls); (3) truthfulness probes (no-project resume, mismatched JD); (4) pay-normalization & scorer property tests; (5) ADR for LangGraph; (6) honest one-paragraph eval claim. Output 04-ai-genai-review.md.
-Carry-over for Phase 5: IDOR inconclusive set (seed resumes/exports/deliveries/shortlists/backups), hiring-deletion test, LLM-route rate-limit test.
+Phase 5 (test-suite audit). Do: (1) mutation-style assertion-strength sampling of the 'VERIFIED' rows (flip a guard, see a test fail) for the invariants: duplicate-submission, approval binding, tenant isolation, session revoke; (2) coverage by risk (not %); flaky/skip inventory (4 skipped providers.live); (3) carry-overs: seed state for IDOR inconclusive set (resume download, prep-export HTML, email deliveries, hiring shortlists, backups, discover-by-id), hiring-data deletion test, authenticated LLM-route rate-limit test; (4) regression tests (red first) for F-037, F-039, F-040; (5) Python/Worker contract gaps (F-027). Output 05-test-strategy.md.
 Open owner decisions: D-1..D-7, LICENSE, Gmail app password, branch protection.

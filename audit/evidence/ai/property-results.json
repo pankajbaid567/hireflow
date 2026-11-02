@@ -1,0 +1,293 @@
+{
+ "properties": [
+  {
+   "name": "score in [0,1] and never NaN",
+   "trials": 2000,
+   "failures": 0,
+   "examples": []
+  },
+  {
+   "name": "adding a REQUIRED skill to the profile never lowers the score (monotone)",
+   "trials": 2000,
+   "failures": 0,
+   "examples": []
+  },
+  {
+   "name": "profile skill order does not change the score",
+   "trials": 2000,
+   "failures": 0,
+   "examples": []
+  },
+  {
+   "name": "duplicate / case-variant profile skills do not change the score",
+   "trials": 2000,
+   "failures": 0,
+   "examples": []
+  },
+  {
+   "name": "deterministic: same input, same output",
+   "trials": 2000,
+   "failures": 0,
+   "examples": []
+  },
+  {
+   "name": "full-vocabulary profile never scores below an empty profile",
+   "trials": 2000,
+   "failures": 0,
+   "examples": []
+  },
+  {
+   "name": "scoring a ≤100 KB JD takes <100 ms (CPU budget)",
+   "trials": 300,
+   "failures": 0,
+   "examples": []
+  },
+  {
+   "name": "experienceFit in [0,1]",
+   "trials": 1000,
+   "failures": 0,
+   "examples": []
+  }
+ ],
+ "pay": [
+  {
+   "input": "Stipend: ₹15,000 per month",
+   "parsed": {
+    "currency": "INR",
+    "period": "month",
+    "monthly_min": 15000,
+    "annual_min": 180000,
+    "annual_max": 180000,
+    "source": "jd_text"
+   },
+   "expected_subset": {
+    "currency": "INR",
+    "monthly_minimum": 15000,
+    "monthly_maximum": 15000
+   },
+   "mismatches": []
+  },
+  {
+   "input": "Stipend ₹10,000 - ₹20,000 /month",
+   "parsed": {
+    "currency": "INR",
+    "period": "month",
+    "monthly_min": 10000,
+    "annual_min": 120000,
+    "annual_max": 240000,
+    "source": "jd_text"
+   },
+   "expected_subset": {
+    "currency": "INR",
+    "monthly_minimum": 10000,
+    "monthly_maximum": 20000
+   },
+   "mismatches": []
+  },
+  {
+   "input": "CTC: 6 LPA",
+   "parsed": {
+    "currency": "INR",
+    "period": "year",
+    "monthly_min": 50000,
+    "annual_min": 600000,
+    "annual_max": 600000,
+    "source": "jd_text"
+   },
+   "expected_subset": {
+    "currency": "INR",
+    "annual_minimum": 600000
+   },
+   "mismatches": []
+  },
+  {
+   "input": "Salary ₹8-12 LPA",
+   "parsed": {
+    "currency": "INR",
+    "period": "year",
+    "monthly_min": 66666.67,
+    "annual_min": 800000,
+    "annual_max": 1200000,
+    "source": "jd_text"
+   },
+   "expected_subset": {
+    "currency": "INR",
+    "annual_minimum": 800000,
+    "annual_maximum": 1200000
+   },
+   "mismatches": []
+  },
+  {
+   "input": "Salary: 1.2 crore per annum",
+   "parsed": {
+    "currency": null,
+    "period": null,
+    "monthly_min": null,
+    "annual_min": null,
+    "annual_max": null,
+    "source": "not_disclosed"
+   },
+   "expected_subset": {
+    "currency": "INR",
+    "annual_minimum": 12000000
+   },
+   "mismatches": [
+    "currency: expected \"INR\" got null",
+    "annual_minimum: expected 12000000 got null"
+   ]
+  },
+  {
+   "input": "Salary $120k per year",
+   "parsed": {
+    "currency": "USD",
+    "period": "year",
+    "monthly_min": 10000,
+    "annual_min": 120000,
+    "annual_max": 120000,
+    "source": "jd_text"
+   },
+   "expected_subset": {
+    "currency": "USD"
+   },
+   "mismatches": []
+  },
+  {
+   "input": "Unpaid internship",
+   "parsed": {
+    "currency": null,
+    "period": null,
+    "monthly_min": null,
+    "annual_min": null,
+    "annual_max": null,
+    "source": "explicit_unpaid"
+   },
+   "expected_subset": {
+    "source": "explicit_unpaid"
+   },
+   "mismatches": []
+  },
+  {
+   "input": "Our funding round raised ₹50 crore",
+   "parsed": {
+    "currency": null,
+    "period": null,
+    "monthly_min": null,
+    "annual_min": null,
+    "annual_max": null,
+    "source": "not_disclosed"
+   },
+   "expected_subset": {
+    "source": "not_disclosed"
+   },
+   "mismatches": []
+  },
+  {
+   "input": "Pay: ₹5,00,000 per annum",
+   "parsed": {
+    "currency": "INR",
+    "period": "year",
+    "monthly_min": 41666.67,
+    "annual_min": 500000,
+    "annual_max": 500000,
+    "source": "jd_text"
+   },
+   "expected_subset": {
+    "currency": "INR",
+    "annual_minimum": 500000
+   },
+   "mismatches": []
+  },
+  {
+   "input": "No stipend mentioned, great learning",
+   "parsed": {
+    "currency": null,
+    "period": null,
+    "monthly_min": null,
+    "annual_min": null,
+    "annual_max": null,
+    "source": "not_disclosed"
+   },
+   "expected_subset": {
+    "source": "not_disclosed"
+   },
+   "mismatches": []
+  },
+  {
+   "input": "Stipend: not unpaid, ₹12000/month",
+   "parsed": {
+    "currency": "INR",
+    "period": "month",
+    "monthly_min": 12000,
+    "annual_min": 144000,
+    "annual_max": 144000,
+    "source": "jd_text"
+   },
+   "expected_subset": {
+    "currency": "INR",
+    "monthly_minimum": 12000
+   },
+   "mismatches": []
+  },
+  {
+   "input": "Salary: 25/hour",
+   "parsed": {
+    "currency": null,
+    "period": null,
+    "monthly_min": null,
+    "annual_min": null,
+    "annual_max": null,
+    "source": "not_disclosed"
+   },
+   "expected_subset": {},
+   "mismatches": []
+  }
+ ],
+ "experience": [
+  {
+   "input": "2-4 years of experience",
+   "minimum_years": 2,
+   "expected": 2,
+   "ok": true
+  },
+  {
+   "input": "Freshers welcome",
+   "minimum_years": 0,
+   "expected": 0,
+   "ok": true
+  },
+  {
+   "input": "Experience: 3 years",
+   "minimum_years": 3,
+   "expected": 3,
+   "ok": true
+  },
+  {
+   "input": "5+ years experience",
+   "minimum_years": 5,
+   "expected": 5,
+   "ok": true
+  },
+  {
+   "input": "Senior colleagues with 10 years of experience mentor you",
+   "minimum_years": 10,
+   "expected": null,
+   "ok": false
+  },
+  {
+   "input": "Requires 99 years of experience",
+   "minimum_years": null,
+   "expected": null,
+   "ok": true
+  }
+ ],
+ "mentor_experience_false_positive": {
+  "with_mentor_sentence": {
+   "score": 0.6075,
+   "experience_fit": 0.05
+  },
+  "without": {
+   "score": 0.75,
+   "experience_fit": 1
+  }
+ }
+}
