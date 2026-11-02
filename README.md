@@ -2,7 +2,7 @@
 
 HireFlow helps students and job seekers build a reviewed application plan, prepare truthful resume PDFs, track supported automatic applications, and study for interviews. Applications require explicit confirmation. Blocked forms, CAPTCHAs, expired vacancies, and uncertain submissions are recorded for manual action.
 
-**Live dashboard:** [hireflow-dashboard.pages.dev](https://hireflow-dashboard.pages.dev/profile).
+**Live dashboard:** [hireflow-dashboard.pages.dev/profile](https://hireflow-dashboard.pages.dev/profile) (same site as `hireflow-dashboard.pages.dev`; this is the production Cloudflare Pages URL).
 React/Pages and the [API Worker](https://hireflow-api.baidpankaj567.workers.dev/health)
 run on Cloudflare with D1, private KV files, Queues and Browser Run.
 **P0 and P1 are implemented and production verified within their documented scopes.**
@@ -20,7 +20,7 @@ tests and live evidence. Native JavaScript hydration is verified on an owned
 synthetic source; the deployed allowlist contains only that host. A real 100+
 relevant pool and arbitrary external JavaScript portal coverage remain
 unverified. Actual email sender setup and inbox receipt are still required;
-a queued or provider-accepted email is not delivery.
+a queued or provider-accepted email is not delivery. Weekly reports are emailed to the address on the signed-in user's own profile through the owner's Gmail (`GMAIL_ALLOW_PROFILE_EMAIL`, at most 3 per account per day, 10 per day across the deployment); hiring-team emails still require an operator allowlist.
 
 The original specification is **not fully complete**. Read the [milestone audit](docs/milestone-audit.md) for implemented, partial, missing, and unverified requirements, and the [prioritized roadmap](future.md) for remaining work, improvements and future additions.
 
@@ -55,11 +55,8 @@ A full engineering audit of this repository lives in [`audit/`](audit/FINAL_REPO
 
 [Deployment and resource details](docs/cloudflare.md) include the actual bindings, secrets, quotas, commands, and verification status. No provider secret belongs in browser code.
 
-The 27 October (IST) deployment uses source `7c9e3ad`, Worker version
-`705de1ec-4e7a-43fd-a656-bf438eb4ea33`, Pages `712c55b3`, and D1 migrations
-through `0021`. Exact CI and production evidence are recorded in
-[P3 verification](docs/p3-verification.md); [P2 verification](docs/p2-verification.md)
-retains the earlier discovery, preparation and recovery evidence.
+The current production deployment (2 November 2026) is built from `main` at `a0b0a56` (audit and hardening merge) plus the profile-email change in the PR that follows it: Worker `hireflow-api` and Pages `hireflow-dashboard` (direct upload, so merging does not deploy; deploy with `wrangler deploy` in `cloudflare/` and `npm run deploy:cloudflare` in `frontend/`). Exact deployment IDs and checks are in [`audit/FINAL_REPORT.md` §9](audit/FINAL_REPORT.md); older evidence stays in
+[P3 verification](docs/p3-verification.md) and [P2 verification](docs/p2-verification.md).
 
 ## User flow
 

@@ -77,6 +77,8 @@
     "BROWSER_ENABLED": "true",
     "EMAIL_PROVIDER": "gmail",
     "GMAIL_DAILY_ATTEMPT_LIMIT": "10",
+    "GMAIL_ALLOW_PROFILE_EMAIL": "true",
+    "GMAIL_PROFILE_DAILY_LIMIT": "3",
     "FROM_EMAIL": "hireflow@example.com",
     "PLAN_WORK_IN_QUEUE": "true",
     "DYNAMIC_SOURCE_ENABLED": "true",

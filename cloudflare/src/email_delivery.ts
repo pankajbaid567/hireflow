@@ -3,7 +3,7 @@ import {ApiError,type Env,type Row,parsed} from './types';
 import {all,first,run} from './storage';
 import {files} from './files';
 import {digest} from './auth';
-import {gmailReadiness,gmailRecipientAllowed,sendGmailMessage,type GmailMessage} from './gmail_transport';
+import {gmailReadiness,gmailRecipientAllowed,profileEmailDelivery,sendGmailMessage,type GmailMessage} from './gmail_transport';
 
 const escape=(s:unknown)=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
 const leaseMs=120_000,retentionMs=30*86400_000,maxAttempts=3;
@@ -44,9 +44,11 @@ export async function enqueueReportEmail(env:Env,owner:number,consent:Consent={}
   env.DB.prepare('SELECT * FROM weekly_reports WHERE user_id=? ORDER BY week_start_date DESC,id DESC LIMIT 1').bind(owner),
  ]),user=snapshot[0].results[0] as Row|undefined,report=snapshot[1].results[0] as Row|undefined;
  if(!user)throw new ApiError(404,'Profile not found');if(!report)throw new ApiError(404,'No weekly report generated yet');
- if(config.provider==='gmail'&&!gmailRecipientAllowed(env,user.email))throw new ApiError(403,'Gmail delivery is restricted to the sender or an operator-configured private recipient allowlist. Use an approved workspace email before requesting delivery.');
+ const profileMode=config.provider==='gmail'&&!gmailRecipientAllowed(env,user.email)&&profileEmailDelivery(env);
+ if(config.provider==='gmail'&&!gmailRecipientAllowed(env,user.email)&&!profileMode)throw new ApiError(403,'Gmail delivery is restricted to the sender or an operator-configured private recipient allowlist. Use an approved workspace email before requesting delivery.');
  let row=await first(env,'SELECT * FROM email_deliveries WHERE user_id=? AND report_key=? AND provider=? AND recipient=?',owner,report.html_path,config.provider,user.email);
  if(row){row=await bindScheduledDelivery(env,owner,row,consent);if(['queued','ready','retry_wait'].includes(row.state)&&!row.dispatched_at&&await consentValid(env,row))await dispatch(env,row);return deliveryMetadata(row);}
+ if(profileMode){const raw=Number(env.GMAIL_PROFILE_DAILY_LIMIT??3),limit=Number.isFinite(raw)?Math.max(0,Math.min(20,Math.floor(raw))):3,since=new Date(Date.now()-86400000).toISOString(),used=(await first(env,'SELECT count(*) AS n FROM email_deliveries WHERE user_id=? AND provider=? AND created_at>?',owner,'gmail',since))?.n||0;if(used>=limit)throw new ApiError(429,'The daily report email limit for this account was reached. Open the report in your workspace or try again tomorrow.');}
  const content=parsed<Row>(report.content,{}),apps=Array.isArray(content.applications)?content.applications.slice(0,100):[],ids=apps.map((a:Row)=>Number(a.id)).filter(Number.isSafeInteger);
  const sources:Row[]=[];
  if(ids.length){
@@ -72,7 +74,7 @@ async function buildPayload(env:Env,row:Row){
  for(const source of snapshot.sources||[]){const file=await files(env).get(source.key);if(!file)throw new Error('missing');if(bytes+file.size>128*1024||attachments.length>=10){links.push(`<li><a href="${escape(snapshot.base+source.url)}">${escape(source.filename)}</a> (sign in to download)</li>`);continue;}bytes+=file.size;attachments.push({filename:source.filename,content:base64(new Uint8Array(await file.arrayBuffer())),type:'application/pdf',disposition:'attachment'});}
  // A random delivery UUID is sufficient for webhook correlation. Never place
  // candidate details or profile IDs in provider tags/custom arguments.
- const html=await report.text()+(links.length?`<p>Additional versioned PDFs are available in your private workspace:</p><ul>${links.join('')}</ul>`:''),payload=row.provider==='gmail'?{from:row.sender,to:row.recipient,subject:row.subject,html,attachments:attachments.map(a=>({filename:a.filename,content:a.content})),messageId:`<${row.id}@hireflow.invalid>`,date:row.created_at}:row.provider==='resend'?{from:row.sender,to:[row.recipient],subject:row.subject,html,attachments:attachments.map(a=>({filename:a.filename,content:a.content})),tags:[{name:'hireflow_delivery_id',value:row.id}]}:{personalizations:[{to:[{email:row.recipient}]}],from:{email:row.sender},subject:row.subject,content:[{type:'text/html',value:html}],attachments,custom_args:{hireflow_delivery_id:row.id}};
+ const html=await report.text()+(links.length?`<p>Additional versioned PDFs are available in your private workspace:</p><ul>${links.join('')}</ul>`:''),payload=row.provider==='gmail'?{from:row.sender,to:row.recipient,subject:row.subject,html,attachments:attachments.map(a=>({filename:a.filename,content:a.content})),messageId:`<${row.id}@hireflow.invalid>`,date:row.created_at,profile_recipient:true}:row.provider==='resend'?{from:row.sender,to:[row.recipient],subject:row.subject,html,attachments:attachments.map(a=>({filename:a.filename,content:a.content})),tags:[{name:'hireflow_delivery_id',value:row.id}]}:{personalizations:[{to:[{email:row.recipient}]}],from:{email:row.sender},subject:row.subject,content:[{type:'text/html',value:html}],attachments,custom_args:{hireflow_delivery_id:row.id}};
  const serialized=JSON.stringify(payload),hash=await digest(serialized);if(new TextEncoder().encode(serialized).byteLength>512000)throw new Error('oversized');
  await files(env).put(row.payload_key,serialized,{httpMetadata:{contentType:'application/json'}});
  return{hash,attachmentCount:attachments.length,linkedCount:links.length};
