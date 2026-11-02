@@ -22,4 +22,4 @@ google-genai>=2.8.0,<3
 openai>=1.30.0,<3
 anthropic>=0.28.0,<1
 numpy>=1.26.0,<3
-faiss-cpu>=1.8.0,<2
+faiss-cpu>=1.15.1,<2

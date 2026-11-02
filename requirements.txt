@@ -24,7 +24,7 @@ requests>=2.31.0
 lxml>=5.2.0
 
 # --- Vector Store & Embeddings ---
-faiss-cpu>=1.8.0
+faiss-cpu>=1.15.1
 sentence-transformers>=3.0.0
 
 # --- Backend API ---
