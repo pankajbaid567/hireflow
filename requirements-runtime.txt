@@ -1,6 +1,6 @@
 # API, browser automation and provider SDKs. Keep this image free of development
 # tools and unused LangChain orchestration packages from requirements.txt.
-fastapi>=0.111.0,<1
+fastapi>=0.162.0,<1
 uvicorn[standard]>=0.29.0,<1
 pydantic>=2.7.0,<3
 pydantic-settings>=2.2.0,<3
