@@ -244,7 +244,7 @@ node scripts/verify_cloudflare_dashboard.mjs
 
 The last script uses isolated D1/file storage, real React/Chromium, and a test-only queue hook with remote employer submission disabled. It checks structured edits, private PDFs, preparation/report views, mobile layout, restored sessions and logout. Servers are disposed afterward. Default tests do not send real email.
 
-Recorded local release gates passed **821 Worker tests** (four opt-in skipped), **415 Python tests** (three opt-in skipped) and **164 frontend tests**, including five deployment-guard regressions. Typecheck, dry run, frozen evaluation and preparation gates pass. Their exact source, remote CI and production outcomes are recorded in [P3 verification](p3-verification.md).
+Recorded local release gates passed **829 Worker tests** (four opt-in skipped), **415 Python tests** (three opt-in skipped) and **168 frontend tests**, including five deployment-guard regressions. Typecheck, dry run, frozen evaluation and preparation gates pass. Their exact source, remote CI and production outcomes are recorded in [P3 verification](p3-verification.md).
 
 ## Release verification
 
