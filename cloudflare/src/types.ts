@@ -38,7 +38,7 @@ export class ApiError extends Error {
   constructor(public status: number, message: string) { super(message); }
 }
 export const json = (value: unknown, status = 200, headers?: HeadersInit) =>
-  new Response(JSON.stringify(value), { status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', ...headers } });
+  new Response(JSON.stringify(value, (_key, item) => typeof item === 'string' && item.includes('#hf-u') ? item.replace(/#hf-u\d+/g, '') : item), { status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', ...headers } });
 export function weekStart(date = new Date()): string {
   const d = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
   d.setUTCDate(d.getUTCDate() - (d.getUTCDay() + 6) % 7);

@@ -1,7 +1,7 @@
 import { ApiError, type Env, type Row, parsed, weekStart } from './types';
 import { all, first, run, userById, applicationQuery, dispatchOutbox, listingSnapshot } from './storage';
 import { scoreMatch, extractSkills } from './intelligence';
-import { LISTING_SCHEMA_VERSION, canonicalListingUrl, companyAliases, companyKey, enrichListing, sourceName } from './listing_details';
+import { LISTING_SCHEMA_VERSION, canonicalListingUrl, companyAliases, companyKey, enrichListing, ownerListingKey, sourceName } from './listing_details';
 import { companyWasSubmitted, submittedCompanies } from './company_policy';
 import { MATCHING_ALGORITHM, rankWithSemantic } from './semantic_matching';
 import { createResume, ResumeFormatError } from './pdf';
@@ -30,7 +30,7 @@ async function scoredJobs(env:Env,user:Row,rows:Row[]):Promise<Row[]>{
 export async function addJobs(env: Env, userId: number, incoming: Row[], verifiedDiscovery=false, discovery?:{id:string;profileVersion:number;cycle?:boolean;token?:string},deferScoring=false) {
   const user = await userById(env, userId);const submitted=await submittedCompanies(env,userId,user.master_profile);
   if(discovery&&user.profile_version!==discovery.profileVersion)throw new ApiError(409,'Your profile changed during job search.');
-  const jobs = incoming.slice(0, 20).map(raw => {
+  const prepared = incoming.slice(0, 20).map(raw => {
     for (const key of ['title', 'company', 'url', 'description']) if (typeof raw[key] !== 'string' || !raw[key].trim()) throw new ApiError(422, `Job ${key} is required`);
     if (raw.description.length > 30000 || raw.title.length > 300 || raw.company.length > 300 || raw.url.length > 2000) throw new ApiError(422, 'Job data is too large');
     let url: string;
@@ -48,6 +48,13 @@ export async function addJobs(env: Env, userId: number, incoming: Row[], verifie
     return verifiedDiscovery&&raw.provenance?.schema_version===LISTING_SCHEMA_VERSION
       ? validated : enrichListing(validated,extractSkills);
   });
+  // A manually added listing is private to its owner (audit F-021): the shared `jobs.url` UNIQUE key would otherwise let the first
+  // user to add a URL decide the text every later user is scored and tailored against. Only server-verified discovery writes the
+  // shared (clean-URL) row. The owner suffix is a fragment, so every URL check that normalises the URL ignores it, canonical_url
+  // stays the real listing identity, and `json()` removes the suffix from API output.
+  // Verified discovery refreshes this user's own private row when they already added the listing by hand; otherwise it writes the shared row.
+  const mine = prepared.length ? new Set((await all(env, 'SELECT url FROM jobs WHERE url IN (SELECT value FROM json_each(?))', JSON.stringify(prepared.map(job => ownerListingKey(String(job.url), userId))))).map(row => row.url)) : new Set<string>();
+  const jobs: Row[] = prepared.map(job => { const key = ownerListingKey(String(job.url), userId); return verifiedDiscovery && !mine.has(key) ? job : { ...job, url: key }; });
   if (!jobs.length) return 0;
   await env.DB.batch(jobs.map(job=>env.DB.prepare(`INSERT INTO jobs(title,company,url,description,location,listing_type,posted_date,${factsColumns.join(',')}) VALUES(${Array(7+factsColumns.length).fill('?').join(',')}) ON CONFLICT(url) ${verifiedDiscovery?`DO UPDATE SET title=excluded.title,company=excluded.company,description=excluded.description,location=excluded.location,listing_type=excluded.listing_type,posted_date=excluded.posted_date,${factsColumns.map(key=>`${key}=excluded.${key}`).join(',')}`:'DO NOTHING'}`).bind(job.title,job.company,job.url,job.description,job.location,job.listing_type,job.posted_date,...factsValues(job))));
   // Known applications are refreshed lazily by getPlan's version gate. Scoring

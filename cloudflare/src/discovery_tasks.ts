@@ -3,6 +3,7 @@ import { ApiError, type Env, type Row, parsed } from './types';
 import { all, first, run, userById } from './storage';
 import { discoverJobs } from './intelligence';
 import { addJobs } from './plans';
+import { ownerListingKey, publicListingUrl } from './listing_details';
 import { validatePublicUrl } from './automation';
 import {newOperationContext} from './telemetry';
 
@@ -64,7 +65,7 @@ export async function processDiscovery(env:Env,id:string){
     if(current.profile_version!==job.profile_version||current.mode!==job.mode)throw new ApiError(409,staleReason);
     const known=await all(env,'SELECT j.url FROM applications a JOIN jobs j ON j.id=a.job_id WHERE a.user_id=?',job.user_id);
     const identity=(url:string)=>url.replace(/\/apply\/?(?=\?|$)/,'').replace(/\/$/,'');
-    const existing=new Set(known.map(item=>identity(item.url))),fresh=valid.filter(item=>!existing.has(identity(item.url)));
+    const existing=new Set(known.map(item=>identity(publicListingUrl(item.url)))),fresh=valid.filter(item=>!existing.has(identity(item.url)));
     const imported=await addJobs(env,job.user_id,valid,true,{id,profileVersion:job.profile_version});
     const message=imported?`${imported} active opportunities added. Refresh your plan to review the job details and resumes.`:valid.length&&!fresh.length?'These active listings are already in your opportunities. Review your weekly plan or broaden your target role.':valid.length?'Verified listings were already available or ineligible under your current company/mode preferences. Review your plan or broaden the search.':'No new active listings could be verified. Try a broader target role or location, or paste a current job-detail URL and its full description below.';
     const result={imported,discovered:valid.length,already_known:valid.length-fresh.length,not_imported:Math.max(0,fresh.length-imported),sources,warnings,message};

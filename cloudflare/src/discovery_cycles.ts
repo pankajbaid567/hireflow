@@ -3,7 +3,7 @@ import {ApiError,type Env,type Row,parsed} from './types';
 import {all,first,run,userById} from './storage';
 import {addJobs} from './plans';
 import {searchDiscoveryPage,verifyDiscoveryDetail,discoveryCanonicalIdentity,extractSkills} from './intelligence';
-import {canonicalListingUrl,parseExperience} from './listing_details';
+import {canonicalListingUrl,ownerListingKey,parseExperience} from './listing_details';
 import {SourceDeferred,pruneSourceCache,discoveryUsageLimit} from './source_reader';
 import {newOperationContext} from './telemetry';
 const definitions:Record<string,{name:string;domains:string[]}>= {
@@ -153,7 +153,7 @@ export async function processDiscoveryCycle(env:Env,id:string){
    if(job&&accepted){
     // Different search URLs can redirect to the same canonical full JD. The
     // target counts distinct verified listings, not successful alias reads.
-    const duplicate=await first(env,"SELECT 1 AS found FROM discovery_candidates WHERE cycle_id=? AND state='verified' AND (job_id=(SELECT id FROM jobs WHERE url=?) OR json_extract(evidence_json,'$.canonical_url')=?) LIMIT 1",id,job.url,evidence.canonical_url);
+    const duplicate=await first(env,"SELECT 1 AS found FROM discovery_candidates WHERE cycle_id=? AND state='verified' AND (job_id=(SELECT id FROM jobs WHERE url=?) OR job_id=(SELECT id FROM jobs WHERE url=?) OR json_extract(evidence_json,'$.canonical_url')=?) LIMIT 1",id,job.url,ownerListingKey(job.url,cycle.user_id),evidence.canonical_url);
     if(duplicate){accepted=false;rejectedReason='duplicate_canonical_listing';evidence={...evidence,accepted:false,reason:rejectedReason};}
    }
    let imported=0,jobId=null;

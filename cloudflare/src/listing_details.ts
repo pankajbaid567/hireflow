@@ -87,6 +87,10 @@ export function canonicalListingUrl(raw: string): string {
   for(const key of [...url.searchParams.keys()])if(/^(utm_.+|fbclid|gclid|trackingid)$/i.test(key))url.searchParams.delete(key);
   url.searchParams.sort();url.pathname=url.pathname.replace(/\/$/,'')||'/';return url.href;
 }
+/** Per-owner storage key for a manually added listing (audit F-021). A fragment never reaches a server and is stripped by URL normalisation. */
+export const ownerListingKey = (url: string, userId: number): string => `${url.replace(/#.*$/, '')}#hf-u${userId}`;
+/** Removes the private owner suffix before a URL leaves the API. */
+export const publicListingUrl = (value: string): string => value.replace(/#hf-u\d+/g, '');
 export function sourceName(raw: string): string {
   try{const host=new URL(raw).hostname.toLowerCase().replace(/^www\./,'');for(const [suffix,label] of [['internshala.com','Internshala'],['wellfound.com','Wellfound'],['linkedin.com','LinkedIn'],['naukri.com','Naukri'],['greenhouse.io','Greenhouse'],['lever.co','Lever'],['ashbyhq.com','Ashby']])if(host===suffix||host.endsWith(`.${suffix}`))return label;return host;}catch{return 'unknown';}
 }
