@@ -120,8 +120,9 @@ async function route(request: Request, env: Env): Promise<Response> {
   }
   if((match=path.match(/^\/applications\/(\d+)\/prep-guide$/)) && method==='GET') {
     const id=number(match[1]); const app=await first(env,`${applicationQuery} WHERE a.id=?`,id);
-    if(!app) { await requireUser(request,env); throw new ApiError(404,'Application not found'); }
-    await requireUser(request,env,app.user_id);
+    // Missing and foreign applications are indistinguishable to the caller (audit F-030).
+    const caller=await requireUser(request,env);
+    if(!app||app.user_id!==caller) throw new ApiError(404,'Application not found');
     // Read refresh state first: completion must never be paired with the previous guide.
     const refresh=await prepRefreshStatus(env,id);
     const guide=await first(env,'SELECT g.*,(SELECT profile_version FROM users WHERE id=?) AS current_profile_version FROM prep_guides g WHERE application_id=?',app.user_id,id);

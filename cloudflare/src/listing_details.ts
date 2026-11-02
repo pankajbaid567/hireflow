@@ -47,7 +47,14 @@ export function compensationFit(compensation: Compensation, profile: Data, listi
   return (upper??lower!)>=minimum*.7?0.4:0.1;
 }
 export function parseExperience(description: string): Data | null {
-  const text=bounded(description), range=text.match(/\b(\d+(?:\.\d+)?)(?:\s*(?:-|–|to)\s*(\d+(?:\.\d+)?))?\s*(\+)?\s*(?:years?|yrs?)\s+(?:of\s+)?(?:(?:relevant|professional|industry|hands[- ]on)\s+)?(?:experience|exp\b)/i) || text.match(/\b(?:experience|exp)\s*(?:required)?\s*[:=-]?\s*(\d+(?:\.\d+)?)(?:\s*(?:-|–|to)\s*(\d+(?:\.\d+)?))?\s*(\+)?\s*(?:years?|yrs?)\b/i);
+  const text=bounded(description);
+  // A years figure is a requirement only when it describes the candidate. "Our mentors have 10 years of
+  // experience" describes the team (audit F-037) and must not lower a fresher's fit.
+  const thirdParty=/\b(?:we|our|us|team|teams|mentors?|colleagues?|engineers?|leadership|founders?|managers?|company|organi[sz]ation|staff|people)\b/i, candidate=/\b(?:you|your|candidate|applicant|required|requires?|requirement|minimum|min|at least|looking for|seeking|must|should|ideal)\b/i;
+  const about=(index:number)=>{const start=Math.max(text.lastIndexOf('.',index),text.lastIndexOf('!',index),text.lastIndexOf('?',index),text.lastIndexOf('\n',index))+1,before=text.slice(start,index);return thirdParty.test(before)&&!candidate.test(before);};
+  const patterns=[/\b(\d+(?:\.\d+)?)(?:\s*(?:-|–|to)\s*(\d+(?:\.\d+)?))?\s*(\+)?\s*(?:years?|yrs?)\s+(?:of\s+)?(?:(?:relevant|professional|industry|hands[- ]on)\s+)?(?:experience|exp\b)/gi,/\b(?:experience|exp)\s*(?:required)?\s*[:=-]?\s*(\d+(?:\.\d+)?)(?:\s*(?:-|–|to)\s*(\d+(?:\.\d+)?))?\s*(\+)?\s*(?:years?|yrs?)\b/gi];
+  let range:RegExpMatchArray|undefined;
+  for(const pattern of patterns){range=[...text.matchAll(pattern)].find(match=>!about(match.index!));if(range)break;}
   if(range){const min=Number(range[1]),max=range[2]?Number(range[2]):null;if(min<=50&&(max===null||max>=min&&max<=50))return {minimum_years:min,maximum_years:max,evidence:range[0],source:'jd_text'};}
   const fresher=text.match(/\b(?:freshers?(?:\s+(?:are\s+)?welcome)?|no (?:prior |professional )?experience (?:is )?required)\b/i);
   return fresher?{minimum_years:0,maximum_years:null,evidence:fresher[0],source:'jd_text'}:null;

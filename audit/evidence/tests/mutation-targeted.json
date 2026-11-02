@@ -1,0 +1,322 @@
+[
+ {
+  "id": "M01",
+  "invariant": "duplicate-submission",
+  "file": "tasks.ts",
+  "status": "SURVIVED",
+  "tests": [
+   "tasks.test.ts",
+   "automation-runtime.test.ts",
+   "p1-workflow.test.ts"
+  ],
+  "failed": 0,
+  "total": 72,
+  "killed_by": [],
+  "seconds": 43
+ },
+ {
+  "id": "M02",
+  "invariant": "approval-binding",
+  "file": "tasks.ts",
+  "status": "SURVIVED",
+  "tests": [
+   "tasks.test.ts",
+   "review-workflow.test.ts",
+   "automation-runtime.test.ts"
+  ],
+  "failed": 0,
+  "total": 76,
+  "killed_by": [],
+  "seconds": 49
+ },
+ {
+  "id": "M03",
+  "invariant": "approval-binding",
+  "file": "tasks.ts",
+  "status": "SURVIVED",
+  "tests": [
+   "tasks.test.ts",
+   "review-workflow.test.ts",
+   "automation-runtime.test.ts"
+  ],
+  "failed": 0,
+  "total": 76,
+  "killed_by": [],
+  "seconds": 46
+ },
+ {
+  "id": "M04",
+  "invariant": "approval-binding",
+  "file": "tasks.ts",
+  "status": "SURVIVED",
+  "tests": [
+   "tasks.test.ts",
+   "review-workflow.test.ts",
+   "automation-runtime.test.ts",
+   "p1-jd-races.test.ts"
+  ],
+  "failed": 0,
+  "total": 82,
+  "killed_by": [],
+  "seconds": 46
+ },
+ {
+  "id": "M05",
+  "invariant": "pre-submit-recheck",
+  "file": "automation.ts",
+  "status": "KILLED",
+  "tests": [
+   "automation.test.ts",
+   "automation-runtime.test.ts",
+   "tasks.test.ts"
+  ],
+  "failed": 1,
+  "total": 138,
+  "killed_by": [
+   "real local HTML form browser behavior completes four controlled steps with reviewed facts and exactly one fina"
+  ],
+  "seconds": 29
+ },
+ {
+  "id": "M06",
+  "invariant": "submitting-checkpoint",
+  "file": "automation.ts",
+  "status": "SURVIVED",
+  "tests": [
+   "automation.test.ts",
+   "automation-runtime.test.ts",
+   "tasks.test.ts"
+  ],
+  "failed": 0,
+  "total": 146,
+  "killed_by": [],
+  "seconds": 45
+ },
+ {
+  "id": "M07",
+  "invariant": "checkpoint-forward-only",
+  "file": "automation_checkpoints.ts",
+  "status": "KILLED",
+  "tests": [
+   "automation.test.ts",
+   "automation-runtime.test.ts",
+   "tasks.test.ts"
+  ],
+  "failed": 1,
+  "total": 52,
+  "killed_by": [
+   "immutable approval and private durable checkpoints never downgrades a durable final marker into a retryable ch"
+  ],
+  "seconds": 8
+ },
+ {
+  "id": "M08",
+  "invariant": "session-expiry",
+  "file": "auth.ts",
+  "status": "SURVIVED",
+  "tests": [
+   "api.test.ts",
+   "account-security.test.ts",
+   "session_transfer.test.ts"
+  ],
+  "failed": 0,
+  "total": 28,
+  "killed_by": [],
+  "seconds": 21
+ },
+ {
+  "id": "M09",
+  "invariant": "logout-revoke",
+  "file": "auth.ts",
+  "status": "KILLED",
+  "tests": [
+   "api.test.ts",
+   "account-security.test.ts"
+  ],
+  "failed": 1,
+  "total": 14,
+  "killed_by": [
+   "Cloudflare API with isolated D1 and R2 recovers an existing profile by email and code and revokes the cookie o"
+  ],
+  "seconds": 12
+ },
+ {
+  "id": "M10",
+  "invariant": "tenant-isolation",
+  "file": "index.ts",
+  "status": "SURVIVED",
+  "tests": [
+   "api.test.ts",
+   "tasks.test.ts",
+   "review-workflow.test.ts"
+  ],
+  "failed": 0,
+  "total": 74,
+  "killed_by": [],
+  "seconds": 41
+ },
+ {
+  "id": "M11",
+  "invariant": "tenant-isolation",
+  "file": "index.ts",
+  "status": "SURVIVED",
+  "tests": [
+   "api.test.ts",
+   "tasks.test.ts",
+   "review-workflow.test.ts"
+  ],
+  "failed": 0,
+  "total": 74,
+  "killed_by": [],
+  "seconds": 39
+ },
+ {
+  "id": "M12",
+  "invariant": "scoring-weights",
+  "file": "intelligence.ts",
+  "status": "KILLED",
+  "tests": [
+   "intelligence.test.ts",
+   "semantic-matching.test.ts",
+   "intelligence-runtime.test.ts"
+  ],
+  "failed": 1,
+  "total": 67,
+  "killed_by": [
+   "portable matching uses the shared weighted score and ranks the stronger candidate first"
+  ],
+  "seconds": 8
+ },
+ {
+  "id": "M13",
+  "invariant": "ssrf",
+  "file": "public_url.ts",
+  "status": "KILLED",
+  "tests": [
+   "p1-workflow.test.ts",
+   "dynamic-source.test.ts",
+   "automation.test.ts",
+   "source-reader.test.ts",
+   "discovery.test.ts"
+  ],
+  "failed": 1,
+  "total": 110,
+  "killed_by": [
+   "public application URL validation rejects http://169.254.169.254/"
+  ],
+  "seconds": 24
+ },
+ {
+  "id": "M14",
+  "invariant": "email-attachment",
+  "file": "gmail_transport.ts",
+  "status": "KILLED",
+  "tests": [
+   "gmail-transport.test.ts",
+   "gmail-delivery.test.ts",
+   "email-delivery.test.ts"
+  ],
+  "failed": 1,
+  "total": 56,
+  "killed_by": [
+   "fixed Gmail SMTP transport rejects unsafe message fields before network or quota reservation{\"attachments\":[{\""
+  ],
+  "seconds": 19
+ },
+ {
+  "id": "M15",
+  "invariant": "llm-id-whitelist",
+  "file": "resume_tailoring.ts",
+  "status": "KILLED",
+  "tests": [
+   "resume-tailoring.test.ts",
+   "intelligence.test.ts"
+  ],
+  "failed": 1,
+  "total": 72,
+  "killed_by": [
+   "grounded resume tailoring rejects unsafe or incomplete selection 0 and reports a truthful fallback"
+  ],
+  "seconds": 1
+ },
+ {
+  "id": "M16",
+  "invariant": "prep-injection-guard",
+  "file": "prep_intelligence.ts",
+  "status": "SURVIVED",
+  "tests": [
+   "prep-quality.test.ts",
+   "intelligence.test.ts",
+   "intelligence-runtime.test.ts"
+  ],
+  "failed": 0,
+  "total": 84,
+  "killed_by": [],
+  "seconds": 4
+ },
+ {
+  "id": "M17",
+  "invariant": "login-rate-limit",
+  "file": "auth.ts",
+  "status": "SURVIVED",
+  "tests": [
+   "api.test.ts",
+   "signup-limits.test.ts",
+   "account-security.test.ts"
+  ],
+  "failed": 0,
+  "total": 18,
+  "killed_by": [],
+  "seconds": 12
+ },
+ {
+  "id": "M18",
+  "invariant": "html-escape",
+  "file": "reports.ts",
+  "status": "KILLED",
+  "tests": [
+   "reports.test.ts",
+   "api.test.ts",
+   "hiring-reports.test.ts"
+  ],
+  "failed": 1,
+  "total": 29,
+  "killed_by": [
+   "bounded weekly reports with real isolated D1 and R2 aggregates each cached JD skill once, excludes historical "
+  ],
+  "seconds": 16
+ },
+ {
+  "id": "M19",
+  "invariant": "html-escape",
+  "file": "prep_document.ts",
+  "status": "KILLED",
+  "tests": [
+   "prep-exports.test.ts",
+   "prep-quality.test.ts",
+   "intelligence.test.ts"
+  ],
+  "failed": 1,
+  "total": 20,
+  "killed_by": [
+   "private versioned standalone prep exports fails visibly on unsupported content, escapes HTML and never emits u"
+  ],
+  "seconds": 26
+ },
+ {
+  "id": "M20",
+  "invariant": "session-transfer-single-use",
+  "file": "session_transfer.ts",
+  "status": "KILLED",
+  "tests": [
+   "session_transfer.test.ts",
+   "api.test.ts"
+  ],
+  "failed": 1,
+  "total": 14,
+  "killed_by": [
+   "single-use workspace session transfers with real D1 creates a new private host-only session and rejects a seco"
+  ],
+  "seconds": 2
+ }
+]

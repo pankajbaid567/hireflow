@@ -9,6 +9,9 @@ export function validatePublicUrl(raw: string): string {
       host.endsWith('.internal') || host === 'metadata.google.internal' || host.endsWith('.home.arpa')) {
     throw new Error('Unsafe application URL');
   }
+  // Only default web ports (the URL parser normalises :80/:443 away) and no wildcard-DNS names that embed
+  // an arbitrary IPv4 address (audit F-031): the former reaches non-HTTP services, the latter defeats the IP checks below.
+  if (url.port || /(^|\.)(nip\.io|sslip\.io|xip\.io|nip\.direct|localtest\.me|lvh\.me|traefik\.me)$/.test(host)) throw new Error('Unsafe application URL');
   if (/^[\d.]+$/.test(host)) {
     const octets = host.split('.').map(Number);
     const [a, b, c] = octets;

@@ -1,0 +1,48 @@
+[
+ {
+  "id": "M10",
+  "invariant": "tenant-isolation",
+  "file": "index.ts",
+  "status": "SURVIVED",
+  "tests": [],
+  "failed": 0,
+  "total": 786,
+  "killed_by": [],
+  "seconds": 296
+ },
+ {
+  "id": "M11",
+  "invariant": "tenant-isolation",
+  "file": "index.ts",
+  "status": "SURVIVED",
+  "tests": [],
+  "failed": 0,
+  "total": 786,
+  "killed_by": [],
+  "seconds": 282
+ },
+ {
+  "id": "M16",
+  "invariant": "prep-injection-guard",
+  "file": "prep_intelligence.ts",
+  "status": "SURVIVED",
+  "tests": [],
+  "failed": 0,
+  "total": 786,
+  "killed_by": [],
+  "seconds": 316
+ },
+ {
+  "id": "M17",
+  "invariant": "login-rate-limit",
+  "file": "auth.ts",
+  "status": "KILLED",
+  "tests": [],
+  "failed": 1,
+  "total": 786,
+  "killed_by": [
+   "Cloudflare plan regressions rate limits incorrect owner codes and denies unapproved origins"
+  ],
+  "seconds": 294
+ }
+]
