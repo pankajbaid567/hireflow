@@ -62,3 +62,12 @@ Production deploy or any production request; live LLM/provider calls; real-porta
 7. Check **branch protection / `dev` default branch** in GitHub.
 8. Approve (or decline) an optional **capped synthetic production smoke**.
 9. Review `RESUME_TRUTH_LEDGER.md` against your actual resume wording; do not use the "36%" or "LangGraph" claims.
+
+## 9. Production deployment and verification (2026-11-02, after the PR merged)
+Neither Cloudflare project auto-deploys from GitHub (Pages is a direct upload, last deploy 26 Oct `7c9e3ad`; Worker last modified 28 Oct), so the merge changed nothing in production until deployed by hand from `main` @ `a0b0a56`.
+- **Worker `hireflow-api`**: `wrangler deploy` → version `5244188b-1787-4c4a-a2f5-ed3db809574e`. All 33 bindings identical before/after (secrets, D1, KV, Queue, AI, Browser); no D1 migration needed; `/health` OK.
+- **Pages `hireflow-dashboard`**: `npm run deploy:cloudflare` → deployment `ddf064f4`; the script's smoke check passed (health JSON, invalid profile → 422, 0 profiles created).
+- **Live headers confirmed** on `/profile`: CSP, HSTS, X-Frame-Options DENY, nosniff, Referrer-Policy, Permissions-Policy, COOP. The owned QA fixture page correctly carries no CSP.
+- **Real-browser smoke on production** (read-only, no accounts created; `evidence/ux/prod-smoke.json`): 4 routes × desktop/mobile → **0 CSP violations, 0 console/page errors, 0 axe violations**, distinct page titles.
+- F-006/F-017 → **FIXED and verified in production**. F-005 (no version in `/health`) remains open. Email: Gmail secrets are configured on the Worker; **no test email was sent**, so delivery is still unverified.
+- Note: `FROM_EMAIL` in `wrangler.jsonc` is the placeholder `hireflow@example.com`; confirm the Gmail transport uses the authenticated sender before the first real send.
