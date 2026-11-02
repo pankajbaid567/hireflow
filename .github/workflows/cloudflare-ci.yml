@@ -7,6 +7,10 @@ on:
     branches: [main, dev]
     paths: ['cloudflare/**', 'frontend/**', 'evals/**', 'scripts/run_ai_evaluation.mjs', 'scripts/evaluate_prep_quality.mjs', 'scripts/evaluate_reranker.mjs', 'scripts/verify_cloudflare_dashboard.mjs', 'scripts/deploy_cloudflare_pages.mjs', '.github/workflows/cloudflare-ci.yml']
 
+# Least privilege (audit F-004): CI only reads the repository.
+permissions:
+  contents: read
+
 jobs:
   test-worker:
     # Playwright 1.60 supports this LTS image; ubuntu-latest can advance first.

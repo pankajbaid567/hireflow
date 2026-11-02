@@ -220,7 +220,8 @@ export default {
       if(request.method==='OPTIONS')response=new Response(null,{status:204});
       else response=await route(request,env);
     } catch(error) {
-      if(!(error instanceof ApiError))console.error(JSON.stringify({event:'request_failed',path:new URL(request.url).pathname}));
+      // Correlation id and error class only (audit F-020): never the message, which can carry user or provider data.
+      if(!(error instanceof ApiError))console.error(JSON.stringify({event:'request_failed',path:new URL(request.url).pathname,request_id:env.OPERATION_CONTEXT!.correlation_id,error_class:error instanceof Error?error.name:typeof error}));
       response=json({detail:error instanceof ApiError?error.message:'The request could not be completed. Please try again.'},error instanceof ApiError?error.status:503);
     }
     const headers=new Headers(response.headers);
